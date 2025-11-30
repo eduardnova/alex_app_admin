@@ -1,0 +1,123 @@
+<!-- ==================== app/templates/reportes/dashboard.html ==================== -->
+{% extends "base.html" %}
+
+{% block title %}Dashboard - AlexRentaCar{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2">Dashboard</h1>
+</div>
+
+<div class="row">
+    <!-- Statistics Cards -->
+    <div class="col-md-3 mb-4">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-car-front"></i> Vehículos
+                </h5>
+                <h2>{{ total_vehiculos }}</h2>
+                <p class="card-text">{{ vehiculos_disponibles }} disponibles</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-calendar-check"></i> Alquileres Activos
+                </h5>
+                <h2>{{ alquileres_activos }}</h2>
+                <p class="card-text">En curso</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-cash-coin"></i> Ingresos del Mes
+                </h5>
+                <h2>${{ "%.2f"|format(ingresos_mes) }}</h2>
+                <p class="card-text">Total</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card text-white bg-danger">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-exclamation-triangle"></i> Deudas Pendientes
+                </h5>
+                <h2>${{ "%.2f"|format(deudas_pendientes) }}</h2>
+                <p class="card-text">Total</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Payments -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Pagos Recientes</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Alquiler</th>
+                                <th>Monto</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pago in pagos_recientes %}
+                            <tr>
+                                <td>{{ pago.fecha_pago.strftime('%d/%m/%Y') }}</td>
+                                <td>#{{ pago.alquiler_id }}</td>
+                                <td>${{ "%.2f"|format(pago.neto) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Stats -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Estadísticas Generales</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Propietarios
+                        <span class="badge bg-primary rounded-pill">{{ total_propietarios }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Inquilinos
+                        <span class="badge bg-primary rounded-pill">{{ total_inquilinos }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Vehículos Disponibles
+                        <span class="badge bg-success rounded-pill">{{ vehiculos_disponibles }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Alquileres Activos
+                        <span class="badge bg-info rounded-pill">{{ alquileres_activos }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,81 @@
+<!-- ==================== app/templates/modulos/vehiculos.html ==================== -->
+{% extends "base.html" %}
+
+{% block title %}Vehículos - AlexRentaCar{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2">Vehículos</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('modulos.crear_vehiculo') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nuevo Vehículo
+        </a>
+    </div>
+</div>
+
+<div class="mb-3">
+    <a href="{{ url_for('modulos.vehiculos', disponible='true') }}" class="btn btn-sm btn-outline-success">
+        Solo Disponibles
+    </a>
+    <a href="{{ url_for('modulos.vehiculos') }}" class="btn btn-sm btn-outline-secondary">
+        Todos
+    </a>
+</div>
+
+<div class="row">
+    {% for vehiculo in vehiculos.items %}
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">
+                    {{ vehiculo.marca_modelo.marca }} {{ vehiculo.marca_modelo.modelo }}
+                </h5>
+                <p class="card-text">
+                    <strong>Placa:</strong> {{ vehiculo.placa }}<br>
+                    <strong>Año:</strong> {{ vehiculo.ano }}<br>
+                    <strong>Color:</strong> {{ vehiculo.color }}<br>
+                    <strong>Precio:</strong> ${{ "%.2f"|format(vehiculo.precio_semanal) }}/semana<br>
+                    <strong>Estado:</strong> 
+                    {% if vehiculo.disponible %}
+                    <span class="badge bg-success">Disponible</span>
+                    {% else %}
+                    <span class="badge bg-warning text-dark">No Disponible</span>
+                    {% endif %}
+                </p>
+                <a href="{{ url_for('modulos.ver_vehiculo', vehiculo_id=vehiculo.id) }}" 
+                   class="btn btn-primary btn-sm">
+                    Ver Detalles
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if vehiculos.has_prev or vehiculos.has_next %}
+<nav aria-label="Page navigation">
+    <ul class="pagination">
+        {% if vehiculos.has_prev %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('modulos.vehiculos', page=vehiculos.prev_num) }}">Anterior</a>
+        </li>
+        {% endif %}
+        
+        {% for page_num in vehiculos.iter_pages() %}
+            {% if page_num %}
+                <li class="page-item {% if page_num == vehiculos.page %}active{% endif %}">
+                    <a class="page-link" href="{{ url_for('modulos.vehiculos', page=page_num) }}">{{ page_num }}</a>
+                </li>
+            {% endif %}
+        {% endfor %}
+        
+        {% if vehiculos.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('modulos.vehiculos', page=vehiculos.next_num) }}">Siguiente</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

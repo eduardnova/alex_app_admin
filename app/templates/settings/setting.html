@@ -1,0 +1,57 @@
+<!-- ==================== app/templates/settings/setting.html ==================== -->
+{% extends "base.html" %}
+
+{% block title %}Configuración - AlexRentaCar{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2">Configuración</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Información de la Cuenta</h5>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <tr>
+                        <th>Usuario:</th>
+                        <td>{{ user.username }}</td>
+                    </tr>
+                    <tr>
+                        <th>Nombre:</th>
+                        <td>{{ user.nombre }} {{ user.apellido }}</td>
+                    </tr>
+                    <tr>
+                        <th>Email:</th>
+                        <td>{{ user.email }}</td>
+                    </tr>
+                    <tr>
+                        <th>Teléfono:</th>
+                        <td>{{ user.telefono or 'No especificado' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Rol:</th>
+                        <td><span class="badge bg-primary">{{ user.rol }}</span></td>
+                    </tr>
+                    <tr>
+                        <th>Miembro desde:</th>
+                        <td>{{ user.fecha_creacion.strftime('%d/%m/%Y') }}</td>
+                    </tr>
+                </table>
+                
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('settings.perfil') }}" class="btn btn-primary">
+                        <i class="bi bi-pencil"></i> Editar Perfil
+                    </a>
+                    <a href="{{ url_for('settings.cambiar_password') }}" class="btn btn-secondary">
+                        <i class="bi bi-key"></i> Cambiar Contraseña
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

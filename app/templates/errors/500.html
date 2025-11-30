@@ -1,0 +1,15 @@
+<!-- ==================== app/templates/errors/500.html ==================== -->
+{% extends "base.html" %}
+
+{% block title %}500 - Error del servidor{% endblock %}
+
+{% block content %}
+<div class="container text-center mt-5">
+    <h1 class="display-1">500</h1>
+    <p class="fs-3">Error del servidor</p>
+    <p class="lead">
+        Lo sentimos, ocurrió un error inesperado.
+    </p>
+    <a href="{{ url_for('index') }}" class="btn btn-primary">Ir al Inicio</a>
+</div>
+{% endblock %}

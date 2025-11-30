@@ -1,0 +1,71 @@
+alexrentacar_adminapp/
+│
+├── app/
+│   ├── __init__.py
+│   ├── config.py
+│   ├── models.py
+│   ├── routes/
+│   │   ├── __init__.py
+│   │   └── aurh_routes.py
+│   │   └── settings_routes.py
+│   │   └── admin_routes.py
+│   │   └── modulos_routes.py
+│   │   └── reportes_routes.py
+│   │   └── mecanicos_routes.py
+│   ├── services/
+│   │   ├── __init__.py
+│   │   └── user_service.py
+│   ├── templates/
+│   │   └── index.html
+│   │   ├── catalogos/
+│   |   |   └── usuarios.html	
+│   |   |   └── vehiculo_marca_modelo.html	
+│   |   |   └── estados_alquiler.html	
+│   |   |   └── metodos_pago.html
+│   |   |   └── tipo_cuentas.html
+│   |   |   └── bancos.html
+│   |   |   └── parentescos.html
+│   |   |   └── 
+│   │   ├── auth/
+│   |   |   └── login.html
+│   |   |   └── forget.html
+│   |   |   └── reset.html	
+│   │   ├── settings/
+│   |   |   └── setting.html
+│   │   ├── admin/
+│   |   |   └── admin.html
+│   |   |   └── usuarios.html
+│   |   |   └── interes.html
+│   |   |   └── mora.html
+│   |   |   └── registro_acceso.html
+│   │   ├── modulos/
+│   │   │   └── propietarios.html
+│   │   │   └── inquilinos.html
+│   │   │   └── alquileres.html
+│   │   │   └── referencias_propietarios.html
+│   │   │   └── referencias_inquilinos.html
+│   │   │   └── garantes_inquilinos.html
+│   │   │   └── vehiculos.html
+│   │   │   └── deudas.html
+│   │   │   └── pagos.html
+│   │   ├── reportes/
+│   │   │   └── dashboard.html
+│   │   │   └── reportes_propietarios.html
+│   │   │   └── reportes_inquilinos.html
+│   │   │   └── reportes_ganancias.html
+│   │   ├── mecanicos/
+│   │   │   └── mecanicos.html
+│   │   │   └── tipos_trabajos.html
+│   │   │   └── trabajos_vehiculos.html
+│   │   │   └── piezas.html
+│   │   │   └── piezas_usadas.html
+|   | 
+│   ├── static/
+│       ├── css/
+│       └── js/
+│
+├── migrations/        # si usas Flask-Migrate
+│
+│
+├── run.py
+└── requirements.txt

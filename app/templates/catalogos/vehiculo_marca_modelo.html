@@ -1,0 +1,35 @@
+<!-- ==================== app/templates/catalogos/vehiculo_marca_modelo.html ==================== -->
+{% extends "base.html" %}
+
+{% block title %}Marcas y Modelos - AlexRentaCar{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2">Marcas y Modelos de Vehículos</h1>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Marca</th>
+                <th>Modelo</th>
+                <th>Tipo</th>
+                <th>Descripción</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for marca in marcas %}
+            <tr>
+                <td>{{ marca.id }}</td>
+                <td>{{ marca.marca }}</td>
+                <td>{{ marca.modelo }}</td>
+                <td><span class="badge bg-info">{{ marca.tipo }}</span></td>
+                <td>{{ marca.descripcion }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
