@@ -1,35 +1,416 @@
-<!-- ==================== app/templates/catalogos/vehiculo_marca_modelo.html ==================== -->
 {% extends "base.html" %}
 
-{% block title %}Marcas y Modelos - AlexRentaCar{% endblock %}
+{% block title %}Marcas y Modelos de Vehículos{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
-    <h1 class="h2">Marcas y Modelos de Vehículos</h1>
+<div class="content-area">
+
+    <!-- Table Card -->
+    <div class="table-container">
+        <div class="table-header">
+            <div>
+                <h3 class="table-title">Lista de Marcas y Modelos
+                <p class="card-subtitle">Gestiona las marcas y modelos disponibles en el sistema</p>
+                </h3>
+            </div>
+            <div class="table-actions">
+                <div class="input-group" style="width: 400px;">
+                    <span class="input-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35"/>
+                        </svg>
+                    </span>
+                    <input type="text" class="form-input" id="searchInput" placeholder="Buscar marca o modelo...">
+                </div>
+            </div>
+             <div style="display: flex; gap: 12px;">
+                <button class="btn btn-secondary" data-modal="filterModal">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                    </svg>
+                    Filtros
+                </button>
+                <button class="btn btn-primary" data-modal="createModal">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Nueva Marca/Modelo
+                </button>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="table" id="marcasTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Logo</th>
+                        <th>Marca</th>
+                        <th>Modelo</th>
+                        <th>Tipo</th>
+                        <th>Descripción</th>
+                        <th>Fecha Registro</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for marca in marcas %}
+                    <tr>
+                        <td>#{{ marca.id }}</td>
+                        <td>
+                            {% if marca.logo_path %}
+                            <img src="{{ url_for('static', filename=marca.logo_path) }}" alt="{{ marca.marca }}" style="width: 40px; height: 40px; object-fit: contain; border-radius: 8px;">
+                            {% else %}
+                            <div style="width: 40px; height: 40px; background: var(--bg-primary); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--text-tertiary);">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                                    <path d="M21 15l-5-5L5 21"/>
+                                </svg>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td><strong>{{ marca.marca }}</strong></td>
+                        <td>{{ marca.modelo }}</td>
+                        <td>
+                            <span class="badge badge-primary">{{ marca.tipo }}</span>
+                        </td>
+                        <td>
+                            <span style="display: block; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                {{ marca.descripcion or 'N/A' }}
+                            </span>
+                        </td>
+                        <td>{{ marca.fecha_registro.strftime('%d/%m/%Y') if marca.fecha_registro else 'N/A' }}</td>
+                        <td>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-sm btn-secondary" onclick="viewHistory({{ marca.id }})" data-tooltip="Ver Historial">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </button>
+                                <button class="btn btn-sm btn-primary" onclick="editMarca({{ marca.id }})" data-tooltip="Editar">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </button>
+                                <form action="{{ url_for('catalogo.eliminar_marca_modelo', id=marca.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('¿Está seguro de eliminar esta marca/modelo?');">
+                                    <button type="submit" class="btn btn-sm btn-danger" data-tooltip="Eliminar">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-footer">
+            <div style="font-size: 14px; color: var(--text-secondary);">
+                Mostrando <strong>1-{{ marcas|length }}</strong> de <strong>{{ marcas|length }}</strong> registros
+            </div>
+            <div class="pagination">
+                <button class="pagination-item" disabled>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </button>
+                <button class="pagination-item active">1</button>
+                <button class="pagination-item">2</button>
+                <button class="pagination-item">3</button>
+                <button class="pagination-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
-<div class="table-responsive">
-    <table class="table table-striped table-hover">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Marca</th>
-                <th>Modelo</th>
-                <th>Tipo</th>
-                <th>Descripción</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for marca in marcas %}
-            <tr>
-                <td>{{ marca.id }}</td>
-                <td>{{ marca.marca }}</td>
-                <td>{{ marca.modelo }}</td>
-                <td><span class="badge bg-info">{{ marca.tipo }}</span></td>
-                <td>{{ marca.descripcion }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<!-- Modal: Crear/Editar Marca/Modelo -->
+<div class="modal-overlay" id="createModal">
+    <div class="modal modal-lg">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                <span id="modalTitle">Nueva Marca/Modelo</span>
+            </h3>
+            <button class="modal-close">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <form action="{{ url_for('catalogo.crear_marca_modelo') }}" method="POST" enctype="multipart/form-data" id="marcaForm">
+            <div class="modal-body">
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+                    <div class="form-group">
+                        <label class="form-label required">Marca</label>
+                        <input type="text" name="marca" class="form-input" placeholder="Ej: Toyota" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label required">Modelo</label>
+                        <input type="text" name="modelo" class="form-input" placeholder="Ej: Corolla" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label required">Tipo de Vehículo</label>
+                        <select name="tipo" class="form-select" required>
+                            <option value="">Seleccionar tipo</option>
+                            <option value="Sedán">Sedán</option>
+                            <option value="SUV">SUV</option>
+                            <option value="Pick-up">Pick-up</option>
+                            <option value="Compacto">Compacto</option>
+                            <option value="Deportivo">Deportivo</option>
+                            <option value="Van">Van</option>
+                            <option value="Camión">Camión</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Logo</label>
+                        <div class="file-upload">
+                            <input type="file" name="logo" id="logoInput" class="file-input" accept="image/*">
+                            <label for="logoInput" class="file-label">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                </svg>
+                                <span class="file-text">Subir logo</span>
+                            </label>
+                        </div>
+                        <div id="logoPreview" style="margin-top: 12px; display: none;">
+                            <img src="" alt="Preview" style="max-width: 150px; border-radius: var(--radius-md); box-shadow: var(--neu-shadow-small);">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Descripción</label>
+                    <textarea name="descripcion" class="form-textarea" rows="4" placeholder="Descripción adicional del modelo..."></textarea>
+                    <span class="form-help">Información adicional sobre características, capacidad, etc.</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button>
+                <button type="submit" class="btn btn-primary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Guardar Marca/Modelo
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
+
+<!-- Modal: Historial de Modificaciones -->
+<div class="modal-overlay" id="historyModal">
+    <div class="modal modal-xl">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Historial de Modificaciones
+            </h3>
+            <button class="modal-close">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <!-- Filters -->
+            <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+                <div class="input-group" style="flex: 1;">
+                    <span class="input-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35"/>
+                        </svg>
+                    </span>
+                    <input type="text" class="form-input" id="historySearch" placeholder="Buscar en historial...">
+                </div>
+                <select class="form-select" style="width: 200px;">
+                    <option value="">Todas las acciones</option>
+                    <option value="crear">Creación</option>
+                    <option value="editar">Edición</option>
+                    <option value="eliminar">Eliminación</option>
+                </select>
+                <input type="date" class="form-input" style="width: 180px;">
+            </div>
+
+            <!-- History Table -->
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Fecha/Hora</th>
+                            <th>Usuario</th>
+                            <th>Acción</th>
+                            <th>Campo Modificado</th>
+                            <th>Valor Anterior</th>
+                            <th>Valor Nuevo</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                        <tr>
+                            <td>28/11/2024 14:35</td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <div class="user-avatar" style="width: 28px; height: 28px; font-size: 11px;">JD</div>
+                                    <span>John Doe</span>
+                                </div>
+                            </td>
+                            <td><span class="badge badge-success">Creación</span></td>
+                            <td>Registro inicial</td>
+                            <td>-</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td>29/11/2024 09:20</td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <div class="user-avatar" style="width: 28px; height: 28px; font-size: 11px;">AM</div>
+                                    <span>Admin User</span>
+                                </div>
+                            </td>
+                            <td><span class="badge badge-warning">Edición</span></td>
+                            <td>Tipo</td>
+                            <td><code>Compacto</code></td>
+                            <td><code>Sedán</code></td>
+                        </tr>
+                        <tr>
+                            <td>30/11/2024 11:45</td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <div class="user-avatar" style="width: 28px; height: 28px; font-size: 11px;">JD</div>
+                                    <span>John Doe</span>
+                                </div>
+                            </td>
+                            <td><span class="badge badge-warning">Edición</span></td>
+                            <td>Descripción</td>
+                            <td><code>Modelo estándar</code></td>
+                            <td><code>Modelo sedán familiar</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button>
+            <button type="button" class="btn btn-primary">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Exportar Historial
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Filtros Avanzados -->
+<div class="modal-overlay" id="filterModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                </svg>
+                Filtros Avanzados
+            </h3>
+            <button class="modal-close">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">Tipo de Vehículo</label>
+                <select class="form-select">
+                    <option value="">Todos</option>
+                    <option value="sedan">Sedán</option>
+                    <option value="suv">SUV</option>
+                    <option value="pickup">Pick-up</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Rango de Fechas</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <input type="date" class="form-input" placeholder="Desde">
+                    <input type="date" class="form-input" placeholder="Hasta">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Usuario que Registró</label>
+                <select class="form-select">
+                    <option value="">Todos los usuarios</option>
+                    <option value="1">Admin User</option>
+                    <option value="2">John Doe</option>
+                </select>
+            </div>
+
+            <div class="checkbox-wrapper">
+                <input type="checkbox" class="checkbox" id="conLogo">
+                <label for="conLogo" class="checkbox-label">Solo con logo</label>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-modal-close>Limpiar</button>
+            <button type="button" class="btn btn-primary" data-modal-close>Aplicar Filtros</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Search functionality
+document.getElementById('searchInput').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const rows = document.querySelectorAll('#marcasTable tbody tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+});
+
+// Logo preview
+document.getElementById('logoInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('logoPreview');
+            preview.querySelector('img').src = e.target.result;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+// Edit marca function
+function editMarca(id) {
+    document.getElementById('modalTitle').textContent = 'Editar Marca/Modelo';
+    document.getElementById('marcaForm').action = `/marcas_modelos/${id}/editar`;
+    // Aquí cargarías los datos mediante AJAX
+    window.AppUtils.openModal('createModal');
+}
+
+// View history function
+function viewHistory(id) {
+    // Aquí cargarías el historial mediante AJAX
+    window.AppUtils.openModal('historyModal');
+}
+</script>
 {% endblock %}

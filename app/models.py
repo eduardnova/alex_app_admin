@@ -60,6 +60,8 @@ class Usuario(UserMixin, db.Model):
     
     def check_password(self, password):
         """Verify password"""
+        if not self.password or self.password == '':  # ← DEBE ESTAR AQUÍ
+            return False
         return check_password_hash(self.password, password)
     
     def __repr__(self):

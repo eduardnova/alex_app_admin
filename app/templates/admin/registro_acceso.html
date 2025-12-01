@@ -1,0 +1,866 @@
+{% extends "base.html" %}
+
+{% block title %}Registro de Accesos - AlexRentaCar{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Stats Cards Compactas */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+    
+    .stat-card {
+        padding: 16px;
+    }
+    
+    .stat-card::before {
+        width: 3px;
+    }
+    
+    .stat-header {
+        margin-bottom: 10px;
+    }
+    
+    .stat-icon {
+        width: 38px;
+        height: 38px;
+        font-size: 20px;
+    }
+    
+    .stat-value {
+        font-size: 24px;
+        margin-bottom: 4px;
+    }
+    
+    .stat-label {
+        font-size: 12px;
+    }
+    
+    .stat-change {
+        font-size: 11px;
+        margin-top: 6px;
+    }
+    
+    .stat-change svg {
+        width: 12px;
+        height: 12px;
+    }
+    
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        
+        .stat-card {
+            padding: 14px;
+        }
+        
+        .stat-icon {
+            width: 34px;
+            height: 34px;
+        }
+        
+        .stat-value {
+            font-size: 20px;
+        }
+        
+        .stat-label {
+            font-size: 11px;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    .filter-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        background: rgba(var(--primary-rgb), 0.1);
+        color: var(--primary);
+        border-radius: var(--radius-full);
+        font-size: 13px;
+        font-weight: 600;
+        margin: 4px;
+    }
+    
+    .filter-badge button {
+        background: none;
+        border: none;
+        color: var(--primary);
+        cursor: pointer;
+        padding: 0;
+        display: flex;
+        align-items: center;
+    }
+    
+    .user-history-item {
+        padding: 16px;
+        border-bottom: 1px solid var(--divider-color);
+        transition: all 0.2s;
+    }
+    
+    .user-history-item:hover {
+        background: var(--bg-primary);
+    }
+    
+    .user-history-item:last-child {
+        border-bottom: none;
+    }
+    
+    .action-badge {
+        padding: 4px 10px;
+        border-radius: var(--radius-sm);
+        font-size: 12px;
+        font-weight: 600;
+    }
+    
+    .action-login {
+        background: rgba(72, 187, 120, 0.1);
+        color: var(--success);
+    }
+    
+    .action-logout {
+        background: rgba(237, 137, 54, 0.1);
+        color: var(--warning);
+    }
+    
+    .action-error {
+        background: rgba(245, 101, 101, 0.1);
+        color: var(--danger);
+    }
+    
+    .action-other {
+        background: rgba(66, 153, 225, 0.1);
+        color: var(--info);
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 300px;
+        margin-top: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Stats Cards Compactas -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <div class="stat-icon primary">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                </svg>
+            </div>
+            <span id="cambioHoy" style="font-size: 11px; color: var(--success); font-weight: 600;">+0%</span>
+        </div>
+        <div class="stat-value" id="totalAccesosHoy">0</div>
+        <div class="stat-label">Total Accesos Hoy</div>
+    </div>
+
+    <div class="stat-card">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <div class="stat-icon success">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <span id="tasaExito" style="font-size: 11px; color: var(--success); font-weight: 600;">0%</span>
+        </div>
+        <div class="stat-value" id="accesosExitosos">0</div>
+        <div class="stat-label">Accesos Exitosos</div>
+    </div>
+
+    <div class="stat-card">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <div class="stat-icon danger">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+            <span id="tasaFallo" style="font-size: 11px; color: var(--danger); font-weight: 600;">0%</span>
+        </div>
+        <div class="stat-value" id="accesosFallidos">0</div>
+        <div class="stat-label">Accesos Fallidos</div>
+    </div>
+
+    <div class="stat-card">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <div class="stat-icon warning">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                </svg>
+            </div>
+            <span style="font-size: 10px; color: var(--text-tertiary); font-weight: 600;">24h</span>
+        </div>
+        <div class="stat-value" id="usuariosActivos">0</div>
+        <div class="stat-label">Usuarios Activos</div>
+    </div>
+</div>
+
+<!-- Main Table Card -->
+<div class="table-container" style="margin-top: 30px;">
+    <div class="table-header">
+        <div>
+            <h3 class="table-title">Registro de Accesos al Sistema</h3>
+            <div id="activeFilters" style="margin-top: 8px;"></div>
+        </div>
+        <div class="table-actions">
+            <button class="btn btn-secondary btn-sm" onclick="limpiarFiltros()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                Limpiar
+            </button>
+            <button class="btn btn-primary btn-sm" data-modal="analyticsModal">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+                Análisis Semanal
+            </button>
+            <button class="btn btn-success btn-sm" onclick="exportarDatos()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Exportar
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div style="padding: 20px; background: var(--bg-primary); border-bottom: 1px solid var(--divider-color);">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+            <div class="form-group" style="margin: 0;">
+                <label class="form-label">Usuario</label>
+                <input type="text" id="filtroUsuario" class="form-input" placeholder="Buscar por usuario...">
+            </div>
+            <div class="form-group" style="margin: 0;">
+                <label class="form-label">Acción</label>
+                <select id="filtroAccion" class="form-select">
+                    <option value="">Todas las acciones</option>
+                    <option value="login">Login</option>
+                    <option value="logout">Logout</option>
+                    <option value="login_failed">Login Fallido</option>
+                    <!--<option value="create">Crear</option>
+                    <option value="update">Actualizar</option>
+                    <option value="delete">Eliminar</option>-->
+                </select>
+            </div>
+            <div class="form-group" style="margin: 0;">
+                <label class="form-label">Fecha Desde</label>
+                <input type="date" id="filtroFechaDesde" class="form-input">
+            </div>
+            <div class="form-group" style="margin: 0;">
+                <label class="form-label">Fecha Hasta</label>
+                <input type="date" id="filtroFechaHasta" class="form-input">
+            </div>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Usuario</th>
+                    <th>Acción</th>
+                    <th>Fecha y Hora</th>
+                    <th>IP Address</th>
+                    <th>Detalles</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tablaRegistros">
+                {% for registro in registros.items %}
+                <tr data-usuario-id="{{ registro.usuario_id }}" 
+                    data-accion="{{ registro.accion }}" 
+                    data-fecha="{{ registro.fecha_hora.strftime('%Y-%m-%d') }}">
+                    <td><strong>#{{ registro.id }}</strong></td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="width: 32px; height: 32px; background: linear-gradient(135deg, var(--primary), var(--primary-light)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 12px;">
+                                {{ registro.usuario.nombre[0] if registro.usuario.nombre else 'U' }}{{ registro.usuario.apellido[0] if registro.usuario.apellido else 'U' }}
+                            </div>
+                            <div>
+                                <div style="font-weight: 600; color: var(--text-primary);">
+                                    {{ registro.usuario.nombre }} {{ registro.usuario.apellido }}
+                                </div>
+                                <div style="font-size: 12px; color: var(--text-tertiary);">
+                                    @{{ registro.usuario.username }}
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="action-badge {% if 'login' in registro.accion and 'failed' not in registro.accion %}action-login{% elif 'logout' in registro.accion %}action-logout{% elif 'failed' in registro.accion or 'error' in registro.accion %}action-error{% else %}action-other{% endif %}">
+                            {{ registro.accion }}
+                        </span>
+                    </td>
+                    <td>
+                        <div style="font-weight: 600; color: var(--text-primary);">
+                            {{ registro.fecha_hora.strftime('%d/%m/%Y') }}
+                        </div>
+                        <div style="font-size: 12px; color: var(--text-tertiary);">
+                            {{ registro.fecha_hora.strftime('%H:%M:%S') }}
+                        </div>
+                    </td>
+                    <td>
+                        <code style="background: var(--bg-primary); padding: 4px 8px; border-radius: var(--radius-sm); font-size: 12px;">
+                            {{ registro.ip_address or 'N/A' }}
+                        </code>
+                    </td>
+                    <td>
+                        <div style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary); font-size: 13px;">
+                            {{ registro.detalles or 'Sin detalles' }}
+                        </div>
+                    </td>
+                    <td>
+                        <button class="btn btn-secondary btn-sm" onclick="verHistorialUsuario({{ registro.usuario_id }}, '{{ registro.usuario.nombre }} {{ registro.usuario.apellido }}')">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
+                            Ver Historial
+                        </button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7">
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                            </div>
+                            <h3 class="empty-title">No hay registros</h3>
+                            <p class="empty-text">No se encontraron registros de acceso en el sistema</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if registros.pages > 1 %}
+    <div class="table-footer">
+        <div style="font-size: 14px; color: var(--text-secondary);">
+            Mostrando {{ registros.per_page * (registros.page - 1) + 1 }} - 
+            {{ registros.per_page * registros.page if registros.page < registros.pages else registros.total }} 
+            de {{ registros.total }} registros
+        </div>
+        <div class="pagination">
+            {% if registros.has_prev %}
+            <a href="{{ url_for('admin.registro_acceso', page=registros.prev_num) }}" class="pagination-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </a>
+            {% else %}
+            <button class="pagination-item" disabled>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </button>
+            {% endif %}
+
+            {% for page_num in registros.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                {% if page_num %}
+                    <a href="{{ url_for('admin.registro_acceso', page=page_num) }}" 
+                       class="pagination-item {% if page_num == registros.page %}active{% endif %}">
+                        {{ page_num }}
+                    </a>
+                {% else %}
+                    <span class="pagination-item" style="cursor: default;">...</span>
+                {% endif %}
+            {% endfor %}
+
+            {% if registros.has_next %}
+            <a href="{{ url_for('admin.registro_acceso', page=registros.next_num) }}" class="pagination-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </a>
+            {% else %}
+            <button class="pagination-item" disabled>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </button>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Offcanvas - Historial de Usuario -->
+<div class="offcanvas-overlay" id="historialOverlay"></div>
+<div class="offcanvas" id="historialOffcanvas">
+    <div class="offcanvas-header">
+        <h3 class="offcanvas-title" id="historialTitulo">Historial de Usuario</h3>
+        <button class="offcanvas-close" onclick="cerrarHistorial()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+    </div>
+    <div class="offcanvas-body" id="historialContenido">
+        <div style="text-align: center; padding: 40px 20px; color: var(--text-tertiary);">
+            <div class="spinner-lg"></div>
+            <p style="margin-top: 16px;">Cargando historial...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Modal - Análisis Semanal -->
+<div class="modal-overlay" id="analyticsModal">
+    <div class="modal modal-lg">
+        <div class="modal-header">
+            <h3 class="modal-title">Análisis de Accesos - Semana Actual</h3>
+            <button class="modal-close" data-modal-close>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div style="margin-bottom: 20px;">
+                <h4 style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 12px;">
+                    Frecuencia de Accesos por Día
+                </h4>
+                <p style="font-size: 14px; color: var(--text-secondary);">
+                    Distribución de accesos al sistema durante la semana actual (Lun - Dom)
+                </p>
+            </div>
+            
+            <div class="chart-container">
+                <canvas id="weeklyChart"></canvas>
+            </div>
+
+            <div style="margin-top: 30px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px;">
+                <div style="background: var(--bg-primary); padding: 16px; border-radius: var(--radius-md); text-align: center;">
+                    <div style="font-size: 24px; font-weight: 700; color: var(--primary);" id="totalSemana">0</div>
+                    <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">Total Semana</div>
+                </div>
+                <div style="background: var(--bg-primary); padding: 16px; border-radius: var(--radius-md); text-align: center;">
+                    <div style="font-size: 24px; font-weight: 700; color: var(--success);" id="promedioSemana">0</div>
+                    <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">Promedio Diario</div>
+                </div>
+                <div style="background: var(--bg-primary); padding: 16px; border-radius: var(--radius-md); text-align: center;">
+                    <div style="font-size: 24px; font-weight: 700; color: var(--warning);" id="diaMasActivo">-</div>
+                    <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">Día Más Activo</div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" data-modal-close>Cerrar</button>
+            <button class="btn btn-primary" onclick="exportarGrafico()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                Exportar Gráfico
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// ============== VARIABLES GLOBALES ============== //
+let weeklyChart = null;
+let todosLosRegistros = [];
+
+// ============== INICIALIZACIÓN ============== //
+document.addEventListener('DOMContentLoaded', function() {
+    cargarDatosIniciales();
+    inicializarFiltros();
+    actualizarEstadisticas();
+});
+
+// ============== CARGAR DATOS INICIALES ============== //
+function cargarDatosIniciales() {
+    // Capturar todos los registros de la tabla
+    const filas = document.querySelectorAll('#tablaRegistros tr[data-usuario-id]');
+    todosLosRegistros = Array.from(filas).map(fila => ({
+        id: fila.querySelector('td:first-child strong').textContent.replace('#', ''),
+        usuarioId: fila.dataset.usuarioId,
+        usuario: fila.querySelector('td:nth-child(2) .text-primary') ? fila.querySelector('td:nth-child(2) .text-primary').textContent : '',
+        accion: fila.dataset.accion,
+        fecha: fila.dataset.fecha,
+        elemento: fila
+    }));
+}
+
+// ============== FILTROS ============== //
+function inicializarFiltros() {
+    const filtroUsuario = document.getElementById('filtroUsuario');
+    const filtroAccion = document.getElementById('filtroAccion');
+    const filtroFechaDesde = document.getElementById('filtroFechaDesde');
+    const filtroFechaHasta = document.getElementById('filtroFechaHasta');
+
+    [filtroUsuario, filtroAccion, filtroFechaDesde, filtroFechaHasta].forEach(filtro => {
+        if (filtro) {
+            filtro.addEventListener('change', aplicarFiltros);
+            filtro.addEventListener('input', aplicarFiltros);
+        }
+    });
+}
+
+function aplicarFiltros() {
+    const usuario = document.getElementById('filtroUsuario').value.toLowerCase();
+    const accion = document.getElementById('filtroAccion').value;
+    const fechaDesde = document.getElementById('filtroFechaDesde').value;
+    const fechaHasta = document.getElementById('filtroFechaHasta').value;
+
+    const filas = document.querySelectorAll('#tablaRegistros tr[data-usuario-id]');
+    let visibles = 0;
+
+    filas.forEach(fila => {
+        const textoUsuario = fila.querySelector('td:nth-child(2)').textContent.toLowerCase();
+        const accionFila = fila.dataset.accion;
+        const fechaFila = fila.dataset.fecha;
+
+        let mostrar = true;
+
+        if (usuario && !textoUsuario.includes(usuario)) mostrar = false;
+        if (accion && accionFila !== accion) mostrar = false;
+        if (fechaDesde && fechaFila < fechaDesde) mostrar = false;
+        if (fechaHasta && fechaFila > fechaHasta) mostrar = false;
+
+        fila.style.display = mostrar ? '' : 'none';
+        if (mostrar) visibles++;
+    });
+
+    // Mostrar mensaje si no hay resultados
+    mostrarMensajeVacio(visibles === 0);
+    
+    // Actualizar badges de filtros activos
+    actualizarBadgesFiltros();
+}
+
+function mostrarMensajeVacio(mostrar) {
+    let mensajeVacio = document.querySelector('.mensaje-vacio-filtro');
+    
+    if (mostrar) {
+        if (!mensajeVacio) {
+            mensajeVacio = document.createElement('tr');
+            mensajeVacio.className = 'mensaje-vacio-filtro';
+            mensajeVacio.innerHTML = `
+                <td colspan="7">
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                        </div>
+                        <h3 class="empty-title">No se encontraron resultados</h3>
+                        <p class="empty-text">Intenta ajustar los filtros de búsqueda</p>
+                    </div>
+                </td>
+            `;
+            document.getElementById('tablaRegistros').appendChild(mensajeVacio);
+        }
+    } else if (mensajeVacio) {
+        mensajeVacio.remove();
+    }
+}
+
+function actualizarBadgesFiltros() {
+    const container = document.getElementById('activeFilters');
+    container.innerHTML = '';
+
+    const filtros = [];
+    
+    const usuario = document.getElementById('filtroUsuario').value;
+    if (usuario) filtros.push({ label: 'Usuario', valor: usuario, input: 'filtroUsuario' });
+    
+    const accion = document.getElementById('filtroAccion').value;
+    if (accion) filtros.push({ label: 'Acción', valor: accion, input: 'filtroAccion' });
+    
+    const fechaDesde = document.getElementById('filtroFechaDesde').value;
+    if (fechaDesde) filtros.push({ label: 'Desde', valor: fechaDesde, input: 'filtroFechaDesde' });
+    
+    const fechaHasta = document.getElementById('filtroFechaHasta').value;
+    if (fechaHasta) filtros.push({ label: 'Hasta', valor: fechaHasta, input: 'filtroFechaHasta' });
+
+    filtros.forEach(filtro => {
+        const badge = document.createElement('span');
+        badge.className = 'filter-badge';
+        badge.innerHTML = `
+            <strong>${filtro.label}:</strong> ${filtro.valor}
+            <button onclick="removerFiltro('${filtro.input}')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        `;
+        container.appendChild(badge);
+    });
+}
+
+function removerFiltro(inputId) {
+    const input = document.getElementById(inputId);
+    input.value = '';
+    aplicarFiltros();
+}
+
+function limpiarFiltros() {
+    document.getElementById('filtroUsuario').value = '';
+    document.getElementById('filtroAccion').value = '';
+    document.getElementById('filtroFechaDesde').value = '';
+    document.getElementById('filtroFechaHasta').value = '';
+    aplicarFiltros();
+}
+
+// ============== HISTORIAL DE USUARIO - OFFCANVAS ============== //
+function verHistorialUsuario(usuarioId, nombreUsuario) {
+    document.getElementById('historialTitulo').textContent = `Historial de ${nombreUsuario}`;
+    
+    // Abrir offcanvas
+    document.getElementById('historialOverlay').classList.add('active');
+    document.getElementById('historialOffcanvas').classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    // Cargar datos del usuario
+    fetch(`/admin/api/historial-usuario/${usuarioId}`)
+        .then(response => response.json())
+        .then(data => {
+            mostrarHistorialUsuario(data);
+        })
+        .catch(error => {
+            document.getElementById('historialContenido').innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <h3 class="empty-title">Error al cargar</h3>
+                    <p class="empty-text">No se pudo cargar el historial del usuario</p>
+                </div>
+            `;
+        });
+}
+
+function mostrarHistorialUsuario(registros) {
+    const contenido = document.getElementById('historialContenido');
+    
+    if (!registros || registros.length === 0) {
+        contenido.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </div>
+                <h3 class="empty-title">Sin registros</h3>
+                <p class="empty-text">Este usuario no tiene accesos registrados</p>
+            </div>
+        `;
+        return;
+    }
+
+    let html = '<div style="margin-bottom: 20px;">';
+    html += `<div style="background: var(--bg-primary); padding: 16px; border-radius: var(--radius-md); margin-bottom: 20px;">`;
+    html += `<div style="font-size: 24px; font-weight: 700; color: var(--primary); margin-bottom: 4px;">${registros.length}</div>`;
+    html += `<div style="font-size: 14px; color: var(--text-secondary);">Total de accesos registrados</div>`;
+    html += `</div>`;
+    html += '</div>';
+
+    registros.forEach(registro => {
+        const fecha = new Date(registro.fecha_hora);
+        const accionClass = registro.accion.includes('login') && !registro.accion.includes('failed') ? 'action-login' :
+                           registro.accion.includes('logout') ? 'action-logout' :
+                           registro.accion.includes('failed') || registro.accion.includes('error') ? 'action-error' :
+                           'action-other';
+        
+        html += `
+            <div class="user-history-item">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                    <span class="action-badge ${accionClass}">${registro.accion}</span>
+                    <div style="text-align: right; font-size: 12px; color: var(--text-tertiary);">
+                        <div>${fecha.toLocaleDateString('es-ES')}</div>
+                        <div>${fecha.toLocaleTimeString('es-ES')}</div>
+                    </div>
+                </div>
+                ${registro.ip_address ? `
+                    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 6px;">
+                        <strong>IP:</strong> <code style="background: var(--bg-secondary); padding: 2px 6px; border-radius: 4px;">${registro.ip_address}</code>
+                    </div>
+                ` : ''}
+                ${registro.detalles ? `
+                    <div style="font-size: 13px; color: var(--text-secondary);">
+                        <strong>Detalles:</strong> ${registro.detalles}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    });
+
+    contenido.innerHTML = html;
+}
+
+function cerrarHistorial() {
+    document.getElementById('historialOverlay').classList.remove('active');
+    document.getElementById('historialOffcanvas').classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+// Cerrar al hacer clic en overlay
+document.getElementById('historialOverlay').addEventListener('click', cerrarHistorial);
+
+// ============== ANÁLISIS SEMANAL - MODAL ============== //
+document.querySelector('[data-modal="analyticsModal"]').addEventListener('click', function() {
+    cargarAnalisisSemanal();
+});
+
+function cargarAnalisisSemanal() {
+    fetch('/admin/api/analisis-semanal')
+        .then(response => response.json())
+        .then(data => {
+            mostrarGraficoSemanal(data);
+        })
+        .catch(error => {
+            console.error('Error al cargar análisis semanal:', error);
+        });
+}
+
+function mostrarGraficoSemanal(data) {
+    const ctx = document.getElementById('weeklyChart');
+    
+    // Destruir gráfico anterior si existe
+    if (weeklyChart) {
+        weeklyChart.destroy();
+    }
+
+    // Crear nuevo gráfico
+    weeklyChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
+            datasets: [{
+                label: 'Accesos',
+                data: data.dias,
+                backgroundColor: 'rgba(66, 153, 225, 0.8)',
+                borderColor: 'rgba(66, 153, 225, 1)',
+                borderWidth: 2,
+                borderRadius: 8,
+                barThickness: 50
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(45, 55, 72, 0.95)',
+                    padding: 12,
+                    titleFont: {
+                        size: 14,
+                        weight: '600'
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    borderColor: 'rgba(66, 153, 225, 0.5)',
+                    borderWidth: 1,
+                    displayColors: false,
+                    callbacks: {
+                        label: function(context) {
+                            return 'Accesos: ' + context.parsed.y;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1,
+                        font: {
+                            size: 12
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    }
+                },
+                x: {
+                    ticks: {
+                        font: {
+                            size: 12
+                        }
+                    },
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+
+    // Actualizar estadísticas
+    document.getElementById('totalSemana').textContent = data.total;
+    document.getElementById('promedioSemana').textContent = Math.round(data.promedio);
+    document.getElementById('diaMasActivo').textContent = data.diaMasActivo;
+}
+
+function exportarGrafico() {
+    if (weeklyChart) {
+        const url = weeklyChart.toBase64Image();
+        const link = document.createElement('a');
+        link.download = 'analisis-semanal-accesos.png';
+        link.href = url;
+        link.click();
+    }
+}
+
+// ============== ESTADÍSTICAS ============== //
+function actualizarEstadisticas() {
+    fetch('/admin/api/estadisticas-accesos')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('totalAccesosHoy').textContent = data.hoy || 0;
+            document.getElementById('accesosExitosos').textContent = data.exitosos || 0;
+            document.getElementById('accesosFallidos').textContent = data.fallidos || 0;
+            document.getElementById('usuariosActivos').textContent = data.usuarios_activos || 0;
+            
+            // Actualizar porcentajes con signo apropiado
+            const cambioHoyEl = document.getElementById('cambioHoy');
+            const cambioValor = data.cambio_hoy || 0;
+            cambioHoyEl.textContent = (cambioValor >= 0 ? '+' : '') + cambioValor + '%';
+            cambioHoyEl.style.color = cambioValor >= 0 ? 'var(--success)' : 'var(--danger)';
+            
+            document.getElementById('tasaExito').textContent = (data.tasa_exito || 0).toFixed(1) + '%';
+            document.getElementById('tasaFallo').textContent = (data.tasa_fallo || 0).toFixed(1) + '%';
+        })
+        .catch(error => {
+            console.error('Error al cargar estadísticas:', error);
+        });
+}
+
+// ============== EXPORTAR DATOS ============== //
+function exportarDatos() {
+    window.location.href = '/admin/api/exportar-accesos?formato=csv';
+}
+
+console.log('📊 Sistema de Registro de Accesos cargado correctamente');
+</script>
+{% endblock %}

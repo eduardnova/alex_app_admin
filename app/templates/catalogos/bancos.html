@@ -1,0 +1,404 @@
+{% extends "base.html" %}
+
+{% block title %}Catálogo de Bancos{% endblock %}
+
+{% block content %}
+<div class="content-area">
+    <!-- Header -->
+    <div class="card" style="margin-bottom: 30px;">
+        <div class="card-header">
+            <div>
+                <h1 class="card-title">Cuentas Bancarias</h1>
+                <p class="card-subtitle">Administra las cuentas bancarias de la empresa</p>
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <button class="btn btn-secondary" data-modal="filterBancosModal">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                    </svg>
+                    Filtros
+                </button>
+                <button class="btn btn-primary" data-modal="createBancoModal">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Nueva Cuenta
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon primary">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="stat-value">{{ bancos|length }}</div>
+            <div class="stat-label">Cuentas Registradas</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon success">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="stat-value">{{ bancos|selectattr('tipo_cuenta.tipo_cuenta', 'equalto', 'Corriente')|list|length }}</div>
+            <div class="stat-label">Cuentas Corrientes</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon warning">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="stat-value">{{ bancos|selectattr('tipo_cuenta.tipo_cuenta', 'equalto', 'Ahorro')|list|length }}</div>
+            <div class="stat-label">Cuentas de Ahorro</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon danger">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="stat-value">RD$ 2.5M</div>
+            <div class="stat-label">Balance Total</div>
+            <div class="stat-change positive">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+                </svg>
+                12.5% vs mes anterior
+            </div>
+        </div>
+    </div>
+
+    <!-- Bank Cards Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; margin-bottom: 30px;">
+        {% for banco in bancos %}
+        <div class="card" style="background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: white; position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -30px; right: -30px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+            <div style="position: absolute; bottom: -40px; left: -40px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+            
+            <div style="position: relative; z-index: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 30px;">
+                    <div>
+                        {% if banco.logo_path %}
+                        <img src="{{ url_for('static', filename=banco.logo_path) }}" alt="{{ banco.banco }}" style="height: 40px; filter: brightness(0) invert(1);">
+                        {% else %}
+                        <div style="width: 60px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                            </svg>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <span style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                        {{ banco.tipo_cuenta.tipo_cuenta if banco.tipo_cuenta else 'N/A' }}
+                    </span>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <div style="font-size: 12px; opacity: 0.8; margin-bottom: 4px;">Número de Cuenta</div>
+                    <div style="font-size: 20px; font-weight: 700; letter-spacing: 2px; font-family: 'Courier New', monospace;">
+                        {{ banco.cuenta[:4] }} •••• •••• {{ banco.cuenta[-4:] if banco.cuenta|length > 8 else banco.cuenta }}
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: end;">
+                    <div>
+                        <div style="font-size: 11px; opacity: 0.7; margin-bottom: 2px;">Titular</div>
+                        <div style="font-size: 14px; font-weight: 600;">{{ banco.administrador }}</div>
+                        <div style="font-size: 11px; opacity: 0.7; margin-top: 2px;">{{ banco.cedula }}</div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-sm" style="background: rgba(255,255,255,0.2); color: white; border: none;" onclick="viewBancoHistory({{ banco.id }})">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </button>
+                        <button class="btn btn-sm" style="background: rgba(255,255,255,0.2); color: white; border: none;" onclick="editBanco({{ banco.id }})">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Detailed Table -->
+    <div class="table-container">
+        <div class="table-header">
+            <h3 class="table-title">Lista Detallada</h3>
+            <div class="input-group" style="width: 300px;">
+                <span class="input-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="M21 21l-4.35-4.35"/>
+                    </svg>
+                </span>
+                <input type="text" class="form-input" id="searchBancos" placeholder="Buscar cuenta...">
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="table" id="bancosTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Banco</th>
+                        <th>Cuenta</th>
+                        <th>Tipo</th>
+                        <th>Titular/Cédula</th>
+                        <th>Descripción</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for banco in bancos %}
+                    <tr>
+                        <td><strong>#{{ banco.id }}</strong></td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                {% if banco.logo_path %}
+                                <img src="{{ url_for('static', filename=banco.logo_path) }}" alt="{{ banco.banco }}" style="width: 35px; height: 35px; object-fit: contain;">
+                                {% else %}
+                                <div style="width: 35px; height: 35px; background: var(--bg-primary); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                                    </svg>
+                                </div>
+                                {% endif %}
+                                <strong>{{ banco.banco }}</strong>
+                            </div>
+                        </td>
+                        <td>
+                            <code style="background: var(--bg-primary); padding: 4px 8px; border-radius: 4px; font-size: 13px;">
+                                {{ banco.cuenta }}
+                            </code>
+                        </td>
+                        <td><span class="badge badge-primary">{{ banco.tipo_cuenta.tipo_cuenta if banco.tipo_cuenta else 'N/A' }}</span></td>
+                        <td>
+                            <div>
+                                <div style="font-weight: 600;">{{ banco.administrador }}</div>
+                                <div style="font-size: 12px; color: var(--text-tertiary);">{{ banco.cedula }}</div>
+                            </div>
+                        </td>
+                        <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            {{ banco.descripcion or 'Sin descripción' }}
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-sm btn-secondary" onclick="viewBancoHistory({{ banco.id }})">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </button>
+                                <button class="btn btn-sm btn-primary" onclick="editBanco({{ banco.id }})">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </button>
+                                <form action="{{ url_for('catalogo.eliminar_banco', id=banco.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('¿Eliminar?');">
+                                    <button type="submit" class="btn btn-sm btn-danger">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Crear/Editar Banco -->
+<div class="modal-overlay" id="createBancoModal">
+    <div class="modal modal-lg">
+        <div class="modal-header">
+            <h3 class="modal-title" id="bancoTitle">Nueva Cuenta Bancaria</h3>
+            <button class="modal-close">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <form action="{{ url_for('catalogo.crear_banco') }}" method="POST" enctype="multipart/form-data" id="bancoForm">
+            <div class="modal-body">
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+                    <div class="form-group">
+                        <label class="form-label required">Nombre del Banco</label>
+                        <input type="text" name="banco" class="form-input" placeholder="Ej: Banco Popular" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label required">Número de Cuenta</label>
+                        <input type="text" name="cuenta" class="form-input" placeholder="Ej: 0123456789" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label required">Tipo de Cuenta</label>
+                        <select name="tipo_cuenta_id" class="form-select" required>
+                            <option value="">Seleccionar tipo</option>
+                            {% for tipo in tipos_cuenta %}
+                            <option value="{{ tipo.id }}">{{ tipo.tipo_cuenta }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label required">Cédula del Titular</label>
+                        <input type="text" name="cedula" class="form-input" placeholder="000-0000000-0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label required">Nombre del Administrador</label>
+                        <input type="text" name="administrador" class="form-input" placeholder="Nombre completo" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Logo del Banco</label>
+                        <div class="file-upload">
+                            <input type="file" name="logo" id="bancoLogoInput" class="file-input" accept="image/*">
+                            <label for="bancoLogoInput" class="file-label">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                </svg>
+                                <span class="file-text">Subir logo</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Descripción</label>
+                    <textarea name="descripcion" class="form-textarea" rows="3" placeholder="Información adicional..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button>
+                <button type="submit" class="btn btn-primary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Guardar Cuenta
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Historial -->
+<div class="modal-overlay" id="historyBancoModal">
+    <div class="modal modal-xl">
+        <div class="modal-header">
+            <h3 class="modal-title">Historial de Modificaciones - Cuenta Bancaria</h3>
+            <button class="modal-close">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Fecha/Hora</th>
+                            <th>Usuario</th>
+                            <th>Acción</th>
+                            <th>Campo</th>
+                            <th>Valor Anterior</th>
+                            <th>Valor Nuevo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>30/11/2024 08:45</td>
+                            <td>Admin User</td>
+                            <td><span class="badge badge-success">Creación</span></td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" data-modal-close>Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Filtros -->
+<div class="modal-overlay" id="filterBancosModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Filtros Avanzados</h3>
+            <button class="modal-close">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">Tipo de Cuenta</label>
+                <select class="form-select">
+                    <option value="">Todos</option>
+                    <option value="corriente">Corriente</option>
+                    <option value="ahorro">Ahorro</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Banco</label>
+                <input type="text" class="form-input" placeholder="Buscar banco...">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" data-modal-close>Limpiar</button>
+            <button class="btn btn-primary" data-modal-close>Aplicar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('searchBancos').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const rows = document.querySelectorAll('#bancosTable tbody tr');
+    rows.forEach(row => {
+        row.style.display = row.textContent.toLowerCase().includes(searchTerm) ? '' : 'none';
+    });
+});
+
+function editBanco(id) {
+    document.getElementById('bancoTitle').textContent = 'Editar Cuenta Bancaria';
+    document.getElementById('bancoForm').action = `/catalogos/bancos/${id}/editar`;
+    window.AppUtils.openModal('createBancoModal');
+}
+
+function viewBancoHistory(id) {
+    window.AppUtils.openModal('historyBancoModal');
+}
+</script>
+{% endblock %}

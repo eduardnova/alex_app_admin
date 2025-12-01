@@ -11,10 +11,10 @@ class Config:
     """Base configuration with common settings"""
     
     # Basic Flask config
-    SECRET_KEY =  'dev-secret-key-change-in-production'
+    SECRET_KEY =  'dev-secret-key-change-in-production' #21XSWcxz3zaq45EDCxsw
     
     # Database configuration
-    SQLALCHEMY_DATABASE_URI =  'mysql+pymysql://root:password@localhost:3306/alquiler_vehiculos'
+    SQLALCHEMY_DATABASE_URI =  'mysql+pymysql://root:@localhost/alquiler_vehiculos'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = False
     SQLALCHEMY_ENGINE_OPTIONS = {
@@ -94,11 +94,11 @@ class ProductionConfig(Config):
     SESSION_COOKIE_SECURE = True
     
     # Override with production values
-    if not SECRET_KEY:
-        raise ValueError("SECRET_KEY must be set in production")
+    #if not SECRET_KEY:
+    #    raise ValueError("SECRET_KEY must be set in production")
     
-    if not DATABASE_ENCRYPTION_KEY:
-        raise ValueError("DATABASE_ENCRYPTION_KEY must be set in production")
+    #if not DATABASE_ENCRYPTION_KEY:
+    #    raise ValueError("DATABASE_ENCRYPTION_KEY must be set in production")
 
 
 class TestingConfig(Config):

@@ -31,34 +31,42 @@ def login():
             
             login_user(user, remember=remember)
             
-            # Log access
-            registro = RegistroAcceso(
-                usuario_id=user.id,
-                accion='login',
-                ip_address=request.remote_addr,
-                detalles=f'Login exitoso desde {request.user_agent.string[:100]}'
-            )
-            db.session.add(registro)
-            db.session.commit()
+            # Log access - con manejo de errores
+            try:
+                registro = RegistroAcceso(
+                    usuario_id=user.id,
+                    accion='login',
+                    ip_address=request.remote_addr,
+                    detalles=f'Login exitoso desde {request.user_agent.string[:100]}'
+                )
+                db.session.add(registro)
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                print(f"Error al registrar acceso: {e}")
             
             flash(f'Bienvenido {user.nombre}!', 'success')
             
             next_page = request.args.get('next')
-            return redirect(next_page) if next_page else redirect(url_for('index'))
+            return redirect(next_page) if next_page else redirect(url_for('reportes.dashboard'))
         
         else:
             flash('Usuario o contraseña incorrectos', 'danger')
             
-            # Log failed attempt
+            # Log failed attempt - con manejo de errores
             if user:
-                registro = RegistroAcceso(
-                    usuario_id=user.id,
-                    accion='login_failed',
-                    ip_address=request.remote_addr,
-                    detalles='Intento de login fallido - contraseña incorrecta'
-                )
-                db.session.add(registro)
-                db.session.commit()
+                try:
+                    registro = RegistroAcceso(
+                        usuario_id=user.id,
+                        accion='login_failed',
+                        ip_address=request.remote_addr,
+                        detalles='Intento de login fallido - contraseña incorrecta'
+                    )
+                    db.session.add(registro)
+                    db.session.commit()
+                except Exception as e:
+                    db.session.rollback()
+                    print(f"Error al registrar intento fallido: {e}")
     
     return render_template('auth/login.html')
 
@@ -67,15 +75,19 @@ def login():
 @login_required
 def logout():
     """User logout"""
-    # Log access
-    registro = RegistroAcceso(
-        usuario_id=current_user.id,
-        accion='logout',
-        ip_address=request.remote_addr,
-        detalles='Logout exitoso'
-    )
-    db.session.add(registro)
-    db.session.commit()
+    # Log access - con manejo de errores
+    try:
+        registro = RegistroAcceso(
+            usuario_id=current_user.id,
+            accion='logout',
+            ip_address=request.remote_addr,
+            detalles='Logout exitoso'
+        )
+        db.session.add(registro)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error al registrar logout: {e}")
     
     logout_user()
     flash('Has cerrado sesión correctamente', 'info')
@@ -97,15 +109,19 @@ def forgot():
             # TODO: Implement email sending with token
             flash('Se ha enviado un correo con instrucciones para restablecer tu contraseña', 
                   'info')
-            # For now, just log the attempt
-            registro = RegistroAcceso(
-                usuario_id=user.id,
-                accion='password_reset_request',
-                ip_address=request.remote_addr,
-                detalles=f'Solicitud de restablecimiento de contraseña para {email}'
-            )
-            db.session.add(registro)
-            db.session.commit()
+            # Log password reset request
+            try:
+                registro = RegistroAcceso(
+                    usuario_id=user.id,
+                    accion='password_reset_request',
+                    ip_address=request.remote_addr,
+                    detalles=f'Solicitud de restablecimiento de contraseña para {email}'
+                )
+                db.session.add(registro)
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                print(f"Error al registrar solicitud de reset: {e}")
         else:
             # Don't reveal if email exists
             flash('Si el correo existe, recibirás instrucciones para restablecer tu contraseña', 

@@ -165,63 +165,6 @@ def registro_acceso():
     
     return render_template('admin/registro_acceso.html', registros=registros)
 
-
-# ==================== CATÁLOGOS ====================
-
-@admin_bp.route('/catalogos/marcas-modelos')
-@login_required
-@admin_required
-def marcas_modelos():
-    """List vehicle brands and models"""
-    marcas = VehiculoMarcaModelo.query.all()
-    return render_template('catalogos/vehiculo_marca_modelo.html', marcas=marcas)
-
-
-@admin_bp.route('/catalogos/estados-alquiler')
-@login_required
-@admin_required
-def estados_alquiler():
-    """List rental states"""
-    estados = EstadoAlquiler.query.all()
-    return render_template('catalogos/estados_alquiler.html', estados=estados)
-
-
-@admin_bp.route('/catalogos/metodos-pago')
-@login_required
-@admin_required
-def metodos_pago():
-    """List payment methods"""
-    metodos = MetodoPago.query.all()
-    return render_template('catalogos/metodos_pago.html', metodos=metodos)
-
-
-@admin_bp.route('/catalogos/tipo-cuentas')
-@login_required
-@admin_required
-def tipo_cuentas():
-    """List account types"""
-    tipos = TipoCuenta.query.all()
-    return render_template('catalogos/tipo_cuentas.html', tipos=tipos)
-
-
-@admin_bp.route('/catalogos/bancos')
-@login_required
-@admin_required
-def bancos():
-    """List banks"""
-    bancos = Banco.query.all()
-    return render_template('catalogos/bancos.html', bancos=bancos)
-
-
-@admin_bp.route('/catalogos/parentescos')
-@login_required
-@admin_required
-def parentescos():
-    """List relationships"""
-    parentescos = Parentesco.query.all()
-    return render_template('catalogos/parentescos.html', parentescos=parentescos)
-
-
 # ==================== API ENDPOINTS ====================
 
 @admin_bp.route('/api/usuarios')
@@ -239,3 +182,170 @@ def api_usuarios():
         'rol': u.rol,
         'activo': u.activo
     } for u in usuarios])
+    
+# Agregar al final de admin_routes.py
+
+@admin_bp.route('/api/historial-usuario/<int:usuario_id>')
+@login_required
+@admin_required
+def api_historial_usuario(usuario_id):
+    """API endpoint for user access history"""
+    registros = RegistroAcceso.query.filter_by(usuario_id=usuario_id)\
+        .order_by(RegistroAcceso.fecha_hora.desc())\
+        .limit(100).all()
+    
+    return jsonify([{
+        'id': r.id,
+        'accion': r.accion,
+        'fecha_hora': r.fecha_hora.isoformat(),
+        'ip_address': r.ip_address,
+        'detalles': r.detalles
+    } for r in registros])
+
+
+@admin_bp.route('/api/analisis-semanal')
+@login_required
+@admin_required
+def api_analisis_semanal():
+    """API endpoint for weekly analytics"""
+    from datetime import datetime, timedelta
+    
+    # Obtener fecha de inicio de la semana (lunes)
+    hoy = datetime.now()
+    inicio_semana = hoy - timedelta(days=hoy.weekday())
+    inicio_semana = inicio_semana.replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    # Contar accesos por día
+    dias_semana = [0] * 7
+    dia_nombres = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+    
+    for i in range(7):
+        dia_inicio = inicio_semana + timedelta(days=i)
+        dia_fin = dia_inicio + timedelta(days=1)
+        
+        count = RegistroAcceso.query.filter(
+            RegistroAcceso.fecha_hora >= dia_inicio,
+            RegistroAcceso.fecha_hora < dia_fin
+        ).count()
+        
+        dias_semana[i] = count
+    
+    # Calcular estadísticas
+    total = sum(dias_semana)
+    promedio = total / 7 if total > 0 else 0
+    
+    # Encontrar día más activo
+    max_accesos = max(dias_semana)
+    dia_mas_activo = dia_nombres[dias_semana.index(max_accesos)] if max_accesos > 0 else 'N/A'
+    
+    return jsonify({
+        'dias': dias_semana,
+        'total': total,
+        'promedio': promedio,
+        'diaMasActivo': dia_mas_activo
+    })
+
+
+@admin_bp.route('/api/estadisticas-accesos')
+@login_required
+@admin_required
+def api_estadisticas_accesos():
+    """API endpoint for access statistics"""
+    from datetime import datetime, timedelta
+    
+    hoy = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    ayer = hoy - timedelta(days=1)
+    hace_24h = datetime.now() - timedelta(hours=24)
+    
+    # Accesos de hoy
+    accesos_hoy = RegistroAcceso.query.filter(
+        RegistroAcceso.fecha_hora >= hoy
+    ).count()
+    
+    # Accesos de ayer
+    accesos_ayer = RegistroAcceso.query.filter(
+        RegistroAcceso.fecha_hora >= ayer,
+        RegistroAcceso.fecha_hora < hoy
+    ).count()
+    
+    # Calcular cambio porcentual
+    if accesos_ayer > 0:
+        cambio_hoy = ((accesos_hoy - accesos_ayer) / accesos_ayer) * 100
+    else:
+        cambio_hoy = 100 if accesos_hoy > 0 else 0
+    
+    # Accesos exitosos (login sin failed)
+    exitosos = RegistroAcceso.query.filter(
+        RegistroAcceso.fecha_hora >= hoy,
+        RegistroAcceso.accion.like('%login%'),
+        ~RegistroAcceso.accion.like('%failed%')
+    ).count()
+    
+    # Accesos fallidos
+    fallidos = RegistroAcceso.query.filter(
+        RegistroAcceso.fecha_hora >= hoy,
+        db.or_(
+            RegistroAcceso.accion.like('%failed%'),
+            RegistroAcceso.accion.like('%error%')
+        )
+    ).count()
+    
+    # Tasas
+    total_intentos = exitosos + fallidos
+    tasa_exito = (exitosos / total_intentos * 100) if total_intentos > 0 else 0
+    tasa_fallo = (fallidos / total_intentos * 100) if total_intentos > 0 else 0
+    
+    # Usuarios activos en últimas 24h
+    usuarios_activos = db.session.query(RegistroAcceso.usuario_id)\
+        .filter(RegistroAcceso.fecha_hora >= hace_24h)\
+        .distinct().count()
+    
+    return jsonify({
+        'hoy': accesos_hoy,
+        'exitosos': exitosos,
+        'fallidos': fallidos,
+        'usuarios_activos': usuarios_activos,
+        'cambio_hoy': round(cambio_hoy, 1),
+        'tasa_exito': round(tasa_exito, 1),
+        'tasa_fallo': round(tasa_fallo, 1)
+    })
+
+
+@admin_bp.route('/api/exportar-accesos')
+@login_required
+@admin_required
+def api_exportar_accesos():
+    """Export access logs to CSV"""
+    import csv
+    from io import StringIO
+    from flask import make_response
+    
+    registros = RegistroAcceso.query.order_by(
+        RegistroAcceso.fecha_hora.desc()
+    ).all()
+    
+    # Crear CSV
+    si = StringIO()
+    writer = csv.writer(si)
+    
+    # Headers
+    writer.writerow(['ID', 'Usuario', 'Acción', 'Fecha', 'Hora', 'IP', 'Detalles'])
+    
+    # Datos
+    for r in registros:
+        writer.writerow([
+            r.id,
+            f"{r.usuario.nombre} {r.usuario.apellido}",
+            r.accion,
+            r.fecha_hora.strftime('%Y-%m-%d'),
+            r.fecha_hora.strftime('%H:%M:%S'),
+            r.ip_address or 'N/A',
+            r.detalles or ''
+        ])
+    
+    # Crear respuesta
+    output = make_response(si.getvalue())
+    output.headers["Content-Disposition"] = f"attachment; filename=registro_accesos_{datetime.now().strftime('%Y%m%d')}.csv"
+    output.headers["Content-type"] = "text/csv"
+    
+    return output
