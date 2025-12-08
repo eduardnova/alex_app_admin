@@ -7,66 +7,14 @@
 
 {% block content %}
 <div class="content-area">
-    <div class="card" style="margin-bottom: 30px;">
-        <div class="card-header">
-            <div>
-                <h1 class="card-title">Métodos de Pago</h1>
-                <p class="card-subtitle">Administra las formas de pago disponibles</p>
-            </div>
-            <button class="btn btn-primary" data-modal="createMetodoModal">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                </svg>
-                Nuevo Método
-            </button>
-        </div>
-    </div>
-
-    <!-- Stats -->
-    <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 30px;">
-        <div class="stat-card">
-            <div class="stat-icon primary">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                    <line x1="1" y1="10" x2="23" y2="10"/>
-                </svg>
-            </div>
-            <div class="stat-value">{{ metodos|length }}</div>
-            <div class="stat-label">Métodos Activos</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon success">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-            </div>
-            <div class="stat-value">450</div>
-            <div class="stat-label">Transacciones Hoy</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon warning">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                </svg>
-            </div>
-            <div class="stat-value">RD$ 125K</div>
-            <div class="stat-label">Procesado Hoy</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon info">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                </svg>
-            </div>
-            <div class="stat-value">98%</div>
-            <div class="stat-label">Tasa de Éxito</div>
-        </div>
-    </div>
 
     <!-- Table -->
     <div class="table-container">
         <div class="table-header">
-            <h3 class="table-title">Métodos Disponibles</h3>
+             <div>
+                <h1 class="card-title">Métodos de Pago</h1>
+                <p class="card-subtitle">Administra las formas de pago disponibles</p>
+            </div>
             <div class="input-group" style="width: 300px;">
                 <span class="input-icon">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -76,6 +24,12 @@
                 </span>
                 <input type="text" class="form-input" id="searchMetodos" placeholder="Buscar método...">
             </div>
+            <button class="btn btn-primary" data-modal="createMetodoModal">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Nuevo Método
+            </button>
         </div>
 
         <div class="table-wrapper">

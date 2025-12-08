@@ -90,7 +90,7 @@ def create_app(config_name=None):
     
     @login_manager.user_loader
     def load_user(user_id):
-        from app.models import Usuario
+        from app.models import Usuario,Parentesco
         return Usuario.query.get(int(user_id))
     
     # Register blueprints
@@ -101,16 +101,19 @@ def create_app(config_name=None):
     from app.routes.reportes_routes import reportes_bp
     from app.routes.catalogos_routes import catalogo_bp
     from app.routes.mecanicos_routes import mecanicos_bp
-  
+    from app.routes.inquilinos_routes_1 import inquilino_bp
+    from app.routes.propietarios_routes import propietario_bp
+    
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(settings_bp, url_prefix='/settings')
-    app.register_blueprint(modulos_bp, url_prefix='/modulos')
+    app.register_blueprint(modulos_bp, url_prefix='')
     app.register_blueprint(reportes_bp, url_prefix='/reportes')
-    app.register_blueprint(catalogo_bp, url_prefix='/catalogo')
+    app.register_blueprint(catalogo_bp, url_prefix='/')
     app.register_blueprint(mecanicos_bp, url_prefix='/mecanicos')
-    
-    
+    app.register_blueprint(inquilino_bp, url_prefix='/')
+    app.register_blueprint(propietario_bp, url_prefix='/')
+       
     # Root route
     @app.route('/')
     def index():

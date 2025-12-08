@@ -4,7 +4,7 @@ Authentication Routes - Login, Logout, Password Reset .
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 from app import db, limiter
-from app.models import Usuario, RegistroAcceso
+from app.models import Usuario, RegistroAcceso,Parentesco
 from datetime import datetime
 
 auth_bp = Blueprint('auth', __name__)

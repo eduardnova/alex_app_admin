@@ -1,0 +1,2687 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Propietarios{% endblock %}
+{% block breadcrumb %}
+<span class="breadcrumb-item">Módulos</span>
+<span class="breadcrumb-item">Propietarios</span>
+{% endblock %}
+
+{% block head %}
+<!-- FilePond CSS -->
+<link href="https://unpkg.com/filepond@^4/dist/filepond.css" rel="stylesheet" />
+<link href="https://unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css" rel="stylesheet" />
+<link href="https://unpkg.com/filepond-plugin-pdf-preview/dist/filepond-plugin-pdf-preview.css" rel="stylesheet" />
+<link href="https://unpkg.com/filepond-plugin-file-poster/dist/filepond-plugin-file-poster.css" rel="stylesheet" />
+
+<style>
+/* Notification System */
+.notification-container {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 400px;
+}
+
+.notification {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    padding: 16px 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    animation: slideIn 0.3s ease-out;
+    border-left: 4px solid;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(400px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+.notification.closing {
+    animation: slideOut 0.3s ease-out forwards;
+}
+
+@keyframes slideOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(400px); opacity: 0; }
+}
+
+.notification.success { border-left-color: #10b981; }
+.notification.error { border-left-color: #ef4444; }
+.notification.info { border-left-color: #3b82f6; }
+.notification.warning { border-left-color: #f59e0b; }
+
+.notification-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.notification.success .notification-icon { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+.notification.error .notification-icon { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+.notification.info .notification-icon { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+.notification.warning .notification-icon { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+
+.notification-content { flex: 1; }
+
+.notification-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.notification-message {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.notification-close {
+    background: none;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.notification-close:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+/* FilePond Custom Styles */
+.filepond--root { 
+    font-family: inherit;
+    margin-bottom: 0;
+}
+
+.filepond--drop-label {
+    color: var(--text-secondary);
+    font-size: 14px;
+    min-height: 120px;
+}
+
+.filepond--label-action {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.filepond--panel-root {
+    background: var(--bg-secondary);
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.filepond--panel-root:hover {
+    border-color: var(--primary);
+    background: var(--bg-primary);
+}
+
+.filepond--item-panel {
+    background: var(--bg-primary);
+    border-radius: 6px;
+}
+
+.filepond--drip-blob { background: var(--primary); }
+
+.file-upload-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    display: block;
+}
+
+.file-upload-label.required::after {
+    content: '*';
+    color: var(--danger);
+    margin-left: 4px;
+}
+
+/* Improved Tabs */
+.tabs-container {
+    margin: 24px 0;
+}
+
+.tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 0;
+    background: var(--bg-secondary);
+    padding: 4px;
+    border-radius: 8px 8px 0 0;
+}
+
+.tab-btn {
+    padding: 12px 24px;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+    border-radius: 6px;
+    position: relative;
+}
+
+.tab-btn:hover {
+    color: var(--text-primary);
+    background: rgba(var(--primary-rgb), 0.1);
+}
+
+.tab-btn.active {
+    color: var(--primary);
+    background: var(--bg-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tab-content {
+    display: none;
+    padding: 24px;
+    background: var(--bg-primary);
+    border-radius: 0 0 8px 8px;
+    border: 1px solid var(--border);
+    border-top: none;
+}
+
+.tab-content.active {
+    display: block;
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.card {
+    background: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--neu-shadow-small);
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.card-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-secondary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-header h4 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.card-body {
+    padding: 20px;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 16px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    transition: all 0.2s;
+}
+
+.info-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.info-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.info-value {
+    font-size: 15px;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.document-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    margin-bottom: 12px;
+    transition: all 0.2s;
+}
+
+.document-item:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.document-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.document-icon {
+    width: 48px;
+    height: 48px;
+    background: rgba(var(--primary-rgb), 0.1);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-secondary);
+}
+
+.empty-state svg {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 16px;
+    opacity: 0.3;
+}
+
+.empty-state p {
+    font-size: 15px;
+    margin-top: 8px;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Section Headers */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--border);
+}
+
+.section-header h4 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Timeline for History */
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--border);
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 24px;
+    padding: 16px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    transition: all 0.2s;
+}
+
+.timeline-item:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -26px;
+    top: 24px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--primary);
+    border: 3px solid var(--bg-primary);
+}
+
+.timeline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.timeline-date {
+    font-size: 13px;
+    color: var(--text-tertiary);
+    font-weight: 500;
+}
+
+.timeline-body {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.change-item {
+    margin: 8px 0;
+    padding: 8px;
+    background: var(--bg-primary);
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.change-label {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.change-values {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.change-old {
+    background: rgba(245, 101, 101, 0.1);
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: var(--danger);
+    font-family: monospace;
+    font-size: 12px;
+}
+
+.change-new {
+    background: rgba(76, 175, 80, 0.1);
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: var(--success);
+    font-family: monospace;
+    font-size: 12px;
+}
+
+.change-arrow {
+    color: var(--text-tertiary);
+}
+</style>
+<!-- ESTILOS ADICIONALES PARA EL MODAL REDISEÑADO -->
+<style>
+/* Modal Propietario - Header Mejorado */
+.propietario-modal-header {
+    background: linear-gradient(135deg, var(--primary) 0%, rgba(var(--primary-rgb), 0.8) 100%);
+    padding: 32px;
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.propietario-modal-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    opacity: 0.3;
+}
+
+.propietario-header-content {
+    position: relative;
+    z-index: 1;
+}
+
+.propietario-avatar {
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+.propietario-name {
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.propietario-meta {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+}
+
+.propietario-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.propietario-actions {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    gap: 8px;
+}
+
+.propietario-actions .btn {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+}
+
+.propietario-actions .btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Stats Cards */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin: 24px 0;
+}
+
+.stat-card {
+    background: var(--bg-primary);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid var(--border);
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--primary);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card:hover::before {
+    opacity: 1;
+}
+
+.stat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.stat-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+
+.stat-icon.primary {
+    background: rgba(var(--primary-rgb), 0.1);
+    color: var(--primary);
+}
+
+.stat-icon.success {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+.stat-icon.warning {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+}
+
+.stat-icon.info {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+}
+
+.stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 13px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+    margin-top: 4px;
+}
+
+/* Información Personal Grid Mejorado */
+.info-section {
+    background: var(--bg-primary);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+}
+
+.info-section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--border);
+}
+
+.info-grid-enhanced {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.info-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 16px;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    border-left: 3px solid transparent;
+    transition: all 0.2s;
+}
+
+.info-field:hover {
+    border-left-color: var(--primary);
+    background: var(--bg-primary);
+    transform: translateX(2px);
+}
+
+.info-field-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.info-field-value {
+    font-size: 15px;
+    color: var(--text-primary);
+    font-weight: 500;
+    word-break: break-word;
+}
+
+.info-field-value.empty {
+    color: var(--text-tertiary);
+    font-style: italic;
+}
+
+/* Tabs Modernos */
+.modern-tabs {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 6px;
+    display: inline-flex;
+    gap: 4px;
+    margin-bottom: 24px;
+}
+
+.modern-tab-btn {
+    padding: 12px 24px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.modern-tab-btn:hover {
+    color: var(--text-primary);
+    background: rgba(var(--primary-rgb), 0.05);
+}
+
+.modern-tab-btn.active {
+    color: white;
+    background: var(--primary);
+    box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);
+}
+
+.modern-tab-btn .badge {
+    margin-left: 4px;
+    font-size: 11px;
+    min-width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 6px;
+}
+
+.modern-tab-btn.active .badge {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+/* Lista de Items Mejorada */
+.items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.item-card {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid var(--border);
+    transition: all 0.3s;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.item-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    border-color: var(--primary);
+}
+
+.item-main {
+    display: flex;
+    gap: 16px;
+    flex: 1;
+}
+
+.item-icon-wrapper {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.item-content {
+    flex: 1;
+}
+
+.item-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.item-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.item-detail {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.item-tags {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.item-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+/* Empty State Mejorado */
+.empty-state-modern {
+    text-align: center;
+    padding: 60px 20px;
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    border: 2px dashed var(--border);
+}
+
+.empty-state-modern svg {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 20px;
+    opacity: 0.2;
+}
+
+.empty-state-modern h4 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.empty-state-modern p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .propietario-modal-header {
+        padding: 24px;
+    }
+    
+    .propietario-name {
+        font-size: 22px;
+    }
+    
+    .propietario-actions {
+        position: static;
+        margin-top: 16px;
+        justify-content: center;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .modern-tabs {
+        width: 100%;
+        overflow-x: auto;
+    }
+    
+    .item-card {
+        flex-direction: column;
+    }
+    
+    .item-actions {
+        width: 100%;
+        justify-content: stretch;
+    }
+    
+    .item-actions .btn {
+        flex: 1;
+    }
+}
+</style>
+
+{% endblock %}
+
+{% block content %}
+<!-- Notification Container -->
+<div class="notification-container" id="notificationContainer"></div>
+
+<div class="content-area">
+    <!-- Table Container -->
+    <div class="table-container">
+        <div class="table-header">
+            <div>
+                <h1 class="card-title">Propietarios Registrados</h1>
+                <p class="card-subtitle">Gestiona la información de propietarios, sus referencias y vehículos</p>
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <div class="input-group" style="width: 300px;">
+                    <span class="input-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="M21 21l-4.35-4.35"/>
+                        </svg>
+                    </span>
+                    <input type="text" class="form-input" id="searchInput" placeholder="Buscar propietario...">
+                </div>
+                <button class="btn btn-primary" onclick="createNewPropietario()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Nuevo Propietario
+                </button>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="table" id="propietariosTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Propietario</th>
+                        <th>Cédula</th>
+                        <th>Teléfono</th>
+                        <th>Email</th>
+                        <th>Vehículos</th>
+                        <th>Referencias</th>
+                        <th>Fecha Registro</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    {% for prop in propietarios.items %}
+                    <tr data-id="{{ prop.id }}">
+                        <td><strong>#{{ prop.id }}</strong></td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="width: 40px; height: 40px; background: rgba(var(--primary-rgb), 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--primary);">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                        <circle cx="12" cy="7" r="4"></circle>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <strong style="font-size: 15px;">{{ prop.nombre_apellido }}</strong>
+                                    {% if prop.direccion %}
+                                    <div style="font-size: 12px; color: var(--text-tertiary);">{{ prop.direccion[:50] }}...</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ prop.cedula if prop.cedula else 'N/A' }}</td>
+                        <td>{{ prop.telefono if prop.telefono else 'N/A' }}</td>
+                        <td>{{ prop.email if prop.email else 'N/A' }}</td>
+                        <td>
+                            <span class="badge badge-info">{{ prop.vehiculos.count() }}</span>
+                        </td>
+                        <td>
+                            <span class="badge badge-success">{{ prop.referencias.count() }}</span>
+                        </td>
+                        <td>
+                            <div style="font-weight: 600; color: var(--text-primary);">
+                                {{ prop.fecha_hora_registro.strftime('%d/%m/%Y') }}
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-tertiary);">
+                                {{ prop.fecha_hora_registro.strftime('%H:%M:%S') }}
+                            </div>
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-sm btn-info" onclick="viewPropietarioDetails({{ prop.id }})" data-tooltip="Ver Detalles">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                </button>
+                                <button class="btn btn-sm btn-primary" onclick="editPropietario({{ prop.id }})" data-tooltip="Editar">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="deletePropietario({{ prop.id }}, '{{ prop.nombre_apellido }}')" data-tooltip="Eliminar">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="table-footer">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 14px; color: var(--text-secondary);">
+                    Mostrando <strong>{{ (propietarios.page - 1) * propietarios.per_page + 1 }}</strong>-<strong>{{ propietarios.page * propietarios.per_page if propietarios.page * propietarios.per_page < propietarios.total else propietarios.total }}</strong> de <strong>{{ propietarios.total }}</strong> registros
+                </span>
+            </div>
+            <div class="pagination">
+                {% if propietarios.has_prev %}
+                <a href="{{ url_for('modulos.propietarios', page=propietarios.prev_num) }}" class="pagination-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </a>
+                {% endif %}
+                {% for page_num in propietarios.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if page_num %}
+                        <a href="{{ url_for('modulos.propietarios', page=page_num) }}" class="pagination-item {{ 'active' if page_num == propietarios.page else '' }}">{{ page_num }}</a>
+                    {% else %}
+                        <span class="pagination-item disabled">...</span>
+                    {% endif %}
+                {% endfor %}
+                {% if propietarios.has_next %}
+                <a href="{{ url_for('modulos.propietarios', page=propietarios.next_num) }}" class="pagination-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Crear/Editar Propietario -->
+<div class="modal-overlay" id="createPropietarioModal">
+    <div class="modal modal-xl">
+        <div class="modal-header">
+            <h3 class="modal-title" id="propietarioModalTitle">Nuevo Propietario</h3>
+            <button class="modal-close">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <form id="propietarioForm" method="POST" enctype="multipart/form-data">
+            <input type="hidden" id="propietarioId" name="propietario_id">
+            <div class="modal-body">
+                <h4 style="margin-bottom: 20px; color: var(--text-primary); border-bottom: 2px solid var(--border); padding-bottom: 10px;">Información Personal</h4>
+                
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+                    <div class="form-group">
+                        <label class="form-label required">Nombre y Apellido</label>
+                        <input type="text" name="nombre_apellido" id="nombreApellido" class="form-input" placeholder="Ej: Juan Pérez" required>
+                         <span class="form-help">Este campo está encriptado</span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Cédula</label>
+                        <input type="text" name="cedula" id="cedula" class="form-input" placeholder="000-0000000-0" maxlength="13">
+                        <span class="form-help">Este campo está encriptado</span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Licencia</label>
+                        <input type="text" name="licencia" id="licencia" class="form-input" placeholder="Número de licencia">
+                        <span class="form-help">Este campo está encriptado</span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Teléfono</label>
+                        <input type="tel" name="telefono" id="telefono" class="form-input" placeholder="(809) 000-0000" maxlength="14">
+                         <span class="form-help">Este campo está encriptado</span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" id="email" class="form-input" placeholder="correo@ejemplo.com">
+                         <span class="form-help">Este campo está encriptado</span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Dirección</label>
+                        <textarea name="direccion" id="direccion" class="form-textarea" rows="2" placeholder="Calle, número, sector, ciudad"></textarea>
+                         <span class="form-help">Este campo está encriptado</span>
+                    </div>
+                </div>
+
+                <h4 style="margin: 30px 0 20px; color: var(--text-primary); border-bottom: 2px solid var(--border); padding-bottom: 10px;">Documentos Adjuntos</h4>
+                
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+                    <div class="form-group">
+                        <label class="file-upload-label">Cédula (Imagen/PDF)</label>
+                        <input type="file" name="cedula_file" id="cedulaFile" accept="image/*,.pdf">
+                    </div>
+                    <div class="form-group">
+                        <label class="file-upload-label">Licencia (Imagen/PDF)</label>
+                        <input type="file" name="licencia_file" id="licenciaFile" accept="image/*,.pdf">
+                    </div>
+                    <div class="form-group">
+                        <label class="file-upload-label">Buena Conducta (Imagen/PDF)</label>
+                        <input type="file" name="buena_conducta_file" id="buenaConductaFile" accept="image/*,.pdf">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button>
+                <button type="submit" class="btn btn-primary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span id="submitBtnText">Guardar Propietario</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Ver Detalles del Propietario -->
+<div class="modal-overlay" id="viewPropietarioModal">
+    <div class="modal modal-xl">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <span id="viewPropietarioName">Propietario</span>
+            </h3>
+            <button class="modal-close">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body" style="max-height: 80vh; overflow-y: auto;">
+            <!-- Loading State -->
+            <div id="detailsLoading" style="text-align: center; padding: 40px;">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="animation: spin 1s linear infinite;">
+                    <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="0" opacity="0.25"/>
+                    <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="8"/>
+                </svg>
+                <p style="margin-top: 12px; color: var(--text-secondary);">Cargando información...</p>
+            </div>
+
+            <!-- Content -->
+            <div id="detailsContent" style="display: none;">
+                <!-- Info Personal -->
+                <div class="card">
+                    <div class="card-header">
+                        <h4>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            Información Personal
+                        </h4>
+                        <button class="btn btn-sm btn-secondary" onclick="viewHistorialPropietario(currentPropietarioId)">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            Ver Historial
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="personalInfo"></div>
+                    </div>
+                </div>
+
+                <!-- Tabs Container -->
+                <div class="tabs-container">
+                    <div class="tabs">
+                        <button class="tab-btn active" data-tab="referencias">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                            </svg>
+                            Referencias
+                        </button>
+                        <button class="tab-btn" data-tab="vehiculos">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M5 17h14v-5H5v5z"></path>
+                                <path d="M3 13l1.5-5h15L21 13"></path>
+                                <circle cx="7.5" cy="17.5" r="1.5"></circle>
+                                <circle cx="16.5" cy="17.5" r="1.5"></circle>
+                            </svg>
+                            Vehículos
+                        </button>
+                        <button class="tab-btn" data-tab="documentos">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                            Documentos
+                        </button>
+                    </div>
+
+                    <!-- Tab Content: Referencias -->
+                    <div id="tab-referencias" class="tab-content active">
+                        <div class="section-header">
+                            <h4>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="9" cy="7" r="4"></circle>
+                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                </svg>
+                                Referencias Personales
+                            </h4>
+                            <button class="btn btn-sm btn-primary" onclick="addReferencia()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                </svg>
+                                Agregar Referencia
+                            </button>
+                        </div>
+                        <div id="referenciasContent"></div>
+                    </div>
+
+                    <!-- Tab Content: Vehículos -->
+                    <div id="tab-vehiculos" class="tab-content">
+                        <div class="section-header">
+                            <h4>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M5 17h14v-5H5v5z"></path>
+                                    <path d="M3 13l1.5-5h15L21 13"></path>
+                                    <circle cx="7.5" cy="17.5" r="1.5"></circle>
+                                    <circle cx="16.5" cy="17.5" r="1.5"></circle>
+                                </svg>
+                                Vehículos Registrados
+                            </h4>
+                            <button class="btn btn-sm btn-primary" onclick="addVehiculo()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                </svg>
+                                Agregar Vehículo
+                            </button>
+                        </div>
+                        <div id="vehiculosContent"></div>
+                    </div>
+
+                    <!-- Tab Content: Documentos -->
+                    <div id="tab-documentos" class="tab-content">
+                        <div class="section-header">
+                            <h4>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                </svg>
+                                Documentos Adjuntos
+                            </h4>
+                        </div>
+                        <div id="documentosContent"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Eliminar Propietario -->
+<div class="modal-overlay" id="deletePropietarioModal">
+    <div class="modal modal-sm">
+        <div class="modal-header">
+            <h3 class="modal-title">Confirmar Eliminación</h3>
+            <button class="modal-close">×</button>
+        </div>
+        <form id="deletePropietarioForm" method="POST">
+            <div class="modal-body">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <div style="width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 50%; background: rgba(245, 101, 101, 0.1); display: flex; align-items: center; justify-content: center;">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                    </div>
+                    <p style="font-size: 15px; color: var(--text-primary); font-weight: 600; margin-bottom: 8px;">
+                        ¿Estás seguro de eliminar este propietario?
+                    </p>
+                    <p style="font-size: 14px; color: var(--text-secondary);">
+                        El propietario <strong id="deletePropietarioName"></strong> será eliminado permanentemente.
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button>
+                <button type="submit" class="btn btn-danger">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    Eliminar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Agregar/Editar Referencia -->
+<div class="modal-overlay" id="referenciaModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title" id="referenciaModalTitle">Agregar Referencia</h3>
+            <button class="modal-close">×</button>
+        </div>
+        <form id="referenciaForm" method="POST">
+            <input type="hidden" id="referenciaId" name="referencia_id">
+            <input type="hidden" id="referenciaPropietarioId" name="propietario_id">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label required">Nombre y Apellido</label>
+                    <input type="text" name="nombre_apellido" id="referenciaNombre" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label required">Parentesco</label>
+                    <select name="parentesco_id" id="referenciaParentesco" class="form-select" required>
+                        <option value="">Seleccionar...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label required">Teléfono</label>
+                    <input type="tel" name="telefono" id="referenciaTelefono" class="form-input" placeholder="(809) 000-0000" maxlength="14" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button>
+                <button type="submit" class="btn btn-primary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Agregar/Editar Vehículo -->
+<div class="modal-overlay" id="vehiculoModal">
+    <div class="modal modal-lg">
+        <div class="modal-header">
+            <h3 class="modal-title" id="vehiculoModalTitle">Agregar Vehículo</h3>
+            <button class="modal-close">×</button>
+        </div>
+        <form id="vehiculoForm" method="POST">
+            <input type="hidden" id="vehiculoId" name="vehiculo_id">
+            <input type="hidden" id="vehiculoPropietarioId" name="propietario_id">
+            <div class="modal-body">
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+                    <div class="form-group">
+                        <label class="form-label required">Placa</label>
+                        <input type="text" name="placa" id="vehiculoPlaca" class="form-input" placeholder="A000000" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Marca y Modelo</label>
+                        <select name="marca_modelo_id" id="vehiculoMarcaModelo" class="form-select" required>
+                            <option value="">Seleccionar...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Año</label>
+                        <input type="number" name="ano" id="vehiculoAno" class="form-input" placeholder="2024" min="1900" max="2099">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Color</label>
+                        <input type="text" name="color" id="vehiculoColor" class="form-input" placeholder="Blanco">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Precio Semanal</label>
+                        <input type="number" name="precio_semanal" id="vehiculoPrecio" class="form-input" placeholder="0.00" step="0.01" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Disponible</label>
+                        <select name="disponible" id="vehiculoDisponible" class="form-select">
+                            <option value="1">Sí</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Descripción</label>
+                    <textarea name="descripcion" id="vehiculoDescripcion" class="form-textarea" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Condiciones</label>
+                    <textarea name="condiciones" id="vehiculoCondiciones" class="form-textarea" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button>
+                <button type="submit" class="btn btn-primary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Historial -->
+<div class="modal-overlay" id="historialModal">
+    <div class="modal modal-xl">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Historial - <span id="historialTitle">Cargando...</span>
+            </h3>
+            <button class="modal-close">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+            <!-- Loading State -->
+            <div id="historialLoading" style="text-align: center; padding: 40px; display: none;">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="animation: spin 1s linear infinite;">
+                    <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="0" opacity="0.25"/>
+                    <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="8"/>
+                </svg>
+                <p style="margin-top: 12px; color: var(--text-secondary);">Cargando historial...</p>
+            </div>
+
+            <!-- History Timeline -->
+            <div class="timeline" id="historialTimeline" style="display: none;"></div>
+
+            <!-- Empty State -->
+            <div id="historialEmpty" class="empty-state" style="display: none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 6v6l4 2"/>
+                </svg>
+                <p>No hay historial disponible.</p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- FilePond JS -->
+<script src="https://unpkg.com/filepond-plugin-file-poster@^2/dist/filepond-plugin-file-poster.js"></script>
+<script src="https://unpkg.com/filepond@^4/dist/filepond.js"></script>
+<script src="https://unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.js"></script>
+<script src="https://unpkg.com/filepond-plugin-file-validate-type/dist/filepond-plugin-file-validate-type.js"></script>
+<script src="https://unpkg.com/filepond-plugin-pdf-preview/dist/filepond-plugin-pdf-preview.js"></script>
+
+<script>
+// ==========================================
+// GLOBAL VARIABLES
+// ==========================================
+
+let currentPropietarioId = null;
+let allParentescos = [];
+let allMarcasModelos = [];
+let pondInstances = {};
+
+// ==========================================
+// AUTO-FORMAT FUNCTIONS
+// ==========================================
+
+function formatCedula(value) {
+    // Remove all non-numeric characters
+    const numbers = value.replace(/\D/g, '');
+    
+    // Apply format: 000-0000000-0
+    if (numbers.length <= 3) {
+        return numbers;
+    } else if (numbers.length <= 10) {
+        return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+    } else {
+        return `${numbers.slice(0, 3)}-${numbers.slice(3, 10)}-${numbers.slice(10, 11)}`;
+    }
+}
+
+function formatTelefono(value) {
+    // Remove all non-numeric characters
+    const numbers = value.replace(/\D/g, '');
+    
+    // Apply format: (809) 000-0000
+    if (numbers.length <= 3) {
+        return numbers.length > 0 ? `(${numbers}` : '';
+    } else if (numbers.length <= 6) {
+        return `(${numbers.slice(0, 3)}) ${numbers.slice(3)}`;
+    } else {
+        return `(${numbers.slice(0, 3)}) ${numbers.slice(3, 6)}-${numbers.slice(6, 10)}`;
+    }
+}
+
+// ==========================================
+// NOTIFICATION SYSTEM
+// ==========================================
+
+function showNotification(message, type = 'info', title = null) {
+    const container = document.getElementById('notificationContainer');
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    
+    const icons = {
+        success: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>',
+        error: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>',
+        info: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>',
+        warning: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>'
+    };
+    
+    const titles = {
+        success: title || '¡Éxito!',
+        error: title || 'Error',
+        info: title || 'Información',
+        warning: title || 'Advertencia'
+    };
+    
+    notification.innerHTML = `
+        <div class="notification-icon">${icons[type]}</div>
+        <div class="notification-content">
+            <div class="notification-title">${titles[type]}</div>
+            <div class="notification-message">${message}</div>
+        </div>
+        <button class="notification-close" onclick="closeNotification(this)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
+    `;
+    
+    container.appendChild(notification);
+    setTimeout(() => { if (notification.parentElement) closeNotification(notification.querySelector('.notification-close')); }, 5000);
+}
+
+function closeNotification(btn) {
+    const notification = btn.closest('.notification');
+    notification.classList.add('closing');
+    setTimeout(() => notification.remove(), 300);
+}
+
+// ==========================================
+// FILEPOND INITIALIZATION
+// ==========================================
+
+FilePond.registerPlugin(
+    FilePondPluginImagePreview,
+    FilePondPluginFileValidateType,
+    FilePondPluginPdfPreview,
+    FilePondPluginFilePoster
+);
+
+// Configuración global de FilePond en español
+FilePond.setOptions({
+    labelIdle: 'Arrastra archivos aquí o <span class="filepond--label-action">Examinar</span>',
+    labelFileWaitingForSize: 'Esperando tamaño',
+    labelFileSizeNotAvailable: 'Tamaño no disponible',
+    labelFileLoading: 'Cargando',
+    labelFileLoadError: 'Error al cargar',
+    labelFileProcessing: 'Subiendo',
+    labelFileProcessingComplete: 'Subida completa',
+    labelFileProcessingAborted: 'Subida cancelada',
+    labelFileProcessingError: 'Error al subir',
+    labelFileProcessingRevertError: 'Error al revertir',
+    labelFileRemoveError: 'Error al eliminar',
+    labelTapToCancel: 'toca para cancelar',
+    labelTapToRetry: 'toca para reintentar',
+    labelTapToUndo: 'toca para deshacer',
+    labelButtonRemoveItem: 'Eliminar',
+    labelButtonAbortItemLoad: 'Abortar',
+    labelButtonRetryItemLoad: 'Reintentar',
+    labelButtonAbortItemProcessing: 'Cancelar',
+    labelButtonUndoItemProcessing: 'Deshacer',
+    labelButtonRetryItemProcessing: 'Reintentar',
+    labelButtonProcessItem: 'Subir',
+    credits: false
+});
+
+function initializeFilePond() {
+    const fileInputs = [
+        { id: 'cedulaFile', name: 'cedula_file' },
+        { id: 'licenciaFile', name: 'licencia_file' },
+        { id: 'buenaConductaFile', name: 'buena_conducta_file' }
+    ];
+    
+    fileInputs.forEach(({ id, name }) => {
+        const inputElement = document.getElementById(id);
+        if (inputElement && !pondInstances[id]) {
+            pondInstances[id] = FilePond.create(inputElement, {
+                acceptedFileTypes: ['image/*', 'application/pdf'],
+                maxFiles: 1,
+                allowMultiple: false,
+                instantUpload: false,
+                name: name,
+                credits: false,
+                stylePanelLayout: 'compact',
+                imagePreviewHeight: 170,
+                allowImagePreview: true,
+                allowPdfPreview: true,
+                pdfPreviewHeight: 320,
+                pdfComponentExtraParams: 'toolbar=0&view=fit&page=1',
+            });
+        }
+    });
+}
+
+// ==========================================
+// INITIALIZATION
+// ==========================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeFilePond();
+    loadParentescos();
+    loadMarcasModelos();
+    setupTabs();
+    setupAutoFormat();
+});
+
+// ==========================================
+// AUTO-FORMAT SETUP
+// ==========================================
+
+function setupAutoFormat() {
+    // Cédula formatting
+    const cedulaInputs = document.querySelectorAll('#cedula');
+    cedulaInputs.forEach(input => {
+        input.addEventListener('input', function(e) {
+            const cursorPosition = e.target.selectionStart;
+            const oldLength = e.target.value.length;
+            e.target.value = formatCedula(e.target.value);
+            const newLength = e.target.value.length;
+            const diff = newLength - oldLength;
+            e.target.setSelectionRange(cursorPosition + diff, cursorPosition + diff);
+        });
+    });
+    
+    // Teléfono formatting
+    const telefonoInputs = document.querySelectorAll('#telefono, #referenciaTelefono');
+    telefonoInputs.forEach(input => {
+        input.addEventListener('input', function(e) {
+            const cursorPosition = e.target.selectionStart;
+            const oldLength = e.target.value.length;
+            e.target.value = formatTelefono(e.target.value);
+            const newLength = e.target.value.length;
+            const diff = newLength - oldLength;
+            e.target.setSelectionRange(cursorPosition + diff, cursorPosition + diff);
+        });
+    });
+}
+
+// ==========================================
+// LOAD DATA FOR SELECTS
+// ==========================================
+
+async function loadParentescos() {
+    try {
+        const response = await fetch('/api/parentescos');
+        if (response.ok) {
+            allParentescos = await response.json();
+            populateParentescosSelect();
+        }
+    } catch (error) {
+        console.error('Error loading parentescos:', error);
+    }
+}
+
+async function loadMarcasModelos() {
+    try {
+        const response = await fetch('/api/marcas-modelos');
+        if (response.ok) {
+            allMarcasModelos = await response.json();
+            populateMarcasModelosSelect();
+        }
+    } catch (error) {
+        console.error('Error loading marcas modelos:', error);
+    }
+}
+
+function populateParentescosSelect() {
+    const select = document.getElementById('referenciaParentesco');
+    if (!select) return;
+    select.innerHTML = '<option value="">Seleccionar...</option>';
+    allParentescos.forEach(p => {
+        const option = document.createElement('option');
+        option.value = p.id;
+        option.textContent = p.parentesco;
+        select.appendChild(option);
+    });
+}
+
+function populateMarcasModelosSelect() {
+    const select = document.getElementById('vehiculoMarcaModelo');
+    if (!select) return;
+    select.innerHTML = '<option value="">Seleccionar...</option>';
+    allMarcasModelos.forEach(m => {
+        const option = document.createElement('option');
+        option.value = m.id;
+        option.textContent = `${m.marca} ${m.modelo}`;
+        select.appendChild(option);
+    });
+}
+
+// ==========================================
+// TABS
+// ==========================================
+
+function setupTabs() {
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    tabButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const tabName = this.getAttribute('data-tab');
+            tabButtons.forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            this.classList.add('active');
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+        });
+    });
+}
+
+// ==========================================
+// SEARCH
+// ==========================================
+
+document.getElementById('searchInput')?.addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const rows = document.querySelectorAll('#tableBody tr');
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+});
+
+// ==========================================
+// CREATE/EDIT PROPIETARIO
+// ==========================================
+
+function createNewPropietario() {
+    const modal = document.getElementById('createPropietarioModal');
+    const title = document.getElementById('propietarioModalTitle');
+    const form = document.getElementById('propietarioForm');
+    const submitBtn = document.getElementById('submitBtnText');
+    
+    if (title) title.textContent = 'Nuevo Propietario';
+    if (submitBtn) submitBtn.textContent = 'Guardar Propietario';
+    if (form) {
+        form.reset();
+        form.action = '/propietarios/crear';
+    }
+    
+    document.getElementById('propietarioId').value = '';
+    Object.values(pondInstances).forEach(pond => pond.removeFiles());
+    openModal('createPropietarioModal');
+}
+
+async function editPropietario(id) {
+    try {
+        const response = await fetch(`/propietarios/${id}/data`);
+        if (!response.ok) throw new Error('Error al cargar datos');
+        
+        const data = await response.json();
+        
+        const modal = document.getElementById('createPropietarioModal');
+        const title = document.getElementById('propietarioModalTitle');
+        const form = document.getElementById('propietarioForm');
+        const submitBtn = document.getElementById('submitBtnText');
+        
+        if (title) title.textContent = 'Editar Propietario';
+        if (submitBtn) submitBtn.textContent = 'Actualizar Propietario';
+        if (form) form.action = `/propietarios/${id}/editar`;
+        
+        document.getElementById('propietarioId').value = id;
+        document.getElementById('nombreApellido').value = data.nombre_apellido || '';
+        document.getElementById('cedula').value = data.cedula || '';
+        document.getElementById('licencia').value = data.licencia || '';
+        document.getElementById('telefono').value = data.telefono || '';
+        document.getElementById('email').value = data.email || '';
+        document.getElementById('direccion').value = data.direccion || '';
+        
+        // Load existing files into FilePond with preview
+        Object.values(pondInstances).forEach(pond => pond.removeFiles());
+        
+        // Load cedula file
+        if (data.cedula_path && pondInstances.cedulaFile) {
+            pondInstances.cedulaFile.addFile(`/static/${data.cedula_path}`, {
+                type: 'local',
+                file: {
+                    name: 'cedula' + data.cedula_path.substring(data.cedula_path.lastIndexOf('.')),
+                    size: 0
+                }
+            });
+        }
+        
+        // Load licencia file
+        if (data.licencia_path && pondInstances.licenciaFile) {
+            pondInstances.licenciaFile.addFile(`/static/${data.licencia_path}`, {
+                type: 'local',
+                file: {
+                    name: 'licencia' + data.licencia_path.substring(data.licencia_path.lastIndexOf('.')),
+                    size: 0
+                }
+            });
+        }
+        
+        // Load buena conducta file
+        if (data.documento_buena_conducta_path && pondInstances.buenaConductaFile) {
+            pondInstances.buenaConductaFile.addFile(`/static/${data.documento_buena_conducta_path}`, {
+                type: 'local',
+                file: {
+                    name: 'buena_conducta' + data.documento_buena_conducta_path.substring(data.documento_buena_conducta_path.lastIndexOf('.')),
+                    size: 0
+                }
+            });
+        }
+        
+        openModal('createPropietarioModal');
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Error al cargar los datos del propietario', 'error');
+    }
+}
+
+function deletePropietario(id, nombre) {
+    const form = document.getElementById('deletePropietarioForm');
+    const nameSpan = document.getElementById('deletePropietarioName');
+    
+    if (form) form.action = `/propietarios/${id}/eliminar`;
+    if (nameSpan) nameSpan.textContent = nombre;
+    
+    openModal('deletePropietarioModal');
+}
+
+// ==========================================
+// VIEW PROPIETARIO DETAILS
+// ==========================================
+
+async function viewPropietarioDetails(id) {
+    currentPropietarioId = id;
+    
+    const loading = document.getElementById('detailsLoading');
+    const content = document.getElementById('detailsContent');
+    
+    if (loading) loading.style.display = 'block';
+    if (content) content.style.display = 'none';
+    
+    openModal('viewPropietarioModal');
+    
+    try {
+        const response = await fetch(`/propietarios/${id}/details`);
+        if (!response.ok) throw new Error('Error al cargar detalles');
+        
+        const data = await response.json();
+        
+        document.getElementById('viewPropietarioName').textContent = data.nombre_apellido;
+        renderPersonalInfo(data);
+        renderReferencias(data.referencias || []);
+        renderVehiculos(data.vehiculos || []);
+        renderDocumentos(data);
+        
+        if (loading) loading.style.display = 'none';
+        if (content) content.style.display = 'block';
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Error al cargar los detalles del propietario', 'error');
+        closeModal('viewPropietarioModal');
+    }
+}
+
+function renderPersonalInfo(data) {
+    const container = document.getElementById('personalInfo');
+    if (!container) return;
+    
+    container.innerHTML = `
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">Nombre Completo</span>
+                <span class="info-value">${data.nombre_apellido || 'N/A'}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Cédula</span>
+                <span class="info-value">${data.cedula || 'N/A'}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Licencia</span>
+                <span class="info-value">${data.licencia || 'N/A'}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Teléfono</span>
+                <span class="info-value">${data.telefono || 'N/A'}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Email</span>
+                <span class="info-value">${data.email || 'N/A'}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Dirección</span>
+                <span class="info-value">${data.direccion || 'N/A'}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Fecha de Registro</span>
+                <span class="info-value">${data.fecha_registro || 'N/A'}</span>
+            </div>
+        </div>
+    `;
+}
+
+function renderReferencias(referencias) {
+    const container = document.getElementById('referenciasContent');
+    if (!container) return;
+    
+    if (referencias.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                <p>No hay referencias registradas</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const html = referencias.map(ref => `
+        <div class="document-item">
+            <div class="document-info">
+                <div class="document-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                </div>
+                <div>
+                    <strong>${ref.nombre_apellido}</strong>
+                    <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
+                        <span style="display: inline-flex; align-items: center; gap: 4px;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                            </svg>
+                            ${ref.parentesco_nombre}
+                        </span>
+                        <span style="margin: 0 8px;">•</span>
+                        <span style="display: inline-flex; align-items: center; gap: 4px;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                            </svg>
+                            ${ref.telefono}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn btn-sm btn-secondary" onclick="viewHistorialReferencia(${ref.id})" data-tooltip="Historial">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </button>
+                <button class="btn btn-sm btn-primary" onclick="editReferencia(${ref.id})" data-tooltip="Editar">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="deleteReferencia(${ref.id})" data-tooltip="Eliminar">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    `).join('');
+    
+    container.innerHTML = html;
+}
+
+function renderVehiculos(vehiculos) {
+    const container = document.getElementById('vehiculosContent');
+    if (!container) return;
+    
+    if (vehiculos.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M5 17h14v-5H5v5z"></path>
+                    <path d="M3 13l1.5-5h15L21 13"></path>
+                    <circle cx="7.5" cy="17.5" r="1.5"></circle>
+                    <circle cx="16.5" cy="17.5" r="1.5"></circle>
+                </svg>
+                <p>No hay vehículos registrados</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const html = vehiculos.map(veh => `
+        <div class="document-item">
+            <div class="document-info">
+                <div class="document-icon" style="background: rgba(72, 187, 120, 0.1); color: var(--success);">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M5 17h14v-5H5v5z"></path>
+                        <path d="M3 13l1.5-5h15L21 13"></path>
+                        <circle cx="7.5" cy="17.5" r="1.5"></circle>
+                        <circle cx="16.5" cy="17.5" r="1.5"></circle>
+                    </svg>
+                </div>
+                <div>
+                    <strong style="font-size: 16px;">${veh.placa}</strong>
+                    <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
+                        ${veh.marca_modelo} • ${veh.ano || 'N/A'} • ${veh.color || 'N/A'}
+                    </div>
+                    <div style="font-size: 13px; margin-top: 6px; display: flex; align-items: center; gap: 12px;">
+                        <span style="font-weight: 600; color: var(--primary);">
+                            RD$ ${parseFloat(veh.precio_semanal).toFixed(2)} /sem
+                        </span>
+                        ${veh.disponible ? 
+                            '<span class="badge badge-success">Disponible</span>' : 
+                            '<span class="badge badge-danger">No Disponible</span>'
+                        }
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn btn-sm btn-secondary" onclick="viewHistorialVehiculo(${veh.id})" data-tooltip="Historial">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </button>
+                <button class="btn btn-sm btn-primary" onclick="editVehiculo(${veh.id})" data-tooltip="Editar">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="deleteVehiculo(${veh.id})" data-tooltip="Eliminar">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    `).join('');
+    
+    container.innerHTML = html;
+}
+
+function renderDocumentos(data) {
+    const container = document.getElementById('documentosContent');
+    if (!container) return;
+    
+    const documentos = [
+        { name: 'Cédula', path: data.cedula_path, icon: 'card' },
+        { name: 'Licencia', path: data.licencia_path, icon: 'card' },
+        { name: 'Buena Conducta', path: data.documento_buena_conducta_path, icon: 'file' }
+    ];
+    
+    const hasDocuments = documentos.some(doc => doc.path);
+    
+    if (!hasDocuments) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+                <p>No hay documentos adjuntos</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const html = documentos.filter(doc => doc.path).map(doc => `
+        <div class="document-item">
+            <div class="document-info">
+                <div class="document-icon" style="background: rgba(237, 137, 54, 0.1); color: var(--warning);">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        ${doc.icon === 'card' ? 
+                            '<rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line>' :
+                            '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline>'
+                        }
+                    </svg>
+                </div>
+                <div>
+                    <strong>${doc.name}</strong>
+                    <div style="font-size: 13px; color: var(--text-secondary);">Archivo adjunto</div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <a href="/static/${doc.path}" target="_blank" class="btn btn-sm btn-info" data-tooltip="Ver">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                </a>
+                <a href="/static/${doc.path}" download class="btn btn-sm btn-success" data-tooltip="Descargar">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m14-7l-5 5m0 0l-5-5m5 5V3"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    `).join('');
+    
+    container.innerHTML = html;
+}
+
+// ==========================================
+// REFERENCIAS CRUD
+// ==========================================
+
+function addReferencia() {
+    const modal = document.getElementById('referenciaModal');
+    const title = document.getElementById('referenciaModalTitle');
+    const form = document.getElementById('referenciaForm');
+    
+    if (title) title.textContent = 'Agregar Referencia';
+    if (form) {
+        form.reset();
+        form.action = '/referencias/crear';
+    }
+    
+    document.getElementById('referenciaId').value = '';
+    document.getElementById('referenciaPropietarioId').value = currentPropietarioId;
+    
+    openModal('referenciaModal');
+}
+
+async function editReferencia(id) {
+    try {
+        const response = await fetch(`/referencias/${id}/data`);
+        if (!response.ok) throw new Error('Error al cargar datos');
+        
+        const data = await response.json();
+        
+        const title = document.getElementById('referenciaModalTitle');
+        const form = document.getElementById('referenciaForm');
+        
+        if (title) title.textContent = 'Editar Referencia';
+        if (form) form.action = `/referencias/${id}/editar`;
+        
+        document.getElementById('referenciaId').value = id;
+        document.getElementById('referenciaPropietarioId').value = data.propietario_id;
+        document.getElementById('referenciaNombre').value = data.nombre_apellido || '';
+        document.getElementById('referenciaParentesco').value = data.parentesco_id || '';
+        document.getElementById('referenciaTelefono').value = data.telefono || '';
+        
+        openModal('referenciaModal');
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Error al cargar los datos de la referencia', 'error');
+    }
+}
+
+async function deleteReferencia(id) {
+    if (!confirm('¿Estás seguro de eliminar esta referencia?')) return;
+    
+    try {
+        const response = await fetch(`/referencias/${id}/eliminar`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification(result.message, 'success');
+            viewPropietarioDetails(currentPropietarioId);
+        } else {
+            showNotification(result.message, 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Error al eliminar la referencia', 'error');
+    }
+}
+
+// ==========================================
+// VEHÍCULOS CRUD
+// ==========================================
+
+function addVehiculo() {
+    const modal = document.getElementById('vehiculoModal');
+    const title = document.getElementById('vehiculoModalTitle');
+    const form = document.getElementById('vehiculoForm');
+    
+    if (title) title.textContent = 'Agregar Vehículo';
+    if (form) {
+        form.reset();
+        form.action = '/vehiculos/crear';
+    }
+    
+    document.getElementById('vehiculoId').value = '';
+    document.getElementById('vehiculoPropietarioId').value = currentPropietarioId;
+    
+    openModal('vehiculoModal');
+}
+
+async function editVehiculo(id) {
+    try {
+        const response = await fetch(`/vehiculos/${id}/data`);
+        if (!response.ok) throw new Error('Error al cargar datos');
+        
+        const data = await response.json();
+        
+        const title = document.getElementById('vehiculoModalTitle');
+        const form = document.getElementById('vehiculoForm');
+        
+        if (title) title.textContent = 'Editar Vehículo';
+        if (form) form.action = `/vehiculos/${id}/editar`;
+        
+        document.getElementById('vehiculoId').value = id;
+        document.getElementById('vehiculoPropietarioId').value = data.propietario_id;
+        document.getElementById('vehiculoPlaca').value = data.placa || '';
+        document.getElementById('vehiculoMarcaModelo').value = data.marca_modelo_vehiculo_id || '';
+        document.getElementById('vehiculoAno').value = data.ano || '';
+        document.getElementById('vehiculoColor').value = data.color || '';
+        document.getElementById('vehiculoPrecio').value = data.precio_semanal || '';
+        document.getElementById('vehiculoDisponible').value = data.disponible ? '1' : '0';
+        document.getElementById('vehiculoDescripcion').value = data.descripcion || '';
+        document.getElementById('vehiculoCondiciones').value = data.condiciones || '';
+        
+        openModal('vehiculoModal');
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Error al cargar los datos del vehículo', 'error');
+    }
+}
+
+async function deleteVehiculo(id) {
+    if (!confirm('¿Estás seguro de eliminar este vehículo?')) return;
+    
+    try {
+        const response = await fetch(`/vehiculos/${id}/eliminar`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification(result.message, 'success');
+            viewPropietarioDetails(currentPropietarioId);
+        } else {
+            showNotification(result.message, 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Error al eliminar el vehículo', 'error');
+    }
+}
+
+// ==========================================
+// HISTORIAL
+// ==========================================
+
+async function viewHistorialPropietario(id) {
+    await viewHistorial('propietario', id);
+}
+
+async function viewHistorialReferencia(id) {
+    await viewHistorial('referencia', id);
+}
+
+async function viewHistorialVehiculo(id) {
+    await viewHistorial('vehiculo', id);
+}
+
+async function viewHistorial(tipo, id) {
+    const loading = document.getElementById('historialLoading');
+    const timeline = document.getElementById('historialTimeline');
+    const empty = document.getElementById('historialEmpty');
+    const title = document.getElementById('historialTitle');
+    
+    if (loading) loading.style.display = 'block';
+    if (timeline) timeline.style.display = 'none';
+    if (empty) empty.style.display = 'none';
+    
+    openModal('historialModal');
+    
+    try {
+        let endpoint;
+        if (tipo === 'propietario') {
+            endpoint = `/propietarios/${id}/historial`;
+        } else if (tipo === 'referencia') {
+            endpoint = `/referencias/${id}/historial`;
+        } else {
+            endpoint = `/vehiculos/${id}/historial`;
+        }
+        
+        const response = await fetch(endpoint);
+        if (!response.ok) throw new Error('Error al cargar historial');
+        
+        const data = await response.json();
+        
+        if (title) {
+            let tipoText = tipo === 'propietario' ? 'Propietario' : tipo === 'referencia' ? 'Referencia' : 'Vehículo';
+            title.textContent = `${tipoText} - ${data.nombre}`;
+        }
+        
+        renderHistorial(data.historial || []);
+        
+        if (loading) loading.style.display = 'none';
+        
+        if (data.historial && data.historial.length > 0) {
+            if (timeline) timeline.style.display = 'block';
+        } else {
+            if (empty) empty.style.display = 'block';
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        if (loading) loading.style.display = 'none';
+        if (empty) empty.style.display = 'block';
+    }
+}
+
+function renderHistorial(records) {
+    const timeline = document.getElementById('historialTimeline');
+    if (!timeline) return;
+    
+    timeline.innerHTML = '';
+    
+    if (records.length === 0) {
+        return;
+    }
+    
+    records.forEach(record => {
+        const item = document.createElement('div');
+        item.className = 'timeline-item';
+        
+        let accionText = record.tipo_operacion;
+        let badgeClass = 'badge-info';
+        
+        if (record.tipo_operacion === 'INSERT') {
+            accionText = 'Creación';
+            badgeClass = 'badge-success';
+        } else if (record.tipo_operacion === 'UPDATE') {
+            accionText = 'Edición';
+            badgeClass = 'badge-warning';
+        } else if (record.tipo_operacion === 'DELETE') {
+            accionText = 'Eliminación';
+            badgeClass = 'badge-danger';
+        }
+        
+        let changesHtml = '';
+        if (record.tipo_operacion === 'UPDATE' && record.cambios && record.cambios.length > 0) {
+            changesHtml = record.cambios.map(cambio => `
+                <div class="change-item">
+                    <div class="change-label">${cambio.campo}</div>
+                    <div class="change-values">
+                        <span class="change-old">${cambio.valor_anterior || 'N/A'}</span>
+                        <span class="change-arrow">→</span>
+                        <span class="change-new">${cambio.valor_nuevo || 'N/A'}</span>
+                    </div>
+                </div>
+            `).join('');
+        } else if (record.tipo_operacion === 'INSERT') {
+            changesHtml = '<div class="change-item"><strong>Registro inicial creado</strong></div>';
+        } else if (record.tipo_operacion === 'DELETE') {
+            changesHtml = '<div class="change-item"><strong>Registro eliminado permanentemente</strong></div>';
+        }
+        
+        item.innerHTML = `
+            <div class="timeline-header">
+                <div>
+                    <span class="badge ${badgeClass}">${accionText}</span>
+                    <span style="margin-left: 12px; font-size: 13px; color: var(--text-secondary);">
+                        por <strong>${record.usuario_nombre}</strong>
+                    </span>
+                </div>
+                <span class="timeline-date">${record.fecha_hora}</span>
+            </div>
+            <div class="timeline-body">
+                ${changesHtml || '<p style="color: var(--text-tertiary); font-style: italic;">Sin cambios específicos registrados</p>'}
+            </div>
+        `;
+        
+        timeline.appendChild(item);
+    });
+}
+
+// ==========================================
+// MODAL HELPERS
+// ==========================================
+
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.classList.add('active');
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.classList.remove('active');
+}
+
+// ==========================================
+// FORM SUBMISSION - PROPIETARIO
+// ==========================================
+
+document.getElementById('propietarioForm')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData();
+    
+    // Agregar campos de texto
+    const campos = [
+        'nombre_apellido',
+        'cedula',
+        'licencia',
+        'telefono',
+        'email',
+        'direccion'
+    ];
+    
+    campos.forEach(campo => {
+        let elemento;
+        if (campo === 'nombre_apellido') {
+            elemento = document.getElementById('nombreApellido');
+        } else {
+            elemento = document.getElementById(campo);
+        }
+        const valor = elemento ? elemento.value : '';
+        formData.append(campo, valor || '');
+    });
+    
+    // Agregar archivos desde FilePond
+    try {
+        if (pondInstances.cedulaFile) {
+            const cedulaFiles = pondInstances.cedulaFile.getFiles();
+            if (cedulaFiles.length > 0 && cedulaFiles[0].file) {
+                formData.append('cedula_file', cedulaFiles[0].file);
+            }
+        }
+        
+        if (pondInstances.licenciaFile) {
+            const licenciaFiles = pondInstances.licenciaFile.getFiles();
+            if (licenciaFiles.length > 0 && licenciaFiles[0].file) {
+                formData.append('licencia_file', licenciaFiles[0].file);
+            }
+        }
+        
+        if (pondInstances.buenaConductaFile) {
+            const buenaConductaFiles = pondInstances.buenaConductaFile.getFiles();
+            if (buenaConductaFiles.length > 0 && buenaConductaFiles[0].file) {
+                formData.append('buena_conducta_file', buenaConductaFiles[0].file);
+            }
+        }
+    } catch (error) {
+        console.error('Error al obtener archivos:', error);
+    }
+    
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="animation: spin 1s linear infinite;">
+            <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="0" opacity="0.25"/>
+            <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="8"/>
+        </svg>
+        Guardando...
+    `;
+    
+    try {
+        const response = await fetch(this.action, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const contentType = response.headers.get("content-type");
+        let result;
+        
+        if (contentType && contentType.includes("application/json")) {
+            result = await response.json();
+        } else {
+            const text = await response.text();
+            throw new Error(text || 'Error desconocido');
+        }
+        
+        if (response.ok && result.success) {
+            showNotification(result.message || 'Propietario guardado exitosamente', 'success');
+            
+            const modal = document.getElementById('createPropietarioModal');
+            if (modal) modal.classList.remove('active');
+            
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            throw new Error(result.error || 'Error al guardar el propietario');
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification(error.message || 'Error al procesar la solicitud', 'error');
+        
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    }
+});
+
+// ==========================================
+// FORM SUBMISSION - DELETE PROPIETARIO
+// ==========================================
+
+document.getElementById('deletePropietarioForm')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="animation: spin 1s linear infinite;">
+            <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="0" opacity="0.25"/>
+            <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="8"/>
+        </svg>
+        Eliminando...
+    `;
+    
+    try {
+        const response = await fetch(this.action, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (response.ok) {
+            showNotification('Propietario eliminado exitosamente', 'success');
+            
+            const modal = document.getElementById('deletePropietarioModal');
+            if (modal) modal.classList.remove('active');
+            
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            throw new Error('Error al eliminar el propietario');
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification(error.message || 'Error al procesar la solicitud', 'error');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    }
+});
+
+// ==========================================
+// FORM SUBMISSION - REFERENCIA
+// ==========================================
+
+document.getElementById('referenciaForm')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="animation: spin 1s linear infinite;">
+            <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="0" opacity="0.25"/>
+            <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="8"/>
+        </svg>
+        Guardando...
+    `;
+    
+    try {
+        const response = await fetch(this.action, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification('Referencia guardada exitosamente', 'success');
+            
+            const modal = document.getElementById('referenciaModal');
+            if (modal) modal.classList.remove('active');
+            
+            if (currentPropietarioId) {
+                await viewPropietarioDetails(currentPropietarioId);
+            }
+        } else {
+            throw new Error(result.error || 'Error al guardar la referencia');
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification(error.message || 'Error al procesar la solicitud', 'error');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    }
+});
+
+// ==========================================
+// FORM SUBMISSION - VEHÍCULO
+// ==========================================
+
+document.getElementById('vehiculoForm')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="animation: spin 1s linear infinite;">
+            <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="0" opacity="0.25"/>
+            <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="8"/>
+        </svg>
+        Guardando...
+    `;
+    
+    try {
+        const response = await fetch(this.action, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification('Vehículo guardado exitosamente', 'success');
+            
+            const modal = document.getElementById('vehiculoModal');
+            if (modal) modal.classList.remove('active');
+            
+            if (currentPropietarioId) {
+                await viewPropietarioDetails(currentPropietarioId);
+            }
+        } else {
+            throw new Error(result.error || 'Error al guardar el vehículo');
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification(error.message || 'Error al procesar la solicitud', 'error');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    }
+});
+
+// ==========================================
+// MODAL CONTROLS
+// ==========================================
+
+document.querySelectorAll('.modal-close, [data-modal-close]').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const modal = this.closest('.modal-overlay');
+        if (modal) modal.classList.remove('active');
+    });
+});
+
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.remove('active');
+        }
+    });
+});
+
+// ==========================================
+// SPIN ANIMATION CSS
+// ==========================================
+
+const spinStyle = document.createElement('style');
+spinStyle.textContent = `
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+`;
+document.head.appendChild(spinStyle);
+</script>
+
+{% endblock %}

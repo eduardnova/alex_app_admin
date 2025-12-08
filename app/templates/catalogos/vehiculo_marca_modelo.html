@@ -1,8 +1,12 @@
 {% extends "base.html" %}
 
 {% block title %}Marcas y Modelos de Vehículos{% endblock %}
-
+{% block breadcrumb %}
+<span class="breadcrumb-item">Catalogo</span>
+<span class="breadcrumb-item">Marcas y Modelos</span>
+{% endblock %}
 {% block content %}
+
 <div class="content-area">
 
     <!-- Table Card -->
@@ -31,7 +35,7 @@
                     </svg>
                     Filtros
                 </button>
-                <button class="btn btn-primary" data-modal="createModal">
+                <button class="btn btn-primary" onclick="createNewMarca()">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                     </svg>
@@ -51,13 +55,18 @@
                         <th>Tipo</th>
                         <th>Descripción</th>
                         <th>Fecha Registro</th>
+                        <th>Actualización</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="tableBody">
                     {% for marca in marcas %}
-                    <tr>
-                        <td>#{{ marca.id }}</td>
+                    <tr data-id="{{ marca.id }}" data-marca="{{ marca.marca }}" data-modelo="{{ marca.modelo }}" data-tipo="{{ marca.tipo }}">
+                        <td>
+                            <span class="badge badge-primary">
+                            #{{ marca.id }}
+                            </span>
+                        </td>
                         <td>
                             {% if marca.logo_path %}
                             <img src="{{ url_for('static', filename=marca.logo_path) }}" alt="{{ marca.marca }}" style="width: 40px; height: 40px; object-fit: contain; border-radius: 8px;">
@@ -81,7 +90,22 @@
                                 {{ marca.descripcion or 'N/A' }}
                             </span>
                         </td>
-                        <td>{{ marca.fecha_registro.strftime('%d/%m/%Y') if marca.fecha_registro else 'N/A' }}</td>
+                        <td>
+                            <div style="font-weight: 600; color: var(--text-primary);">
+                                {{ marca.fecha_hora_registro.strftime('%d/%m/%Y') }}
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-tertiary);">
+                                {{ marca.fecha_hora_registro.strftime('%H:%M:%S') }}
+                            </div>
+                        </td>
+                        <td>
+                            <div style="font-weight: 600; color: var(--text-primary);">
+                                {{ marca.fecha_hora_actualizo.strftime('%d/%m/%Y') }}
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-tertiary);">
+                                {{ marca.fecha_hora_actualizo.strftime('%H:%M:%S') }}
+                            </div>
+                        </td>
                         <td>
                             <div style="display: flex; gap: 8px;">
                                 <button class="btn btn-sm btn-secondary" onclick="viewHistory({{ marca.id }})" data-tooltip="Ver Historial">
@@ -89,18 +113,16 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                     </svg>
                                 </button>
-                                <button class="btn btn-sm btn-primary" onclick="editMarca({{ marca.id }})" data-tooltip="Editar">
+                                <button class="btn btn-sm btn-primary" onclick='editMarca({{ marca.id | tojson }}, {{ marca.marca | tojson }}, {{ marca.modelo | tojson }}, {{ marca.tipo | tojson }}, {{ marca.descripcion | tojson }}, {{ marca.logo_path | tojson }})' data-tooltip="Editar">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                     </svg>
                                 </button>
-                                <form action="{{ url_for('catalogo.eliminar_marca_modelo', id=marca.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('¿Está seguro de eliminar esta marca/modelo?');">
-                                    <button type="submit" class="btn btn-sm btn-danger" data-tooltip="Eliminar">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                        </svg>
-                                    </button>
-                                </form>
+                                <button type="button" class="btn btn-sm btn-danger" onclick='deleteMarca({{ marca.id }}, {{ marca.marca | tojson }}, {{ marca.modelo | tojson }})' data-tooltip="Eliminar">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -110,27 +132,29 @@
         </div>
 
         <div class="table-footer">
-            <div style="font-size: 14px; color: var(--text-secondary);">
-                Mostrando <strong>1-{{ marcas|length }}</strong> de <strong>{{ marcas|length }}</strong> registros
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 14px; color: var(--text-secondary);">
+                    Mostrando <strong id="showingStart">1</strong>-<strong id="showingEnd">5</strong> de <strong id="totalRecords">{{ marcas|length }}</strong> registros
+                </span>
+                <select id="itemsPerPage" class="form-select" style="width: 80px; height: 36px; padding: 6px 10px;">
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
             </div>
-            <div class="pagination">
-                <button class="pagination-item" disabled>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                    </svg>
-                </button>
-                <button class="pagination-item active">1</button>
-                <button class="pagination-item">2</button>
-                <button class="pagination-item">3</button>
-                <button class="pagination-item">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                    </svg>
-                </button>
+            <div class="pagination" id="paginationContainer">
+                <!-- Pagination buttons will be generated by JavaScript -->
             </div>
         </div>
     </div>
+
 </div>
+
+<!-- ========================================= -->
+<!-- MODALS - TODOS DENTRO DEL BLOQUE CONTENT -->
+<!-- ========================================= -->
 
 <!-- Modal: Crear/Editar Marca/Modelo -->
 <div class="modal-overlay" id="createModal">
@@ -149,29 +173,32 @@
             </button>
         </div>
         <form action="{{ url_for('catalogo.crear_marca_modelo') }}" method="POST" enctype="multipart/form-data" id="marcaForm">
+            <input type="hidden" name="marca_id" id="marcaId">
             <div class="modal-body">
                 <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
                     <div class="form-group">
                         <label class="form-label required">Marca</label>
-                        <input type="text" name="marca" class="form-input" placeholder="Ej: Toyota" required>
+                        <input type="text" name="marca" id="marcaInput" class="form-input" placeholder="Ej: Toyota" required>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label required">Modelo</label>
-                        <input type="text" name="modelo" class="form-input" placeholder="Ej: Corolla" required>
+                        <input type="text" name="modelo" id="modeloInput" class="form-input" placeholder="Ej: Corolla" required>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label required">Tipo de Vehículo</label>
-                        <select name="tipo" class="form-select" required>
+                        <select name="tipo" id="tipoSelect" class="form-select" required>
                             <option value="">Seleccionar tipo</option>
                             <option value="Sedán">Sedán</option>
                             <option value="SUV">SUV</option>
+                            <option value="Hatchback">Hatchback</option>
                             <option value="Pick-up">Pick-up</option>
                             <option value="Compacto">Compacto</option>
                             <option value="Deportivo">Deportivo</option>
                             <option value="Van">Van</option>
                             <option value="Camión">Camión</option>
+
                         </select>
                     </div>
 
@@ -183,18 +210,25 @@
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                                 </svg>
-                                <span class="file-text">Subir logo</span>
+                                <span class="file-text" id="fileText">Subir logo</span>
                             </label>
                         </div>
                         <div id="logoPreview" style="margin-top: 12px; display: none;">
-                            <img src="" alt="Preview" style="max-width: 150px; border-radius: var(--radius-md); box-shadow: var(--neu-shadow-small);">
+                            <div style="position: relative; display: inline-block;">
+                                <img id="logoPreviewImg" src="" alt="Preview" style="max-width: 150px; max-height: 150px; border-radius: var(--radius-md); box-shadow: var(--neu-shadow-small);">
+                                <button type="button" onclick="clearLogo()" style="position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; border-radius: 50%; background: var(--danger); color: white; border: 2px solid white; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                        <path d="M18 6L6 18M6 6l12 12"/>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">Descripción</label>
-                    <textarea name="descripcion" class="form-textarea" rows="4" placeholder="Descripción adicional del modelo..."></textarea>
+                    <textarea name="descripcion" id="descripcionInput" class="form-textarea" rows="4" placeholder="Descripción adicional del modelo..."></textarea>
                     <span class="form-help">Información adicional sobre características, capacidad, etc.</span>
                 </div>
             </div>
@@ -204,7 +238,48 @@
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                     </svg>
-                    Guardar Marca/Modelo
+                    <span id="submitBtnText">Guardar Marca/Modelo</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Delete Confirmation -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal modal-sm">
+        <div class="modal-header">
+            <h3 class="modal-title">Confirmar Eliminación</h3>
+            <button class="modal-close" data-modal-close>×</button>
+        </div>
+        <form id="deleteForm" method="POST">
+            <div class="modal-body">
+                <input type="hidden" id="deleteMarcaId" name="marca_id">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <div style="width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 50%; background: rgba(245, 101, 101, 0.1); display: flex; align-items: center; justify-content: center;">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                    </div>
+                    <p style="font-size: 15px; color: var(--text-primary); font-weight: 600; margin-bottom: 8px;">
+                        ¿Estás seguro de eliminar esta marca/modelo?
+                    </p>
+                    <p style="font-size: 14px; color: var(--text-secondary);">
+                        La marca <strong id="deleteMarcaName"></strong> será eliminada permanentemente. Esta acción no se puede deshacer.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button>
+                <button type="submit" class="btn btn-danger">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    Eliminar Marca/Modelo
                 </button>
             </div>
         </form>
@@ -219,17 +294,26 @@
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
-                Historial de Modificaciones
+                Historial de Modificaciones - <span id="historyMarcaName">Cargando...</span>
             </h3>
-            <button class="modal-close">
+            <button class="modal-close" data-modal-close>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
             </button>
         </div>
         <div class="modal-body">
+            <!-- Loading State -->
+            <div id="historyLoading" style="text-align: center; padding: 40px; display: none;">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="animation: spin 1s linear infinite;">
+                    <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="0" opacity="0.25"/>
+                    <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="8"/>
+                </svg>
+                <p style="margin-top: 12px; color: var(--text-secondary);">Cargando historial...</p>
+            </div>
+
             <!-- Filters -->
-            <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+            <div id="historyFilters" style="display: none; gap: 12px; margin-bottom: 20px;">
                 <div class="input-group" style="flex: 1;">
                     <span class="input-icon">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -239,75 +323,43 @@
                     </span>
                     <input type="text" class="form-input" id="historySearch" placeholder="Buscar en historial...">
                 </div>
-                <select class="form-select" style="width: 200px;">
+                <select class="form-select" id="historyFilterAction" style="width: 200px;">
                     <option value="">Todas las acciones</option>
-                    <option value="crear">Creación</option>
-                    <option value="editar">Edición</option>
-                    <option value="eliminar">Eliminación</option>
+                    <option value="INSERT">Creación</option>
+                    <option value="UPDATE">Edición</option>
+                    <option value="DELETE">Eliminación</option>
                 </select>
-                <input type="date" class="form-input" style="width: 180px;">
             </div>
 
             <!-- History Table -->
-            <div class="table-wrapper">
+            <div class="table-wrapper" id="historyTableContainer" style="display: none;">
                 <table class="table">
                     <thead>
                         <tr>
                             <th>Fecha/Hora</th>
                             <th>Usuario</th>
                             <th>Acción</th>
-                            <th>Campo Modificado</th>
-                            <th>Valor Anterior</th>
-                            <th>Valor Nuevo</th>
+                            <th>Detalles</th>
                         </tr>
                     </thead>
                     <tbody id="historyTableBody">
-                        <tr>
-                            <td>28/11/2024 14:35</td>
-                            <td>
-                                <div style="display: flex; align-items: center; gap: 8px;">
-                                    <div class="user-avatar" style="width: 28px; height: 28px; font-size: 11px;">JD</div>
-                                    <span>John Doe</span>
-                                </div>
-                            </td>
-                            <td><span class="badge badge-success">Creación</span></td>
-                            <td>Registro inicial</td>
-                            <td>-</td>
-                            <td>-</td>
-                        </tr>
-                        <tr>
-                            <td>29/11/2024 09:20</td>
-                            <td>
-                                <div style="display: flex; align-items: center; gap: 8px;">
-                                    <div class="user-avatar" style="width: 28px; height: 28px; font-size: 11px;">AM</div>
-                                    <span>Admin User</span>
-                                </div>
-                            </td>
-                            <td><span class="badge badge-warning">Edición</span></td>
-                            <td>Tipo</td>
-                            <td><code>Compacto</code></td>
-                            <td><code>Sedán</code></td>
-                        </tr>
-                        <tr>
-                            <td>30/11/2024 11:45</td>
-                            <td>
-                                <div style="display: flex; align-items: center; gap: 8px;">
-                                    <div class="user-avatar" style="width: 28px; height: 28px; font-size: 11px;">JD</div>
-                                    <span>John Doe</span>
-                                </div>
-                            </td>
-                            <td><span class="badge badge-warning">Edición</span></td>
-                            <td>Descripción</td>
-                            <td><code>Modelo estándar</code></td>
-                            <td><code>Modelo sedán familiar</code></td>
-                        </tr>
+                        <!-- Will be populated dynamically -->
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Empty State -->
+            <div id="historyEmpty" style="text-align: center; padding: 40px; display: none;">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" style="margin: 0 auto 16px;">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 6v6l4 2"/>
+                </svg>
+                <p style="color: var(--text-secondary); font-size: 15px;">No hay historial disponible para esta marca/modelo.</p>
             </div>
         </div>
         <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button>
-            <button type="button" class="btn btn-primary">
+            <button type="button" class="btn btn-primary" onclick="exportHistory()">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
@@ -336,28 +388,15 @@
         <div class="modal-body">
             <div class="form-group">
                 <label class="form-label">Tipo de Vehículo</label>
-                <select class="form-select">
+                <select class="form-select" id="filterTipo">
                     <option value="">Todos</option>
-                    <option value="sedan">Sedán</option>
-                    <option value="suv">SUV</option>
-                    <option value="pickup">Pick-up</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Rango de Fechas</label>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                    <input type="date" class="form-input" placeholder="Desde">
-                    <input type="date" class="form-input" placeholder="Hasta">
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Usuario que Registró</label>
-                <select class="form-select">
-                    <option value="">Todos los usuarios</option>
-                    <option value="1">Admin User</option>
-                    <option value="2">John Doe</option>
+                    <option value="Sedán">Sedán</option>
+                    <option value="SUV">SUV</option>
+                    <option value="Pick-up">Pick-up</option>
+                    <option value="Compacto">Compacto</option>
+                    <option value="Deportivo">Deportivo</option>
+                    <option value="Van">Van</option>
+                    <option value="Camión">Camión</option>
                 </select>
             </div>
 
@@ -367,50 +406,633 @@
             </div>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-modal-close>Limpiar</button>
-            <button type="button" class="btn btn-primary" data-modal-close>Aplicar Filtros</button>
+            <button type="button" class="btn btn-secondary" onclick="clearFilters()">Limpiar</button>
+            <button type="button" class="btn btn-primary" onclick="applyFilters()">Aplicar Filtros</button>
         </div>
     </div>
 </div>
 
+<!-- CSS for loading animation -->
+<style>
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+</style>
+
 <script>
-// Search functionality
-document.getElementById('searchInput').addEventListener('input', function(e) {
-    const searchTerm = e.target.value.toLowerCase();
-    const rows = document.querySelectorAll('#marcasTable tbody tr');
+// ==========================================
+// PAGINATION AND TABLE MANAGEMENT
+// ==========================================
+
+let currentPage = 1;
+let itemsPerPage = 5;
+let allRows = [];
+let filteredRows = [];
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Initializing Marcas/Modelos page...');
     
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
-    });
+    // Verify critical elements exist
+    const criticalElements = {
+        'searchInput': document.getElementById('searchInput'),
+        'itemsPerPage': document.getElementById('itemsPerPage'),
+        'tableBody': document.getElementById('tableBody'),
+        'paginationContainer': document.getElementById('paginationContainer'),
+        'createModal': document.getElementById('createModal'),
+        'deleteModal': document.getElementById('deleteModal'),
+        'historyModal': document.getElementById('historyModal'),
+        'filterModal': document.getElementById('filterModal')
+    };
+    
+    let allPresent = true;
+    for (const [name, element] of Object.entries(criticalElements)) {
+        if (!element) {
+            console.error(`❌ Missing element: ${name}`);
+            allPresent = false;
+        } else {
+            console.log(`✅ Found: ${name}`);
+        }
+    }
+    
+    if (allPresent) {
+        console.log('✅ All critical elements found');
+        allRows = Array.from(document.querySelectorAll('#tableBody tr'));
+        filteredRows = [...allRows];
+        updatePagination();
+        console.log(`📊 Loaded ${allRows.length} records`);
+    } else {
+        console.error('❌ Page initialization failed - missing elements');
+    }
 });
 
-// Logo preview
-document.getElementById('logoInput').addEventListener('change', function(e) {
+// Search functionality
+document.getElementById('searchInput')?.addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    filteredRows = allRows.filter(row => {
+        const text = row.textContent.toLowerCase();
+        return text.includes(searchTerm);
+    });
+    currentPage = 1;
+    updatePagination();
+});
+
+// Items per page change
+document.getElementById('itemsPerPage')?.addEventListener('change', function(e) {
+    itemsPerPage = parseInt(e.target.value);
+    currentPage = 1;
+    updatePagination();
+});
+
+// Update pagination
+function updatePagination() {
+    const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    
+    // Hide all rows
+    allRows.forEach(row => row.style.display = 'none');
+    
+    // Show current page rows
+    filteredRows.slice(start, end).forEach(row => row.style.display = '');
+    
+    // Update showing text
+    const actualEnd = Math.min(end, filteredRows.length);
+    const showingStart = document.getElementById('showingStart');
+    const showingEnd = document.getElementById('showingEnd');
+    const totalRecords = document.getElementById('totalRecords');
+    
+    if (showingStart) showingStart.textContent = filteredRows.length > 0 ? start + 1 : 0;
+    if (showingEnd) showingEnd.textContent = actualEnd;
+    if (totalRecords) totalRecords.textContent = filteredRows.length;
+    
+    // Generate pagination buttons
+    generatePaginationButtons(totalPages);
+}
+
+// Generate pagination buttons
+function generatePaginationButtons(totalPages) {
+    const container = document.getElementById('paginationContainer');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    // Previous button
+    const prevBtn = createPaginationButton('prev', currentPage === 1);
+    prevBtn.onclick = () => {
+        if (currentPage > 1) {
+            currentPage--;
+            updatePagination();
+        }
+    };
+    container.appendChild(prevBtn);
+    
+    // Page number buttons
+    const maxButtons = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+    let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+    
+if (endPage - startPage < maxButtons - 1) {
+        startPage = Math.max(1, endPage - maxButtons + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'pagination-item' + (i === currentPage ? ' active' : '');
+        btn.textContent = i;
+        btn.onclick = () => {
+            currentPage = i;
+            updatePagination();
+        };
+        container.appendChild(btn);
+    }
+    
+    // Next button
+    const nextBtn = createPaginationButton('next', currentPage === totalPages || totalPages === 0);
+    nextBtn.onclick = () => {
+        if (currentPage < totalPages) {
+            currentPage++;
+            updatePagination();
+        }
+    };
+    container.appendChild(nextBtn);
+}
+
+// Create pagination button helper
+function createPaginationButton(type, disabled) {
+    const btn = document.createElement('button');
+    btn.className = 'pagination-item';
+    if (disabled) btn.disabled = true;
+    
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', '16');
+    svg.setAttribute('height', '16');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
+    path.setAttribute('stroke-width', '2');
+    path.setAttribute('d', type === 'prev' ? 'M15 19l-7-7 7-7' : 'M9 5l7 7-7 7');
+    
+    svg.appendChild(path);
+    btn.appendChild(svg);
+    
+    return btn;
+}
+
+// ==========================================
+// LOGO PREVIEW AND UPLOAD
+// ==========================================
+
+document.getElementById('logoInput')?.addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (file) {
         const reader = new FileReader();
         reader.onload = function(e) {
             const preview = document.getElementById('logoPreview');
-            preview.querySelector('img').src = e.target.result;
-            preview.style.display = 'block';
+            const img = document.getElementById('logoPreviewImg');
+            if (img && preview) {
+                img.src = e.target.result;
+                preview.style.display = 'block';
+            }
+            const fileText = document.getElementById('fileText');
+            if (fileText) fileText.textContent = file.name;
         };
         reader.readAsDataURL(file);
     }
 });
 
-// Edit marca function
-function editMarca(id) {
-    document.getElementById('modalTitle').textContent = 'Editar Marca/Modelo';
-    document.getElementById('marcaForm').action = `/marcas_modelos/${id}/editar`;
-    // Aquí cargarías los datos mediante AJAX
-    window.AppUtils.openModal('createModal');
+function clearLogo() {
+    const logoInput = document.getElementById('logoInput');
+    const logoPreview = document.getElementById('logoPreview');
+    const logoPreviewImg = document.getElementById('logoPreviewImg');
+    const fileText = document.getElementById('fileText');
+    
+    if (logoInput) logoInput.value = '';
+    if (logoPreview) logoPreview.style.display = 'none';
+    if (logoPreviewImg) logoPreviewImg.src = '';
+    if (fileText) fileText.textContent = 'Subir logo';
 }
 
-// View history function
-function viewHistory(id) {
-    // Aquí cargarías el historial mediante AJAX
-    window.AppUtils.openModal('historyModal');
+// ==========================================
+// CREATE, EDIT, DELETE MARCA/MODELO
+// ==========================================
+
+function createNewMarca() {
+    const modalTitle = document.getElementById('modalTitle');
+    const submitBtnText = document.getElementById('submitBtnText');
+    const marcaForm = document.getElementById('marcaForm');
+    const marcaId = document.getElementById('marcaId');
+    
+    if (modalTitle) modalTitle.textContent = 'Nueva Marca/Modelo';
+    if (submitBtnText) submitBtnText.textContent = 'Guardar Marca/Modelo';
+    if (marcaForm) {
+        marcaForm.action = '{{ url_for("catalogo.crear_marca_modelo") }}';
+        marcaForm.reset();
+    }
+    if (marcaId) marcaId.value = '';
+    
+    clearLogo();
+    
+    if (window.AppUtils && window.AppUtils.openModal) {
+        window.AppUtils.openModal('createModal');
+    } else {
+        const modal = document.getElementById('createModal');
+        if (modal) modal.classList.add('active');
+    }
+}
+
+function editMarca(id, marca, modelo, tipo, descripcion, logoPath) {
+    const modalTitle = document.getElementById('modalTitle');
+    const submitBtnText = document.getElementById('submitBtnText');
+    const marcaForm = document.getElementById('marcaForm');
+    const marcaId = document.getElementById('marcaId');
+    const marcaInput = document.getElementById('marcaInput');
+    const modeloInput = document.getElementById('modeloInput');
+    const tipoSelect = document.getElementById('tipoSelect');
+    const descripcionInput = document.getElementById('descripcionInput');
+    
+    if (modalTitle) modalTitle.textContent = 'Editar Marca/Modelo';
+    if (submitBtnText) submitBtnText.textContent = 'Actualizar Marca/Modelo';
+    if (marcaForm) marcaForm.action = `/catalogo/marcas_modelos/${id}/editar`;
+    if (marcaId) marcaId.value = id;
+    if (marcaInput) marcaInput.value = marca;
+    if (modeloInput) modeloInput.value = modelo;
+    if (tipoSelect) tipoSelect.value = tipo;
+    if (descripcionInput) descripcionInput.value = descripcion || '';
+    
+    // Show existing logo if available
+    if (logoPath) {
+        const preview = document.getElementById('logoPreview');
+        const img = document.getElementById('logoPreviewImg');
+        const fileText = document.getElementById('fileText');
+        
+        if (img && preview) {
+            img.src = '{{ url_for("static", filename="") }}' + logoPath;
+            preview.style.display = 'block';
+        }
+        if (fileText) fileText.textContent = 'Cambiar logo';
+    } else {
+        clearLogo();
+    }
+    
+    if (window.AppUtils && window.AppUtils.openModal) {
+        window.AppUtils.openModal('createModal');
+    } else {
+        const modal = document.getElementById('createModal');
+        if (modal) modal.classList.add('active');
+    }
+}
+
+function deleteMarca(id, marca, modelo) {
+    const deleteMarcaId = document.getElementById('deleteMarcaId');
+    const deleteMarcaName = document.getElementById('deleteMarcaName');
+    const deleteForm = document.getElementById('deleteForm');
+    
+    if (deleteMarcaId) deleteMarcaId.value = id;
+    if (deleteMarcaName) deleteMarcaName.textContent = `${marca} ${modelo}`;
+    if (deleteForm) deleteForm.action = `/catalogo/marcas_modelos/${id}/eliminar`;
+    
+    if (window.AppUtils && window.AppUtils.openModal) {
+        window.AppUtils.openModal('deleteModal');
+    } else {
+        const modal = document.getElementById('deleteModal');
+        if (modal) modal.classList.add('active');
+    }
+}
+
+// ==========================================
+// FILTERS
+// ==========================================
+
+function applyFilters() {
+    const filterTipo = document.getElementById('filterTipo');
+    const conLogo = document.getElementById('conLogo');
+    
+    const tipo = filterTipo ? filterTipo.value : '';
+    const soloConLogo = conLogo ? conLogo.checked : false;
+    
+    filteredRows = allRows.filter(row => {
+        let show = true;
+        
+        // Filter by tipo
+        if (tipo) {
+            const rowTipo = row.getAttribute('data-tipo');
+            show = show && rowTipo === tipo;
+        }
+        
+        // Filter by logo
+        if (soloConLogo) {
+            const hasLogo = row.querySelector('td:nth-child(2) img') !== null;
+            show = show && hasLogo;
+        }
+        
+        return show;
+    });
+    
+    currentPage = 1;
+    updatePagination();
+    
+    if (window.AppUtils && window.AppUtils.closeModal) {
+        window.AppUtils.closeModal('filterModal');
+    } else {
+        const modal = document.getElementById('filterModal');
+        if (modal) modal.classList.remove('active');
+    }
+}
+
+function clearFilters() {
+    const filterTipo = document.getElementById('filterTipo');
+    const conLogo = document.getElementById('conLogo');
+    
+    if (filterTipo) filterTipo.value = '';
+    if (conLogo) conLogo.checked = false;
+    
+    filteredRows = [...allRows];
+    currentPage = 1;
+    updatePagination();
+}
+
+// ==========================================
+// HISTORY MODAL
+// ==========================================
+
+let allHistoryRecords = [];
+let currentHistoryId = null;
+
+async function viewHistory(id) {
+    console.log('📜 Opening history for ID:', id);
+    currentHistoryId = id;
+    
+    // Get elements
+    const loadingEl = document.getElementById('historyLoading');
+    const filtersEl = document.getElementById('historyFilters');
+    const tableEl = document.getElementById('historyTableContainer');
+    const emptyEl = document.getElementById('historyEmpty');
+    const marcaNameEl = document.getElementById('historyMarcaName');
+    
+    // Check if elements exist
+    if (!loadingEl || !filtersEl || !tableEl || !emptyEl || !marcaNameEl) {
+        console.error('❌ History modal elements not found');
+        alert('Error: No se pudo cargar el modal de historial. Verifica que el modal esté en el HTML.');
+        return;
+    }
+    
+    console.log('✅ All history modal elements found');
+    
+    // Show loading
+    loadingEl.style.display = 'block';
+    filtersEl.style.display = 'none';
+    tableEl.style.display = 'none';
+    emptyEl.style.display = 'none';
+    
+    // Open modal
+    if (window.AppUtils && window.AppUtils.openModal) {
+        window.AppUtils.openModal('historyModal');
+    } else {
+        const modal = document.getElementById('historyModal');
+        if (modal) modal.classList.add('active');
+    }
+    
+    console.log('🌐 Fetching history from server...');
+    
+    try {
+        const response = await fetch(`/catalogo/marcas_modelos/${id}/historial`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('📦 Received data:', data);
+        
+        if (data.success) {
+            allHistoryRecords = data.historial || [];
+            marcaNameEl.textContent = data.marca_nombre || 'Desconocida';
+            
+            // Initialize filters
+            initHistoryFilters();
+            
+            renderHistory(allHistoryRecords);
+            
+            // Hide loading, show content
+            loadingEl.style.display = 'none';
+            
+            if (allHistoryRecords.length > 0) {
+                filtersEl.style.display = 'flex';
+                tableEl.style.display = 'block';
+                console.log(`✅ Loaded ${allHistoryRecords.length} history records`);
+            } else {
+                emptyEl.style.display = 'block';
+                console.log('ℹ️ No history records found');
+            }
+        } else {
+            throw new Error(data.message || 'Error al cargar historial');
+        }
+    } catch (error) {
+        console.error('❌ Error loading history:', error);
+        loadingEl.style.display = 'none';
+        emptyEl.style.display = 'block';
+        
+        const emptyText = emptyEl.querySelector('p');
+        if (emptyText) {
+            emptyText.textContent = 'Error al cargar el historial. Por favor, intenta nuevamente.';
+        }
+    }
+}
+
+function renderHistory(records) {
+    const tbody = document.getElementById('historyTableBody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    if (records.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 40px; color: var(--text-secondary);">No hay registros para mostrar</td></tr>';
+        return;
+    }
+    
+    records.forEach(record => {
+        const row = document.createElement('tr');
+        
+        // Fecha/Hora
+        const fechaCell = document.createElement('td');
+        fechaCell.textContent = record.fecha_hora;
+        row.appendChild(fechaCell);
+        
+        // Usuario
+        const usuarioCell = document.createElement('td');
+        usuarioCell.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="user-avatar" style="width: 28px; height: 28px; font-size: 11px;">${record.usuario_iniciales}</div>
+                <span>${record.usuario_nombre}</span>
+            </div>
+        `;
+        row.appendChild(usuarioCell);
+        
+        // Acción
+        const accionCell = document.createElement('td');
+        let badgeClass = 'badge-info';
+        let accionText = record.tipo_operacion;
+        
+        if (record.tipo_operacion === 'INSERT') {
+            badgeClass = 'badge-success';
+            accionText = 'Creación';
+        } else if (record.tipo_operacion === 'UPDATE') {
+            badgeClass = 'badge-warning';
+            accionText = 'Edición';
+        } else if (record.tipo_operacion === 'DELETE') {
+            badgeClass = 'badge-danger';
+            accionText = 'Eliminación';
+        }
+        
+        accionCell.innerHTML = `<span class="badge ${badgeClass}">${accionText}</span>`;
+        row.appendChild(accionCell);
+        
+        // Detalles
+        const detallesCell = document.createElement('td');
+        detallesCell.innerHTML = formatHistoryDetails(record);
+        row.appendChild(detallesCell);
+        
+        tbody.appendChild(row);
+    });
+}
+
+function formatHistoryDetails(record) {
+    if (record.tipo_operacion === 'INSERT') {
+        return `
+            <div style="font-size: 13px;">
+                <strong>Registro Inicial:</strong> ${record.marca} ${record.modelo}<br>
+                <span style="color: var(--text-secondary);">Tipo: ${record.tipo}</span>
+            </div>
+        `;
+    } else if (record.tipo_operacion === 'DELETE') {
+        return `
+            <div style="font-size: 13px;">
+                <strong>Registro Eliminado:</strong> ${record.marca} ${record.modelo}<br>
+                <span style="color: var(--text-secondary);">Tipo: ${record.tipo}</span>
+            </div>
+        `;
+    } else if (record.tipo_operacion === 'UPDATE') {
+        let changes = [];
+        
+        if (record.cambios) {
+            record.cambios.forEach(cambio => {
+                changes.push(`
+                    <div style="margin-bottom: 8px; padding: 8px; background: var(--bg-secondary); border-radius: 6px;">
+                        <strong>${cambio.campo}:</strong><br>
+                        <span style="color: var(--text-secondary); font-size: 12px;">
+                            <code style="background: rgba(245, 101, 101, 0.1); padding: 2px 6px; border-radius: 3px;">${cambio.valor_anterior || 'N/A'}</code>
+                            →
+                            <code style="background: rgba(76, 175, 80, 0.1); padding: 2px 6px; border-radius: 3px;">${cambio.valor_nuevo || 'N/A'}</code>
+                        </span>
+                    </div>
+                `);
+            });
+        }
+        
+        return changes.length > 0 ? changes.join('') : '<span style="color: var(--text-secondary);">Sin cambios específicos registrados</span>';
+    }
+    
+    return '-';
+}
+
+function initHistoryFilters() {
+    const searchInput = document.getElementById('historySearch');
+    const actionSelect = document.getElementById('historyFilterAction');
+    
+    if (searchInput) {
+        searchInput.removeEventListener('input', filterHistory);
+        searchInput.addEventListener('input', filterHistory);
+        searchInput.value = '';
+    }
+    
+    if (actionSelect) {
+        actionSelect.removeEventListener('change', filterHistory);
+        actionSelect.addEventListener('change', filterHistory);
+        actionSelect.value = '';
+    }
+}
+
+function filterHistory() {
+    if (!allHistoryRecords || allHistoryRecords.length === 0) return;
+    
+    const searchInput = document.getElementById('historySearch');
+    const actionSelect = document.getElementById('historyFilterAction');
+    
+    if (!searchInput || !actionSelect) return;
+    
+    const searchTerm = searchInput.value.toLowerCase();
+    const actionFilter = actionSelect.value;
+    
+    let filtered = allHistoryRecords;
+    
+    // Filter by search term
+    if (searchTerm) {
+        filtered = filtered.filter(record => {
+            const searchableText = `${record.marca} ${record.modelo} ${record.tipo} ${record.usuario_nombre}`.toLowerCase();
+            return searchableText.includes(searchTerm);
+        });
+    }
+    
+    // Filter by action type
+    if (actionFilter) {
+        filtered = filtered.filter(record => record.tipo_operacion === actionFilter);
+    }
+    
+    renderHistory(filtered);
+}
+
+function exportHistory() {
+    if (!allHistoryRecords || allHistoryRecords.length === 0) {
+        alert('No hay datos para exportar');
+        return;
+    }
+    
+    try {
+        // CSV header
+        let csv = 'Fecha/Hora,Usuario,Acción,Marca,Modelo,Tipo,Descripción\n';
+        
+        // CSV rows
+        allHistoryRecords.forEach(record => {
+            let accionText = record.tipo_operacion;
+            if (record.tipo_operacion === 'INSERT') accionText = 'Creación';
+            else if (record.tipo_operacion === 'UPDATE') accionText = 'Edición';
+            else if (record.tipo_operacion === 'DELETE') accionText = 'Eliminación';
+            
+            const descripcion = (record.descripcion || '').replace(/"/g, '""');
+            
+            csv += `"${record.fecha_hora}","${record.usuario_nombre}","${accionText}","${record.marca}","${record.modelo}","${record.tipo}","${descripcion}"\n`;
+        });
+        
+        // Create download link
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+        const filename = `historial_marca_modelo_${currentHistoryId}_${timestamp}.csv`;
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Clean up
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+        
+        console.log('✅ History exported successfully');
+    } catch (error) {
+        console.error('❌ Error exporting history:', error);
+        alert('Error al exportar el historial. Por favor, intenta nuevamente.');
+    }
 }
 </script>
 {% endblock %}

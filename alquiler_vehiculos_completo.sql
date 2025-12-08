@@ -127,15 +127,15 @@ CREATE TABLE parentescos (
 CREATE TABLE propietarios (
     id INT PRIMARY KEY AUTO_INCREMENT,
     usuario_id INT,
-    nombre_apellido VARCHAR(100) NOT NULL,
+    nombre_apellido VARCHAR(255) NOT NULL,
     documento_buena_conducta_path VARCHAR(255) DEFAULT NULL,
-    cedula VARCHAR(20) UNIQUE,
+    cedula VARCHAR(255) UNIQUE,
     cedula_path VARCHAR(255) DEFAULT NULL,
-    licencia VARCHAR(50) UNIQUE,
+    licencia VARCHAR(255) UNIQUE,
     licencia_path VARCHAR(255) DEFAULT NULL,
     direccion VARCHAR(255),
-    telefono VARCHAR(20),
-    email VARCHAR(100),
+    telefono VARCHAR(255),
+    email VARCHAR(255),
     usuario_registro_id INT NOT NULL,
     fecha_hora_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     usuario_actualizo_id INT NOT NULL,
@@ -1649,9 +1649,37 @@ END$$
 
 DELIMITER ;
 
+USE alquiler_vehiculos;
+
+ALTER TABLE propietarios
+    MODIFY COLUMN cedula VARCHAR(255),
+    MODIFY COLUMN licencia VARCHAR(255);
+
+ALTER TABLE inquilinos
+    MODIFY COLUMN cedula VARCHAR(255),
+    MODIFY COLUMN licencia VARCHAR(255);
+
+ALTER TABLE bancos
+    MODIFY COLUMN cuenta VARCHAR(255),
+    MODIFY COLUMN cedula VARCHAR(255);
+
+-- Historical tables
+ALTER TABLE historico_propietarios
+    MODIFY COLUMN cedula VARCHAR(255),
+    MODIFY COLUMN licencia VARCHAR(255);
+
+ALTER TABLE historico_inquilinos
+    MODIFY COLUMN cedula VARCHAR(255),
+    MODIFY COLUMN licencia VARCHAR(255);
+
+ALTER TABLE historico_bancos
+    MODIFY COLUMN cuenta VARCHAR(255),
+    MODIFY COLUMN cedula VARCHAR(255);
 -- ================================================================================
 -- SECCIÓN 4: DATOS INICIALES (INSERTS)
 -- ================================================================================
+
+
 
 -- Usuario administrador inicial (password: 'admin123' - CAMBIAR INMEDIATAMENTE)
 INSERT INTO usuarios (username, password, rol, nombre, apellido, email, telefono, activo) VALUES

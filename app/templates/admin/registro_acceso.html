@@ -2,6 +2,11 @@
 
 {% block title %}Registro de Accesos - AlexRentaCar{% endblock %}
 
+{% block breadcrumb %}
+<span class="breadcrumb-item">Administración</span>
+<span class="breadcrumb-item">Registro Accesos</span>
+{% endblock %}
+
 {% block extra_css %}
 <style>
     /* Stats Cards Compactas */
@@ -148,6 +153,40 @@
         height: 300px;
         margin-top: 20px;
     }
+    
+    /* Paginación mejorada */
+    .table-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+        border-top: 1px solid var(--divider-color);
+        background: var(--bg-primary);
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+    
+    .pagination-item:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    @media (max-width: 768px) {
+        .table-footer {
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .table-footer > div:first-child {
+            flex-direction: column;
+            width: 100%;
+        }
+        
+        .pagination {
+            justify-content: center;
+            width: 100%;
+        }
+    }
 </style>
 {% endblock %}
 
@@ -160,11 +199,11 @@
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
                 </svg>
-            </div>
+            </div>        
+            <div class="stat-value" id="totalAccesosHoy">0</div>
+            <div class="stat-label">Total Accesos Hoy</div>
             <span id="cambioHoy" style="font-size: 11px; color: var(--success); font-weight: 600;">+0%</span>
         </div>
-        <div class="stat-value" id="totalAccesosHoy">0</div>
-        <div class="stat-label">Total Accesos Hoy</div>
     </div>
 
     <div class="stat-card">
@@ -174,10 +213,10 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
             </div>
+            <div class="stat-value" id="accesosExitosos">0</div>
+            <div class="stat-label">Accesos Exitosos</div>
             <span id="tasaExito" style="font-size: 11px; color: var(--success); font-weight: 600;">0%</span>
         </div>
-        <div class="stat-value" id="accesosExitosos">0</div>
-        <div class="stat-label">Accesos Exitosos</div>
     </div>
 
     <div class="stat-card">
@@ -187,10 +226,11 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                 </svg>
             </div>
+            <div class="stat-value" id="accesosFallidos">0</div>
+            <div class="stat-label">Accesos Fallidos</div>
             <span id="tasaFallo" style="font-size: 11px; color: var(--danger); font-weight: 600;">0%</span>
         </div>
-        <div class="stat-value" id="accesosFallidos">0</div>
-        <div class="stat-label">Accesos Fallidos</div>
+
     </div>
 
     <div class="stat-card">
@@ -200,10 +240,10 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
                 </svg>
             </div>
+            <div class="stat-value" id="usuariosActivos">0</div>
+            <div class="stat-label">Usuarios Activos</div>
             <span style="font-size: 10px; color: var(--text-tertiary); font-weight: 600;">24h</span>
         </div>
-        <div class="stat-value" id="usuariosActivos">0</div>
-        <div class="stat-label">Usuarios Activos</div>
     </div>
 </div>
 
@@ -250,9 +290,6 @@
                     <option value="login">Login</option>
                     <option value="logout">Logout</option>
                     <option value="login_failed">Login Fallido</option>
-                    <!--<option value="create">Crear</option>
-                    <option value="update">Actualizar</option>
-                    <option value="delete">Eliminar</option>-->
                 </select>
             </div>
             <div class="form-group" style="margin: 0;">
@@ -271,13 +308,71 @@
         <table class="table">
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Usuario</th>
-                    <th>Acción</th>
-                    <th>Fecha y Hora</th>
-                    <th>IP Address</th>
-                    <th>Detalles</th>
-                    <th>Acciones</th>
+                    <th>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="8" y1="6" x2="21" y2="6"></line>
+                                <line x1="8" y1="12" x2="21" y2="12"></line>
+                                <line x1="8" y1="18" x2="21" y2="18"></line>
+                                <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                                <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                                <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                            </svg>
+                            ID
+                        </div>
+                    </th>
+                    <th>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            Usuario
+                        </div>
+                    </th>
+                    <th>
+                        <div style="display: flex; align-items: center; gap: 6px;">        
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-three-dots-vertical" viewBox="0 0 16 16">
+                            <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0"/>
+                            </svg>
+                            Acción
+                        </div>
+                    </th>
+                    <th>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-calendar2-week" viewBox="0 0 16 16">
+                                <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M2 2a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z"/>
+                                <path d="M2.5 4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5H3a.5.5 0 0 1-.5-.5zM11 7.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-5 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5z"/>
+                            </svg>
+                            Fecha y Hora
+                         </div>
+                    </th>
+                    <th>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-geo-fill" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M4 4a4 4 0 1 1 4.5 3.969V13.5a.5.5 0 0 1-1 0V7.97A4 4 0 0 1 4 3.999zm2.493 8.574a.5.5 0 0 1-.411.575c-.712.118-1.28.295-1.655.493a1.3 1.3 0 0 0-.37.265.3.3 0 0 0-.057.09V14l.002.008.016.033a.6.6 0 0 0 .145.15c.165.13.435.27.813.395.751.25 1.82.414 3.024.414s2.273-.163 3.024-.414c.378-.126.648-.265.813-.395a.6.6 0 0 0 .146-.15l.015-.033L12 14v-.004a.3.3 0 0 0-.057-.09 1.3 1.3 0 0 0-.37-.264c-.376-.198-.943-.375-1.655-.493a.5.5 0 1 1 .164-.986c.77.127 1.452.328 1.957.594C12.5 13 13 13.4 13 14c0 .426-.26.752-.544.977-.29.228-.68.413-1.116.558-.878.293-2.059.465-3.34.465s-2.462-.172-3.34-.465c-.436-.145-.826-.33-1.116-.558C3.26 14.752 3 14.426 3 14c0-.599.5-1 .961-1.243.505-.266 1.187-.467 1.957-.594a.5.5 0 0 1 .575.411"/>
+                            </svg>
+                            IP Address
+                        </div>
+                    </th>
+                    <th>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-list-task" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd" d="M2 2.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5V3a.5.5 0 0 0-.5-.5zM3 3H2v1h1z"/>
+                                <path d="M5 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5M5.5 7a.5.5 0 0 0 0 1h9a.5.5 0 0 0 0-1zm0 4a.5.5 0 0 0 0 1h9a.5.5 0 0 0 0-1z"/>
+                                <path fill-rule="evenodd" d="M1.5 7a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5H2a.5.5 0 0 1-.5-.5zM2 7h1v1H2zm0 3.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zm1 .5H2v1h1z"/>
+                            </svg>
+                            Detalles
+                        </div>
+                    </th>
+                    <th>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-grid" viewBox="0 0 16 16">
+                            <path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5zM2.5 2a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5zm6.5.5A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5zM1 10.5A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5zm6.5.5A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5z"/>
+                            </svg>
+                            Acciones
+                        </div>
+                    </th>
                 </tr>
             </thead>
             <tbody id="tablaRegistros">
@@ -285,7 +380,7 @@
                 <tr data-usuario-id="{{ registro.usuario_id }}" 
                     data-accion="{{ registro.accion }}" 
                     data-fecha="{{ registro.fecha_hora.strftime('%Y-%m-%d') }}">
-                    <td><strong>#{{ registro.id }}</strong></td>
+                    <td><strong class="badge badge-primary">#{{ registro.id }}</strong></td>
                     <td>
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <div style="width: 32px; height: 32px; background: linear-gradient(135deg, var(--primary), var(--primary-light)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 12px;">
@@ -354,55 +449,26 @@
     </div>
 
     <!-- Pagination -->
-    {% if registros.pages > 1 %}
     <div class="table-footer">
-        <div style="font-size: 14px; color: var(--text-secondary);">
-            Mostrando {{ registros.per_page * (registros.page - 1) + 1 }} - 
-            {{ registros.per_page * registros.page if registros.page < registros.pages else registros.total }} 
-            de {{ registros.total }} registros
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 14px; color: var(--text-secondary);">
+                Mostrando <strong id="paginaInicio">0</strong> - <strong id="paginaFin">0</strong> de <strong id="totalRegistros">0</strong> registros
+            </span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label style="font-size: 14px; color: var(--text-secondary);">Por página:</label>
+                <select id="itemsPorPagina" class="form-select" style="width: auto; padding: 6px 32px 6px 12px;">
+                    <option value="5" selected>5</option>
+                    <option value="10" >10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
         </div>
-        <div class="pagination">
-            {% if registros.has_prev %}
-            <a href="{{ url_for('admin.registro_acceso', page=registros.prev_num) }}" class="pagination-item">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                </svg>
-            </a>
-            {% else %}
-            <button class="pagination-item" disabled>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                </svg>
-            </button>
-            {% endif %}
-
-            {% for page_num in registros.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
-                {% if page_num %}
-                    <a href="{{ url_for('admin.registro_acceso', page=page_num) }}" 
-                       class="pagination-item {% if page_num == registros.page %}active{% endif %}">
-                        {{ page_num }}
-                    </a>
-                {% else %}
-                    <span class="pagination-item" style="cursor: default;">...</span>
-                {% endif %}
-            {% endfor %}
-
-            {% if registros.has_next %}
-            <a href="{{ url_for('admin.registro_acceso', page=registros.next_num) }}" class="pagination-item">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                </svg>
-            </a>
-            {% else %}
-            <button class="pagination-item" disabled>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                </svg>
-            </button>
-            {% endif %}
+        <div class="pagination" id="paginacionControles">
+            <!-- Se generará dinámicamente -->
         </div>
     </div>
-    {% endif %}
 </div>
 
 <!-- Offcanvas - Historial de Usuario -->
@@ -465,7 +531,13 @@
             </div>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-secondary" data-modal-close>Cerrar</button>
+            <button class="btn btn-secondary" data-modal-close>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-square" viewBox="0 0 16 16">
+                    <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"/>
+                    <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/>
+                </svg>
+                Cerrar
+            </button>
             <button class="btn btn-primary" onclick="exportarGrafico()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
@@ -483,11 +555,15 @@
 // ============== VARIABLES GLOBALES ============== //
 let weeklyChart = null;
 let todosLosRegistros = [];
+let paginaActual = 1;
+let itemsPorPagina = 5;
+let registrosFiltrados = [];
 
 // ============== INICIALIZACIÓN ============== //
 document.addEventListener('DOMContentLoaded', function() {
     cargarDatosIniciales();
     inicializarFiltros();
+    inicializarPaginacion();
     actualizarEstadisticas();
 });
 
@@ -527,7 +603,7 @@ function aplicarFiltros() {
     const fechaHasta = document.getElementById('filtroFechaHasta').value;
 
     const filas = document.querySelectorAll('#tablaRegistros tr[data-usuario-id]');
-    let visibles = 0;
+    registrosFiltrados = [];
 
     filas.forEach(fila => {
         const textoUsuario = fila.querySelector('td:nth-child(2)').textContent.toLowerCase();
@@ -541,12 +617,16 @@ function aplicarFiltros() {
         if (fechaDesde && fechaFila < fechaDesde) mostrar = false;
         if (fechaHasta && fechaFila > fechaHasta) mostrar = false;
 
-        fila.style.display = mostrar ? '' : 'none';
-        if (mostrar) visibles++;
+        if (mostrar) {
+            registrosFiltrados.push(fila);
+        }
     });
 
-    // Mostrar mensaje si no hay resultados
-    mostrarMensajeVacio(visibles === 0);
+    // Resetear a la primera página
+    paginaActual = 1;
+    
+    // Aplicar paginación a los resultados filtrados
+    aplicarPaginacion();
     
     // Actualizar badges de filtros activos
     actualizarBadgesFiltros();
@@ -859,6 +939,143 @@ function actualizarEstadisticas() {
 // ============== EXPORTAR DATOS ============== //
 function exportarDatos() {
     window.location.href = '/admin/api/exportar-accesos?formato=csv';
+}
+
+// ============== PAGINACIÓN ============== //
+function inicializarPaginacion() {
+    const selectItems = document.getElementById('itemsPorPagina');
+    
+    // Inicializar registros filtrados con todos los registros
+    registrosFiltrados = Array.from(document.querySelectorAll('#tablaRegistros tr[data-usuario-id]'));
+    
+    // Event listener para cambio de items por página
+    selectItems.addEventListener('change', function() {
+        itemsPorPagina = parseInt(this.value);
+        paginaActual = 1;
+        aplicarPaginacion();
+    });
+    
+    // Aplicar paginación inicial
+    aplicarPaginacion();
+}
+
+function aplicarPaginacion() {
+    const todasLasFilas = document.querySelectorAll('#tablaRegistros tr[data-usuario-id]');
+    
+    // Ocultar todas las filas primero
+    todasLasFilas.forEach(fila => fila.style.display = 'none');
+    
+    // Si no hay registros filtrados, mostrar mensaje
+    if (registrosFiltrados.length === 0) {
+        mostrarMensajeVacio(true);
+        actualizarInfoPaginacion(0, 0, 0);
+        document.getElementById('paginacionControles').innerHTML = '';
+        return;
+    }
+    
+    mostrarMensajeVacio(false);
+    
+    // Calcular índices
+    const totalRegistros = registrosFiltrados.length;
+    const totalPaginas = Math.ceil(totalRegistros / itemsPorPagina);
+    const inicio = (paginaActual - 1) * itemsPorPagina;
+    const fin = Math.min(inicio + itemsPorPagina, totalRegistros);
+    
+    // Mostrar solo los registros de la página actual
+    for (let i = inicio; i < fin; i++) {
+        registrosFiltrados[i].style.display = '';
+    }
+    
+    // Actualizar información de paginación
+    actualizarInfoPaginacion(inicio + 1, fin, totalRegistros);
+    
+    // Generar controles de paginación
+    generarControlesPaginacion(totalPaginas);
+}
+
+function actualizarInfoPaginacion(inicio, fin, total) {
+    document.getElementById('paginaInicio').textContent = inicio;
+    document.getElementById('paginaFin').textContent = fin;
+    document.getElementById('totalRegistros').textContent = total;
+}
+
+function generarControlesPaginacion(totalPaginas) {
+    const controles = document.getElementById('paginacionControles');
+    
+    if (totalPaginas <= 1) {
+        controles.innerHTML = '';
+        return;
+    }
+    
+    let html = '';
+    
+    // Botón anterior
+    html += `
+        <button class="pagination-item" ${paginaActual === 1 ? 'disabled' : ''} onclick="cambiarPagina(${paginaActual - 1})">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+        </button>
+    `;
+    
+    // Páginas
+    const maxPaginasVisibles = 5;
+    let inicioPaginas = Math.max(1, paginaActual - Math.floor(maxPaginasVisibles / 2));
+    let finPaginas = Math.min(totalPaginas, inicioPaginas + maxPaginasVisibles - 1);
+    
+    // Ajustar si estamos cerca del final
+    if (finPaginas - inicioPaginas < maxPaginasVisibles - 1) {
+        inicioPaginas = Math.max(1, finPaginas - maxPaginasVisibles + 1);
+    }
+    
+    // Primera página si no está visible
+    if (inicioPaginas > 1) {
+        html += `<button class="pagination-item" onclick="cambiarPagina(1)">1</button>`;
+        if (inicioPaginas > 2) {
+            html += `<span class="pagination-item" style="cursor: default;">...</span>`;
+        }
+    }
+    
+    // Páginas numeradas
+    for (let i = inicioPaginas; i <= finPaginas; i++) {
+        html += `
+            <button class="pagination-item ${i === paginaActual ? 'active' : ''}" 
+                    onclick="cambiarPagina(${i})">
+                ${i}
+            </button>
+        `;
+    }
+    
+    // Última página si no está visible
+    if (finPaginas < totalPaginas) {
+        if (finPaginas < totalPaginas - 1) {
+            html += `<span class="pagination-item" style="cursor: default;">...</span>`;
+        }
+        html += `<button class="pagination-item" onclick="cambiarPagina(${totalPaginas})">${totalPaginas}</button>`;
+    }
+    
+    // Botón siguiente
+    html += `
+        <button class="pagination-item" ${paginaActual === totalPaginas ? 'disabled' : ''} onclick="cambiarPagina(${paginaActual + 1})">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+        </button>
+    `;
+    
+    controles.innerHTML = html;
+}
+
+function cambiarPagina(numeroPagina) {
+    const totalPaginas = Math.ceil(registrosFiltrados.length / itemsPorPagina);
+    
+    if (numeroPagina < 1 || numeroPagina > totalPaginas) return;
+    
+    paginaActual = numeroPagina;
+    aplicarPaginacion();
+    
+    // Scroll suave hacia arriba de la tabla
+    document.querySelector('.table-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 console.log('📊 Sistema de Registro de Accesos cargado correctamente');

@@ -1,0 +1,1648 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Inquilinos{% endblock %}
+{% block breadcrumb %}
+<span class="breadcrumb-item">Catálogo</span>
+<span class="breadcrumb-item">Inquilinos</span>
+{% endblock %}
+{% block content %}
+
+<div class="content-area">
+    <!-- Table Card -->
+    <div class="table-container">
+        <div class="table-header">
+            <div>
+                <h3 class="table-title">Lista de Inquilinos</h3>
+                <p class="card-subtitle">Gestiona los inquilinos registrados en el sistema</p>
+            </div>
+            <div class="table-actions">
+                <div class="input-group" style="width: 400px;">
+                    <span class="input-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35"/>
+                        </svg>
+                    </span>
+                    <input type="text" class="form-input" id="searchInput" placeholder="Buscar inquilino...">
+                </div>
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <button class="btn btn-secondary" data-modal="filterModal">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                    </svg>
+                    Filtros
+                </button>
+                <button class="btn btn-primary" onclick="createNewInquilino()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Nuevo Inquilino
+                </button>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="table" id="inquilinosTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Inquilino</th>
+                        <th>Cédula</th>
+                        <th>Licencia</th>
+                        <th>Teléfono</th>
+                        <th>Email</th>
+                        <th>Documentos</th>
+                        <th>Referencias</th>
+                        <th>Garantes</th>
+                        <th>Fecha Registro</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    {% for inquilino in inquilinos %}
+                    <tr data-id="{{ inquilino.id }}" 
+                        data-nombre="{{ inquilino.nombre_apellido }}"
+                        data-cedula="{{ inquilino.cedula or '' }}"
+                        data-licencia="{{ inquilino.licencia or '' }}"
+                        data-has-docs="{{ 'true' if (inquilino.cedula_path or inquilino.licencia_path or inquilino.documento_buena_conducta_path) else 'false' }}"
+                        data-has-refs="{{ 'true' if inquilino.referencias.count() > 0 else 'false' }}"
+                        data-has-garantes="{{ 'true' if inquilino.garantes.count() > 0 else 'false' }}">
+                        <td>#{{ inquilino.id }}</td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div class="user-avatar" style="width: 36px; height: 36px; font-size: 13px; background: linear-gradient(135deg, var(--primary), var(--primary-dark));">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                        <circle cx="12" cy="7" r="4"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <strong>{{ inquilino.nombre_apellido }}</strong>
+                                    {% if inquilino.direccion %}
+                                    <div style="font-size: 12px; color: var(--text-tertiary);">{{ inquilino.direccion[:30] }}{% if inquilino.direccion|length > 30 %}...{% endif %}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            {% if inquilino.cedula %}
+                            <span style="font-family: monospace;">{{ inquilino.cedula }}</span>
+                            {% else %}
+                            <span style="color: var(--text-tertiary);">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if inquilino.licencia %}
+                            <span style="font-family: monospace;">{{ inquilino.licencia }}</span>
+                            {% else %}
+                            <span style="color: var(--text-tertiary);">—</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ inquilino.telefono or '—' }}</td>
+                        <td>
+                            {% if inquilino.email %}
+                            <a href="mailto:{{ inquilino.email }}" style="color: var(--primary);">{{ inquilino.email }}</a>
+                            {% else %}
+                            <span style="color: var(--text-tertiary);">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 4px;">
+                                {% if inquilino.cedula_path %}
+                                <span class="badge badge-success" title="Cédula">CED</span>
+                                {% endif %}
+                                {% if inquilino.licencia_path %}
+                                <span class="badge badge-info" title="Licencia">LIC</span>
+                                {% endif %}
+                                {% if inquilino.documento_buena_conducta_path %}
+                                <span class="badge badge-warning" title="Buena Conducta">BC</span>
+                                {% endif %}
+                                {% if not inquilino.cedula_path and not inquilino.licencia_path and not inquilino.documento_buena_conducta_path %}
+                                <span style="color: var(--text-tertiary);">—</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge badge-primary" style="cursor: pointer;" onclick="viewReferencias({{ inquilino.id }}, '{{ inquilino.nombre_apellido | e }}')">
+                                {{ inquilino.referencias.count() }} ref.
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge badge-secondary" style="cursor: pointer;" onclick="viewGarantes({{ inquilino.id }}, '{{ inquilino.nombre_apellido | e }}')">
+                                {{ inquilino.garantes.count() }} gar.
+                            </span>
+                        </td>
+                        <td>
+                            <div style="font-weight: 600; color: var(--text-primary);">
+                                {{ inquilino.fecha_hora_registro.strftime('%d/%m/%Y') }}
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-tertiary);">
+                                {{ inquilino.fecha_hora_registro.strftime('%H:%M:%S') }}
+                            </div>
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-sm btn-secondary" onclick="viewHistory({{ inquilino.id }})" title="Ver Historial">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </button>
+                                <button class="btn btn-sm btn-primary" onclick='editInquilino({{ inquilino.id }})' title="Editar">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-danger" onclick='deleteInquilino({{ inquilino.id }}, "{{ inquilino.nombre_apellido | e }}")' title="Eliminar">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-footer">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 14px; color: var(--text-secondary);">
+                    Mostrando <strong id="showingStart">1</strong>-<strong id="showingEnd">5</strong> de <strong id="totalRecords">{{ inquilinos|length }}</strong> registros
+                </span>
+                <select id="itemsPerPage" class="form-select" style="width: 80px; height: 36px; padding: 6px 10px;">
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
+            <div class="pagination" id="paginationContainer"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================= -->
+<!-- MODAL: Crear/Editar Inquilino -->
+<!-- ========================================= -->
+<div class="modal-overlay" id="createModal">
+    <div class="modal modal-xl">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                <span id="modalTitle">Nuevo Inquilino</span>
+            </h3>
+            <button class="modal-close" data-modal-close>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <form action="{{ url_for('inquilino.crear_inquilino') }}" method="POST" enctype="multipart/form-data" id="inquilinoForm">
+            <input type="hidden" name="inquilino_id" id="inquilinoId">
+            <div class="modal-body">
+                <!-- Datos Personales -->
+                <div style="margin-bottom: 24px;">
+                    <h4 style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                        Datos Personales
+                    </h4>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+                        <div class="form-group">
+                            <label class="form-label required">Nombre y Apellido</label>
+                            <input type="text" name="nombre_apellido" id="nombreApellidoInput" class="form-input" placeholder="Ej: Juan Pérez" required>
+                            <span class="form-help" style="font-size: 11px; color: var(--warning);">🔒 Campo encriptado</span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label required">Cédula</label>
+                            <input type="text" name="cedula" id="cedulaInput" class="form-input" placeholder="Ej: 001-0000000-0" required>
+                            <span class="form-help" style="font-size: 11px; color: var(--warning);">🔒 Campo encriptado</span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label required">Licencia</label>
+                            <input type="text" name="licencia" id="licenciaInput" class="form-input" placeholder="Ej: 001-0000000-0" required>
+                            <span class="form-help" style="font-size: 11px; color: var(--warning);">🔒 Campo encriptado</span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Teléfono</label>
+                            <input type="tel" name="telefono" id="telefonoInput" class="form-input" placeholder="Ej: 809-000-0000">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="email" id="emailInput" class="form-input" placeholder="Ej: correo@ejemplo.com">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Dirección</label>
+                            <input type="text" name="direccion" id="direccionInput" class="form-input" placeholder="Dirección completa">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Documentos -->
+                <div style="margin-bottom: 24px;">
+                    <h4 style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                        Documentos
+                    </h4>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+                        <!-- Documento Cédula -->
+                        <div class="form-group">
+                            <label class="form-label">Documento Cédula</label>
+                            <div class="file-upload">
+                                <input type="file" name="cedula_doc" id="cedulaDocInput" class="file-input" accept="image/*,.pdf" onchange="handleDocumentPreview(this, 'cedulaPreview')">
+                                <label for="cedulaDocInput" class="file-label">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                    </svg>
+                                    <span class="file-text" id="cedulaDocText">Subir cédula</span>
+                                </label>
+                            </div>
+                            <div id="cedulaPreview" class="document-preview" style="margin-top: 10px; display: none;">
+                                <div style="position: relative; display: inline-block;">
+                                    <img id="cedulaPreviewImg" src="" alt="Preview" style="max-width: 120px; max-height: 120px; border-radius: 8px; box-shadow: var(--neu-shadow-small);">
+                                    <div id="cedulaPdfIndicator" style="display: none; width: 120px; height: 80px; background: var(--bg-secondary); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                            <polyline points="14 2 14 8 20 8"/>
+                                        </svg>
+                                        <span style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">PDF</span>
+                                    </div>
+                                    <button type="button" onclick="clearDocument('cedula')" style="position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; border-radius: 50%; background: var(--danger); color: white; border: 2px solid white; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                            <path d="M18 6L6 18M6 6l12 12"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <input type="hidden" name="cedula_doc_existing" id="cedulaDocExisting">
+                        </div>
+
+                        <!-- Documento Licencia -->
+                        <div class="form-group">
+                            <label class="form-label">Documento Licencia</label>
+                            <div class="file-upload">
+                                <input type="file" name="licencia_doc" id="licenciaDocInput" class="file-input" accept="image/*,.pdf" onchange="handleDocumentPreview(this, 'licenciaPreview')">
+                                <label for="licenciaDocInput" class="file-label">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                    </svg>
+                                    <span class="file-text" id="licenciaDocText">Subir licencia</span>
+                                </label>
+                            </div>
+                            <div id="licenciaPreview" class="document-preview" style="margin-top: 10px; display: none;">
+                                <div style="position: relative; display: inline-block;">
+                                    <img id="licenciaPreviewImg" src="" alt="Preview" style="max-width: 120px; max-height: 120px; border-radius: 8px; box-shadow: var(--neu-shadow-small);">
+                                    <div id="licenciaPdfIndicator" style="display: none; width: 120px; height: 80px; background: var(--bg-secondary); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                            <polyline points="14 2 14 8 20 8"/>
+                                        </svg>
+                                        <span style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">PDF</span>
+                                    </div>
+                                    <button type="button" onclick="clearDocument('licencia')" style="position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; border-radius: 50%; background: var(--danger); color: white; border: 2px solid white; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                            <path d="M18 6L6 18M6 6l12 12"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <input type="hidden" name="licencia_doc_existing" id="licenciaDocExisting">
+                        </div>
+
+                        <!-- Documento Buena Conducta -->
+                        <div class="form-group">
+                            <label class="form-label">Buena Conducta</label>
+                            <div class="file-upload">
+                                <input type="file" name="buena_conducta_doc" id="buenaConductaDocInput" class="file-input" accept="image/*,.pdf" onchange="handleDocumentPreview(this, 'buenaConductaPreview')">
+                                <label for="buenaConductaDocInput" class="file-label">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                    </svg>
+                                    <span class="file-text" id="buenaConductaDocText">Subir documento</span>
+                                </label>
+                            </div>
+                            <div id="buenaConductaPreview" class="document-preview" style="margin-top: 10px; display: none;">
+                                <div style="position: relative; display: inline-block;">
+                                    <img id="buenaConductaPreviewImg" src="" alt="Preview" style="max-width: 120px; max-height: 120px; border-radius: 8px; box-shadow: var(--neu-shadow-small);">
+                                    <div id="buenaConductaPdfIndicator" style="display: none; width: 120px; height: 80px; background: var(--bg-secondary); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                            <polyline points="14 2 14 8 20 8"/>
+                                        </svg>
+                                        <span style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">PDF</span>
+                                    </div>
+                                    <button type="button" onclick="clearDocument('buenaConducta')" style="position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; border-radius: 50%; background: var(--danger); color: white; border: 2px solid white; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                            <path d="M18 6L6 18M6 6l12 12"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <input type="hidden" name="buena_conducta_doc_existing" id="buenaConductaDocExisting">
+                        </div>
+                    </div>
+                    <span class="form-help" style="font-size: 12px; color: var(--text-tertiary);">Formatos aceptados: JPG, PNG, GIF, WebP, PDF (Máx. 5MB)</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button>
+                <button type="submit" class="btn btn-primary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span id="submitBtnText">Guardar Inquilino</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ========================================= -->
+<!-- MODAL: Confirmar Eliminación -->
+<!-- ========================================= -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal modal-sm">
+        <div class="modal-header">
+            <h3 class="modal-title">Confirmar Eliminación</h3>
+            <button class="modal-close" data-modal-close>×</button>
+        </div>
+        <form id="deleteForm" method="POST">
+            <div class="modal-body">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <div style="width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 50%; background: rgba(245, 101, 101, 0.1); display: flex; align-items: center; justify-content: center;">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                    </div>
+                    <p style="font-size: 15px; color: var(--text-primary); font-weight: 600; margin-bottom: 8px;">
+                        ¿Estás seguro de eliminar este inquilino?
+                    </p>
+                    <p style="font-size: 14px; color: var(--text-secondary);">
+                        El inquilino <strong id="deleteInquilinoName"></strong> será eliminado permanentemente junto con sus documentos, referencias y garantes.
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button>
+                <button type="submit" class="btn btn-danger">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    Eliminar Inquilino
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ========================================= -->
+<!-- MODAL: Referencias del Inquilino -->
+<!-- ========================================= -->
+<div class="modal-overlay" id="referenciasModal">
+    <div class="modal modal-xl">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                </svg>
+                Referencias Personales - <span id="referenciasInquilinoName">Inquilino</span>
+            </h3>
+            <button class="modal-close" data-modal-close>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="referenciasInquilinoId">
+            
+            <!-- Botón agregar -->
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
+                <button type="button" class="btn btn-primary btn-sm" onclick="showAddReferenciaForm()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Agregar Referencia
+                </button>
+            </div>
+
+            <!-- Formulario agregar/editar referencia -->
+            <div id="referenciaFormContainer" style="display: none; background: var(--bg-secondary); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+                <h5 style="margin-bottom: 16px; font-size: 14px; font-weight: 600;" id="referenciaFormTitle">Nueva Referencia</h5>
+                <form id="referenciaForm">
+                    <input type="hidden" id="referenciaId">
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+                        <div class="form-group">
+                            <label class="form-label required">Nombre y Apellido</label>
+                            <input type="text" id="refNombreApellido" class="form-input" placeholder="Nombre completo" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label required">Teléfono</label>
+                            <input type="tel" id="refTelefono" class="form-input" placeholder="809-000-0000" required>
+                        </div>
+                        <div class="alert alert-info">
+    <h5>DEBUG: Parentescos recibidos</h5>
+    <p>Total: {{ parentescos|length }}</p>
+    {% if parentescos %}
+        <ul>
+        {% for p in parentescos %}
+            <li>ID: {{ p.id }} - Nombre: {{ p.parentesco }}</li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p style="color: red;">¡La lista de parentescos está VACÍA!</p>
+    {% endif %}
+</div>
+
+<!-- Tu select original -->
+<div class="form-group">
+    <label class="form-label required">Parentesco</label>
+    <select id="refParentescoId" class="form-select" required>
+        <option value="">Seleccionar...</option>
+        {% for parentesco in parentescos %}
+        <option value="{{ parentesco.id }}">{{ parentesco.parentesco }}</option>
+        {% endfor %}
+    </select>
+</div>
+
+                    </div>
+                    <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px;">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="hideReferenciaForm()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary btn-sm" id="refSubmitBtn">Guardar</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Loading -->
+            <div id="referenciasLoading" style="text-align: center; padding: 40px;">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="animation: spin 1s linear infinite;">
+                    <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="0" opacity="0.25"/>
+                    <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="8"/>
+                </svg>
+                <p style="margin-top: 12px; color: var(--text-secondary);">Cargando referencias...</p>
+            </div>
+
+            <!-- Tabla de referencias -->
+            <div class="table-wrapper" id="referenciasTableContainer" style="display: none;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Teléfono</th>
+                            <th>Parentesco</th>
+                            <th>Fecha Registro</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="referenciasTableBody"></tbody>
+                </table>
+            </div>
+
+            <!-- Empty State -->
+            <div id="referenciasEmpty" style="text-align: center; padding: 40px; display: none;">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" style="margin: 0 auto 16px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                <p style="color: var(--text-secondary); font-size: 15px;">No hay referencias registradas para este inquilino.</p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================= -->
+<!-- MODAL: Garantes del Inquilino -->
+<!-- ========================================= -->
+<div class="modal-overlay" id="garantesModal">
+    <div class="modal modal-xl">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                </svg>
+                Garantes/Fiadores - <span id="garantesInquilinoName">Inquilino</span>
+            </h3>
+            <button class="modal-close" data-modal-close>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="garantesInquilinoId">
+            
+            <!-- Botón agregar -->
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
+                <button type="button" class="btn btn-primary btn-sm" onclick="showAddGaranteForm()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Agregar Garante
+                </button>
+            </div>
+
+            <!-- Formulario agregar/editar garante -->
+            <div id="garanteFormContainer" style="display: none; background: var(--bg-secondary); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+                <h5 style="margin-bottom: 16px; font-size: 14px; font-weight: 600;" id="garanteFormTitle">Nuevo Garante</h5>
+                <form id="garanteForm" enctype="multipart/form-data">
+                    <input type="hidden" id="garanteId">
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+                        <div class="form-group">
+                            <label class="form-label required">Nombre y Apellido</label>
+                            <input type="text" id="garNombreApellido" class="form-input" placeholder="Nombre completo" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Teléfono</label>
+                            <input type="tel" id="garTelefono" class="form-input" placeholder="809-000-0000">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <input type="email" id="garEmail" class="form-input" placeholder="correo@ejemplo.com">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Dirección</label>
+                            <input type="text" id="garDireccion" class="form-input" placeholder="Dirección completa">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label required">Parentesco</label>
+                            <select id="garParentescoId" class="form-select" required>
+                                <option value="">Seleccionar...</option>
+                                {% for parentesco in parentescos %}
+                                <option value="{{ parentesco.id }}">{{ parentesco.parentesco }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Referencia Laboral</label>
+                            <div class="file-upload">
+                                <input type="file" id="garDocumentoInput" class="file-input" accept="image/*,.pdf" onchange="handleGaranteDocPreview(this)">
+                                <label for="garDocumentoInput" class="file-label" style="padding: 8px 12px;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                    </svg>
+                                    <span id="garDocText" style="font-size: 12px;">Subir</span>
+                                </label>
+                            </div>
+                            <div id="garDocPreview" style="margin-top: 8px; display: none;">
+                                <div style="position: relative; display: inline-block;">
+                                    <img id="garDocPreviewImg" src="" style="max-width: 80px; max-height: 60px; border-radius: 6px;">
+                                    <button type="button" onclick="clearGaranteDoc()" style="position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%; background: var(--danger); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px;">×</button>
+                                </div>
+                            </div>
+                            <input type="hidden" id="garDocExisting">
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px;">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="hideGaranteForm()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary btn-sm" id="garSubmitBtn">Guardar</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Loading -->
+            <div id="garantesLoading" style="text-align: center; padding: 40px;">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="animation: spin 1s linear infinite;">
+                    <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="0" opacity="0.25"/>
+                    <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="8"/>
+                </svg>
+                <p style="margin-top: 12px; color: var(--text-secondary);">Cargando garantes...</p>
+            </div>
+
+            <!-- Tabla de garantes -->
+            <div class="table-wrapper" id="garantesTableContainer" style="display: none;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Teléfono</th>
+                            <th>Email</th>
+                            <th>Parentesco</th>
+                            <th>Documento</th>
+                            <th>Fecha Registro</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="garantesTableBody"></tbody>
+                </table>
+            </div>
+
+            <!-- Empty State -->
+            <div id="garantesEmpty" style="text-align: center; padding: 40px; display: none;">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" style="margin: 0 auto 16px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                </svg>
+                <p style="color: var(--text-secondary); font-size: 15px;">No hay garantes registrados para este inquilino.</p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================= -->
+<!-- MODAL: Historial de Modificaciones -->
+<!-- ========================================= -->
+<div class="modal-overlay" id="historyModal">
+    <div class="modal modal-xl">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Historial de Modificaciones - <span id="historyInquilinoName">Cargando...</span>
+            </h3>
+            <button class="modal-close" data-modal-close>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <!-- Loading State -->
+            <div id="historyLoading" style="text-align: center; padding: 40px; display: none;">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="animation: spin 1s linear infinite;">
+                    <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="0" opacity="0.25"/>
+                    <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="8"/>
+                </svg>
+                <p style="margin-top: 12px; color: var(--text-secondary);">Cargando historial...</p>
+            </div>
+
+            <!-- Filters -->
+            <div id="historyFilters" style="display: none; gap: 12px; margin-bottom: 20px;">
+                <div class="input-group" style="flex: 1;">
+                    <span class="input-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35"/>
+                        </svg>
+                    </span>
+                    <input type="text" class="form-input" id="historySearch" placeholder="Buscar en historial...">
+                </div>
+                <select class="form-select" id="historyFilterAction" style="width: 200px;">
+                    <option value="">Todas las acciones</option>
+                    <option value="INSERT">Creación</option>
+                    <option value="UPDATE">Edición</option>
+                    <option value="DELETE">Eliminación</option>
+                </select>
+            </div>
+
+            <!-- History Table -->
+            <div class="table-wrapper" id="historyTableContainer" style="display: none;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Fecha/Hora</th>
+                            <th>Usuario</th>
+                            <th>Acción</th>
+                            <th>Detalles</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody"></tbody>
+                </table>
+            </div>
+
+            <!-- Empty State -->
+            <div id="historyEmpty" style="text-align: center; padding: 40px; display: none;">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" style="margin: 0 auto 16px;">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 6v6l4 2"/>
+                </svg>
+                <p style="color: var(--text-secondary); font-size: 15px;">No hay historial disponible para este inquilino.</p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button>
+            <button type="button" class="btn btn-primary" onclick="exportHistory()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Exportar Historial
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================= -->
+<!-- MODAL: Filtros Avanzados -->
+<!-- ========================================= -->
+<div class="modal-overlay" id="filterModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                </svg>
+                Filtros Avanzados
+            </h3>
+            <button class="modal-close" data-modal-close>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">Estado de Documentos</label>
+                <select class="form-select" id="filterDocs">
+                    <option value="">Todos</option>
+                    <option value="completos">Documentos completos</option>
+                    <option value="parciales">Documentos parciales</option>
+                    <option value="sin_docs">Sin documentos</option>
+                </select>
+            </div>
+
+            <div class="checkbox-wrapper">
+                <input type="checkbox" class="checkbox" id="conReferencias">
+                <label for="conReferencias" class="checkbox-label">Con referencias</label>
+            </div>
+
+            <div class="checkbox-wrapper">
+                <input type="checkbox" class="checkbox" id="conGarantes">
+                <label for="conGarantes" class="checkbox-label">Con garantes</label>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="clearFilters()">Limpiar</button>
+            <button type="button" class="btn btn-primary" onclick="applyFilters()">Aplicar Filtros</button>
+        </div>
+    </div>
+</div>
+
+<!-- CSS -->
+<style>
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+.document-preview {
+    position: relative;
+}
+</style>
+
+<script>
+// ==========================================
+// VARIABLES GLOBALES
+// ==========================================
+let currentPage = 1;
+let itemsPerPage = 5;
+let allRows = [];
+let filteredRows = [];
+let allHistoryRecords = [];
+let currentHistoryId = null;
+let allReferencias = [];
+let allGarantes = [];
+
+// ==========================================
+// INICIALIZACIÓN
+// ==========================================
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Initializing Inquilinos page...');
+    
+    allRows = Array.from(document.querySelectorAll('#tableBody tr'));
+    filteredRows = [...allRows];
+    updatePagination();
+    console.log(`📊 Loaded ${allRows.length} records`);
+    
+    // Event listeners
+    document.getElementById('searchInput')?.addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase();
+        filteredRows = allRows.filter(row => row.textContent.toLowerCase().includes(searchTerm));
+        currentPage = 1;
+        updatePagination();
+    });
+    
+    document.getElementById('itemsPerPage')?.addEventListener('change', function(e) {
+        itemsPerPage = parseInt(e.target.value);
+        currentPage = 1;
+        updatePagination();
+    });
+
+    // Formulario de referencias
+    document.getElementById('referenciaForm')?.addEventListener('submit', handleReferenciaSubmit);
+    
+    // Formulario de garantes
+    document.getElementById('garanteForm')?.addEventListener('submit', handleGaranteSubmit);
+});
+
+// ==========================================
+// PAGINACIÓN
+// ==========================================
+function updatePagination() {
+    const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    
+    allRows.forEach(row => row.style.display = 'none');
+    filteredRows.slice(start, end).forEach(row => row.style.display = '');
+    
+    const actualEnd = Math.min(end, filteredRows.length);
+    document.getElementById('showingStart').textContent = filteredRows.length > 0 ? start + 1 : 0;
+    document.getElementById('showingEnd').textContent = actualEnd;
+    document.getElementById('totalRecords').textContent = filteredRows.length;
+    
+    generatePaginationButtons(totalPages);
+}
+
+function generatePaginationButtons(totalPages) {
+    const container = document.getElementById('paginationContainer');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    // Previous button
+    const prevBtn = document.createElement('button');
+    prevBtn.className = 'pagination-item';
+    prevBtn.disabled = currentPage === 1;
+    prevBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>';
+    prevBtn.onclick = () => { if (currentPage > 1) { currentPage--; updatePagination(); } };
+    container.appendChild(prevBtn);
+    
+    // Page buttons
+    const maxButtons = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+    let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+    if (endPage - startPage < maxButtons - 1) startPage = Math.max(1, endPage - maxButtons + 1);
+    
+    for (let i = startPage; i <= endPage; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'pagination-item' + (i === currentPage ? ' active' : '');
+        btn.textContent = i;
+        btn.onclick = () => { currentPage = i; updatePagination(); };
+        container.appendChild(btn);
+    }
+    
+    // Next button
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'pagination-item';
+    nextBtn.disabled = currentPage === totalPages || totalPages === 0;
+    nextBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>';
+    nextBtn.onclick = () => { if (currentPage < totalPages) { currentPage++; updatePagination(); } };
+    container.appendChild(nextBtn);
+}
+
+// ==========================================
+// PREVIEW DE DOCUMENTOS
+// ==========================================
+function handleDocumentPreview(input, previewId) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    // Validar tamaño (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+        alert('El archivo excede el tamaño máximo de 5MB');
+        input.value = '';
+        return;
+    }
+    
+    const preview = document.getElementById(previewId);
+    const img = document.getElementById(previewId + 'Img');
+    const pdfIndicator = document.getElementById(previewId.replace('Preview', 'PdfIndicator'));
+    const fileText = document.getElementById(input.id.replace('Input', 'Text'));
+    
+    if (file.type === 'application/pdf') {
+        if (img) img.style.display = 'none';
+        if (pdfIndicator) pdfIndicator.style.display = 'flex';
+        if (preview) preview.style.display = 'block';
+        if (fileText) fileText.textContent = file.name;
+    } else if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            if (img) {
+                img.src = e.target.result;
+                img.style.display = 'block';
+            }
+            if (pdfIndicator) pdfIndicator.style.display = 'none';
+            if (preview) preview.style.display = 'block';
+            if (fileText) fileText.textContent = file.name;
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+function clearDocument(type) {
+    const inputMap = {
+        'cedula': 'cedulaDocInput',
+        'licencia': 'licenciaDocInput',
+        'buenaConducta': 'buenaConductaDocInput'
+    };
+    const previewMap = {
+        'cedula': 'cedulaPreview',
+        'licencia': 'licenciaPreview',
+        'buenaConducta': 'buenaConductaPreview'
+    };
+    const textMap = {
+        'cedula': 'cedulaDocText',
+        'licencia': 'licenciaDocText',
+        'buenaConducta': 'buenaConductaDocText'
+    };
+    const existingMap = {
+        'cedula': 'cedulaDocExisting',
+        'licencia': 'licenciaDocExisting',
+        'buenaConducta': 'buenaConductaDocExisting'
+    };
+    
+    const input = document.getElementById(inputMap[type]);
+    const preview = document.getElementById(previewMap[type]);
+    const text = document.getElementById(textMap[type]);
+    const existing = document.getElementById(existingMap[type]);
+    
+    if (input) input.value = '';
+    if (preview) preview.style.display = 'none';
+    if (text) text.textContent = 'Subir documento';
+    if (existing) existing.value = '';
+}
+
+function showExistingDocument(type, path) {
+    if (!path) return;
+    
+    const previewMap = {
+        'cedula': 'cedulaPreview',
+        'licencia': 'licenciaPreview',
+        'buenaConducta': 'buenaConductaPreview'
+    };
+    const imgMap = {
+        'cedula': 'cedulaPreviewImg',
+        'licencia': 'licenciaPreviewImg',
+        'buenaConducta': 'buenaConductaPreviewImg'
+    };
+    const pdfMap = {
+        'cedula': 'cedulaPdfIndicator',
+        'licencia': 'licenciaPdfIndicator',
+        'buenaConducta': 'buenaConductaPdfIndicator'
+    };
+    const textMap = {
+        'cedula': 'cedulaDocText',
+        'licencia': 'licenciaDocText',
+        'buenaConducta': 'buenaConductaDocText'
+    };
+    const existingMap = {
+        'cedula': 'cedulaDocExisting',
+        'licencia': 'licenciaDocExisting',
+        'buenaConducta': 'buenaConductaDocExisting'
+    };
+    
+    const preview = document.getElementById(previewMap[type]);
+    const img = document.getElementById(imgMap[type]);
+    const pdfIndicator = document.getElementById(pdfMap[type]);
+    const text = document.getElementById(textMap[type]);
+    const existing = document.getElementById(existingMap[type]);
+    
+    if (path.toLowerCase().endsWith('.pdf')) {
+        if (img) img.style.display = 'none';
+        if (pdfIndicator) pdfIndicator.style.display = 'flex';
+    } else {
+        if (img) {
+            img.src = '/static/' + path;
+            img.style.display = 'block';
+        }
+        if (pdfIndicator) pdfIndicator.style.display = 'none';
+    }
+    
+    if (preview) preview.style.display = 'block';
+    if (text) text.textContent = 'Cambiar documento';
+    if (existing) existing.value = path;
+}
+
+// ==========================================
+// CRUD INQUILINOS
+// ==========================================
+function createNewInquilino() {
+    document.getElementById('modalTitle').textContent = 'Nuevo Inquilino';
+    document.getElementById('submitBtnText').textContent = 'Guardar Inquilino';
+    document.getElementById('inquilinoForm').action = '{{ url_for("inquilino.crear_inquilino") }}';
+    document.getElementById('inquilinoForm').reset();
+    document.getElementById('inquilinoId').value = '';
+    
+    // Limpiar previews
+    clearDocument('cedula');
+    clearDocument('licencia');
+    clearDocument('buenaConducta');
+    
+    openModal('createModal');
+}
+
+async function editInquilino(id) {
+    //try {
+        const response = await fetch(`/inquilinos/${id}`);
+        const data = await response.json();
+        
+        //if (data.success) {
+            const inq = data.inquilino || data;
+            
+            document.getElementById('modalTitle').textContent = 'Editar Inquilino';
+            document.getElementById('submitBtnText').textContent = 'Actualizar Inquilino';
+            document.getElementById('inquilinoForm').action = `/inquilinos/${id}/editar`;
+            document.getElementById('inquilinoId').value = id;
+            
+            document.getElementById('nombreApellidoInput').value = inq.nombre_apellido || '';
+            document.getElementById('cedulaInput').value = inq.cedula || '';
+            document.getElementById('licenciaInput').value = inq.licencia || '';
+            document.getElementById('telefonoInput').value = inq.telefono || '';
+            document.getElementById('emailInput').value = inq.email || '';
+            document.getElementById('direccionInput').value = inq.direccion || '';
+            
+            // Documentos existentes
+            clearDocument('cedula');
+            clearDocument('licencia');
+            clearDocument('buenaConducta');
+            
+            if (inq.cedula_path) showExistingDocument('cedula', inq.cedula_path);
+            if (inq.licencia_path) showExistingDocument('licencia', inq.licencia_path);
+            if (inq.documento_buena_conducta_path) showExistingDocument('buenaConducta', inq.documento_buena_conducta_path);
+            
+            openModal('createModal');
+        //} else {
+        //    alert('Error al cargar datos del inquilino');
+       // }
+    //} catch (error) {
+    //    console.error('Error:', error);
+    //    alert('Error al cargar datos del inquilino');
+    //}
+}
+
+function deleteInquilino(id, nombre) {
+    document.getElementById('deleteInquilinoName').textContent = nombre;
+    document.getElementById('deleteForm').action = `/inquilinos/${id}/eliminar`;
+    openModal('deleteModal');
+}
+
+// ==========================================
+// REFERENCIAS
+// ==========================================
+async function viewReferencias(inquilinoId, nombre) {
+    document.getElementById('referenciasInquilinoId').value = inquilinoId;
+    document.getElementById('referenciasInquilinoName').textContent = nombre;
+    
+    document.getElementById('referenciasLoading').style.display = 'block';
+    document.getElementById('referenciasTableContainer').style.display = 'none';
+    document.getElementById('referenciasEmpty').style.display = 'none';
+    hideReferenciaForm();
+    
+    openModal('referenciasModal');
+    
+    try {
+        const response = await fetch(`/inquilinos/${inquilinoId}/referencias`);
+        const data = await response.json();
+        
+        document.getElementById('referenciasLoading').style.display = 'none';
+        
+        if (data.success && data.referencias.length > 0) {
+            allReferencias = data.referencias;
+            renderReferencias(allReferencias);
+            document.getElementById('referenciasTableContainer').style.display = 'block';
+        } else {
+            document.getElementById('referenciasEmpty').style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('referenciasLoading').style.display = 'none';
+        document.getElementById('referenciasEmpty').style.display = 'block';
+    }
+}
+
+function renderReferencias(referencias) {
+    const tbody = document.getElementById('referenciasTableBody');
+    tbody.innerHTML = '';
+    
+    referencias.forEach(ref => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>#${ref.id}</td>
+            <td><strong>${ref.nombre_apellido}</strong></td>
+            <td>${ref.telefono}</td>
+            <td><span class="badge badge-info">${ref.parentesco_nombre}</span></td>
+            <td>${ref.fecha_registro}</td>
+            <td>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn btn-sm btn-primary" onclick='editReferencia(${JSON.stringify(ref)})' title="Editar">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteReferencia(${ref.id})" title="Eliminar">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function showAddReferenciaForm() {
+    document.getElementById('referenciaFormTitle').textContent = 'Nueva Referencia';
+    document.getElementById('referenciaForm').reset();
+    document.getElementById('referenciaId').value = '';
+    document.getElementById('refSubmitBtn').textContent = 'Guardar';
+    document.getElementById('referenciaFormContainer').style.display = 'block';
+}
+
+function hideReferenciaForm() {
+    document.getElementById('referenciaFormContainer').style.display = 'none';
+    document.getElementById('referenciaForm').reset();
+}
+
+function editReferencia(ref) {
+    document.getElementById('referenciaFormTitle').textContent = 'Editar Referencia';
+    document.getElementById('referenciaId').value = ref.id;
+    document.getElementById('refNombreApellido').value = ref.nombre_apellido;
+    document.getElementById('refTelefono').value = ref.telefono;
+    document.getElementById('refParentescoId').value = ref.parentesco_id;
+    document.getElementById('refSubmitBtn').textContent = 'Actualizar';
+    document.getElementById('referenciaFormContainer').style.display = 'block';
+}
+
+async function handleReferenciaSubmit(e) {
+    e.preventDefault();
+    
+    const inquilinoId = document.getElementById('referenciasInquilinoId').value;
+    const referenciaId = document.getElementById('referenciaId').value;
+    const isEdit = !!referenciaId;
+    
+    const formData = {
+        nombre_apellido: document.getElementById('refNombreApellido').value,
+        telefono: document.getElementById('refTelefono').value,
+        parentesco_id: document.getElementById('refParentescoId').value
+    };
+    
+    const url = isEdit 
+        ? `/referencias/${referenciaId}/editar`
+        : `/inquilinos/${inquilinoId}/referencias/crear`;
+    
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            hideReferenciaForm();
+            viewReferencias(inquilinoId, document.getElementById('referenciasInquilinoName').textContent);
+        } else {
+            alert(data.message || 'Error al guardar referencia');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al guardar referencia');
+    }
+}
+
+async function deleteReferencia(id) {
+    if (!confirm('¿Estás seguro de eliminar esta referencia?')) return;
+    
+    const inquilinoId = document.getElementById('referenciasInquilinoId').value;
+    
+    try {
+        const response = await fetch(`/referencias/${id}/eliminar`, { method: 'POST' });
+        const data = await response.json();
+        
+        if (data.success) {
+            viewReferencias(inquilinoId, document.getElementById('referenciasInquilinoName').textContent);
+        } else {
+            alert(data.message || 'Error al eliminar referencia');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al eliminar referencia');
+    }
+}
+
+// ==========================================
+// GARANTES
+// ==========================================
+async function viewGarantes(inquilinoId, nombre) {
+    document.getElementById('garantesInquilinoId').value = inquilinoId;
+    document.getElementById('garantesInquilinoName').textContent = nombre;
+    
+    document.getElementById('garantesLoading').style.display = 'block';
+    document.getElementById('garantesTableContainer').style.display = 'none';
+    document.getElementById('garantesEmpty').style.display = 'none';
+    hideGaranteForm();
+    
+    openModal('garantesModal');
+    
+    try {
+        const response = await fetch(`/inquilinos/${inquilinoId}/garantes`);
+        const data = await response.json();
+        
+        document.getElementById('garantesLoading').style.display = 'none';
+        
+        if (data.success && data.garantes.length > 0) {
+            allGarantes = data.garantes;
+            renderGarantes(allGarantes);
+            document.getElementById('garantesTableContainer').style.display = 'block';
+        } else {
+            document.getElementById('garantesEmpty').style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('garantesLoading').style.display = 'none';
+        document.getElementById('garantesEmpty').style.display = 'block';
+    }
+}
+
+function renderGarantes(garantes) {
+    const tbody = document.getElementById('garantesTableBody');
+    tbody.innerHTML = '';
+    
+    garantes.forEach(gar => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>#${gar.id}</td>
+            <td>
+                <div>
+                    <strong>${gar.nombre_apellido}</strong>
+                    ${gar.direccion ? `<div style="font-size: 11px; color: var(--text-tertiary);">${gar.direccion.substring(0, 30)}...</div>` : ''}
+                </div>
+            </td>
+            <td>${gar.telefono || '—'}</td>
+            <td>${gar.email || '—'}</td>
+            <td><span class="badge badge-info">${gar.parentesco_nombre}</span></td>
+            <td>
+                ${gar.documento_referencia_laboral_path 
+                    ? `<a href="/static/${gar.documento_referencia_laboral_path}" target="_blank" class="badge badge-success">Ver Doc</a>` 
+                    : '<span style="color: var(--text-tertiary);">—</span>'}
+            </td>
+            <td>${gar.fecha_registro}</td>
+            <td>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn btn-sm btn-primary" onclick='editGarante(${JSON.stringify(gar).replace(/'/g, "&#39;")})' title="Editar">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteGarante(${gar.id})" title="Eliminar">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function showAddGaranteForm() {
+    document.getElementById('garanteFormTitle').textContent = 'Nuevo Garante';
+    document.getElementById('garanteForm').reset();
+    document.getElementById('garanteId').value = '';
+    document.getElementById('garSubmitBtn').textContent = 'Guardar';
+    document.getElementById('garDocPreview').style.display = 'none';
+    document.getElementById('garDocExisting').value = '';
+    document.getElementById('garDocText').textContent = 'Subir';
+    document.getElementById('garanteFormContainer').style.display = 'block';
+}
+
+function hideGaranteForm() {
+    document.getElementById('garanteFormContainer').style.display = 'none';
+    document.getElementById('garanteForm').reset();
+}
+
+function editGarante(gar) {
+    document.getElementById('garanteFormTitle').textContent = 'Editar Garante';
+    document.getElementById('garanteId').value = gar.id;
+    document.getElementById('garNombreApellido').value = gar.nombre_apellido;
+    document.getElementById('garTelefono').value = gar.telefono || '';
+    document.getElementById('garEmail').value = gar.email || '';
+    document.getElementById('garDireccion').value = gar.direccion || '';
+    document.getElementById('garParentescoId').value = gar.parentesco_id;
+    document.getElementById('garSubmitBtn').textContent = 'Actualizar';
+    
+    // Documento existente
+    if (gar.documento_referencia_laboral_path) {
+        document.getElementById('garDocExisting').value = gar.documento_referencia_laboral_path;
+        document.getElementById('garDocText').textContent = 'Cambiar';
+        if (!gar.documento_referencia_laboral_path.toLowerCase().endsWith('.pdf')) {
+            document.getElementById('garDocPreviewImg').src = '/static/' + gar.documento_referencia_laboral_path;
+            document.getElementById('garDocPreview').style.display = 'block';
+        }
+    } else {
+        document.getElementById('garDocPreview').style.display = 'none';
+        document.getElementById('garDocExisting').value = '';
+        document.getElementById('garDocText').textContent = 'Subir';
+    }
+    
+    document.getElementById('garanteFormContainer').style.display = 'block';
+}
+
+function handleGaranteDocPreview(input) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    if (file.size > 5 * 1024 * 1024) {
+        alert('El archivo excede el tamaño máximo de 5MB');
+        input.value = '';
+        return;
+    }
+    
+    if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('garDocPreviewImg').src = e.target.result;
+            document.getElementById('garDocPreview').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+    document.getElementById('garDocText').textContent = file.name.substring(0, 10) + '...';
+}
+
+function clearGaranteDoc() {
+    document.getElementById('garDocumentoInput').value = '';
+    document.getElementById('garDocPreview').style.display = 'none';
+    document.getElementById('garDocExisting').value = '';
+    document.getElementById('garDocText').textContent = 'Subir';
+}
+
+async function handleGaranteSubmit(e) {
+    e.preventDefault();
+    
+    const inquilinoId = document.getElementById('garantesInquilinoId').value;
+    const garanteId = document.getElementById('garanteId').value;
+    const isEdit = !!garanteId;
+    
+    const formData = new FormData();
+    formData.append('nombre_apellido', document.getElementById('garNombreApellido').value);
+    formData.append('telefono', document.getElementById('garTelefono').value);
+    formData.append('email', document.getElementById('garEmail').value);
+    formData.append('direccion', document.getElementById('garDireccion').value);
+    formData.append('parentesco_id', document.getElementById('garParentescoId').value);
+    formData.append('documento_existing', document.getElementById('garDocExisting').value);
+    
+    const docInput = document.getElementById('garDocumentoInput');
+    if (docInput.files[0]) {
+        formData.append('documento', docInput.files[0]);
+    }
+    
+    const url = isEdit 
+        ? `/garantes/${garanteId}/editar`
+        : `/inquilinos/${inquilinoId}/garantes/crear`;
+    
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            hideGaranteForm();
+            viewGarantes(inquilinoId, document.getElementById('garantesInquilinoName').textContent);
+        } else {
+            alert(data.message || 'Error al guardar garante');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al guardar garante');
+    }
+}
+
+async function deleteGarante(id) {
+    if (!confirm('¿Estás seguro de eliminar este garante?')) return;
+    
+    const inquilinoId = document.getElementById('garantesInquilinoId').value;
+    
+    try {
+        const response = await fetch(`/garantes/${id}/eliminar`, { method: 'POST' });
+        const data = await response.json();
+        
+        if (data.success) {
+            viewGarantes(inquilinoId, document.getElementById('garantesInquilinoName').textContent);
+        } else {
+            alert(data.message || 'Error al eliminar garante');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al eliminar garante');
+    }
+}
+
+// ==========================================
+// HISTORIAL
+// ==========================================
+async function viewHistory(id) {
+    currentHistoryId = id;
+    
+    document.getElementById('historyLoading').style.display = 'block';
+    document.getElementById('historyFilters').style.display = 'none';
+    document.getElementById('historyTableContainer').style.display = 'none';
+    document.getElementById('historyEmpty').style.display = 'none';
+    
+    openModal('historyModal');
+    
+    try {
+        const response = await fetch(`/inquilinos/${id}/historial`);
+        const data = await response.json();
+        
+        document.getElementById('historyLoading').style.display = 'none';
+        
+        if (data.success) {
+            allHistoryRecords = data.historial || [];
+            document.getElementById('historyInquilinoName').textContent = data.inquilino_nombre || 'Desconocido';
+            
+            initHistoryFilters();
+            renderHistory(allHistoryRecords);
+            
+            if (allHistoryRecords.length > 0) {
+                document.getElementById('historyFilters').style.display = 'flex';
+                document.getElementById('historyTableContainer').style.display = 'block';
+            } else {
+                document.getElementById('historyEmpty').style.display = 'block';
+            }
+        } else {
+            document.getElementById('historyEmpty').style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('historyLoading').style.display = 'none';
+        document.getElementById('historyEmpty').style.display = 'block';
+    }
+}
+
+function renderHistory(records) {
+    const tbody = document.getElementById('historyTableBody');
+    tbody.innerHTML = '';
+    
+    if (records.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 40px; color: var(--text-secondary);">No hay registros</td></tr>';
+        return;
+    }
+    
+    records.forEach(record => {
+        const row = document.createElement('tr');
+        
+        let badgeClass = 'badge-info';
+        let accionText = record.tipo_operacion;
+        if (record.tipo_operacion === 'INSERT') { badgeClass = 'badge-success'; accionText = 'Creación'; }
+        else if (record.tipo_operacion === 'UPDATE') { badgeClass = 'badge-warning'; accionText = 'Edición'; }
+        else if (record.tipo_operacion === 'DELETE') { badgeClass = 'badge-danger'; accionText = 'Eliminación'; }
+        
+        row.innerHTML = `
+            <td>${record.fecha_hora}</td>
+            <td>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div class="user-avatar" style="width: 28px; height: 28px; font-size: 11px;">${record.usuario_iniciales}</div>
+                    <span>${record.usuario_nombre}</span>
+                </div>
+            </td>
+            <td><span class="badge ${badgeClass}">${accionText}</span></td>
+            <td>${formatHistoryDetails(record)}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function formatHistoryDetails(record) {
+    if (record.tipo_operacion === 'INSERT') {
+        return `<div style="font-size: 13px;"><strong>Registro Inicial:</strong> ${record.nombre_apellido}<br><span style="color: var(--text-secondary);">Cédula: ${record.cedula || 'N/A'}</span></div>`;
+    } else if (record.tipo_operacion === 'DELETE') {
+        return `<div style="font-size: 13px;"><strong>Registro Eliminado:</strong> ${record.nombre_apellido}</div>`;
+    } else if (record.tipo_operacion === 'UPDATE' && record.cambios) {
+        let changes = record.cambios.map(c => `
+            <div style="margin-bottom: 8px; padding: 8px; background: var(--bg-secondary); border-radius: 6px;">
+                <strong>${c.campo}:</strong><br>
+                <span style="color: var(--text-secondary); font-size: 12px;">
+                    <code style="background: rgba(245, 101, 101, 0.1); padding: 2px 6px; border-radius: 3px;">${c.valor_anterior || 'N/A'}</code>
+                    →
+                    <code style="background: rgba(76, 175, 80, 0.1); padding: 2px 6px; border-radius: 3px;">${c.valor_nuevo || 'N/A'}</code>
+                </span>
+            </div>
+        `).join('');
+        return changes || '<span style="color: var(--text-secondary);">Sin cambios específicos</span>';
+    }
+    return '-';
+}
+
+function initHistoryFilters() {
+    const searchInput = document.getElementById('historySearch');
+    const actionSelect = document.getElementById('historyFilterAction');
+    
+    if (searchInput) {
+        searchInput.removeEventListener('input', filterHistory);
+        searchInput.addEventListener('input', filterHistory);
+        searchInput.value = '';
+    }
+    if (actionSelect) {
+        actionSelect.removeEventListener('change', filterHistory);
+        actionSelect.addEventListener('change', filterHistory);
+        actionSelect.value = '';
+    }
+}
+
+function filterHistory() {
+    const searchTerm = document.getElementById('historySearch')?.value.toLowerCase() || '';
+    const actionFilter = document.getElementById('historyFilterAction')?.value || '';
+    
+    let filtered = allHistoryRecords;
+    
+    if (searchTerm) {
+        filtered = filtered.filter(r => `${r.nombre_apellido} ${r.usuario_nombre}`.toLowerCase().includes(searchTerm));
+    }
+    if (actionFilter) {
+        filtered = filtered.filter(r => r.tipo_operacion === actionFilter);
+    }
+    
+    renderHistory(filtered);
+}
+
+function exportHistory() {
+    if (!allHistoryRecords || allHistoryRecords.length === 0) {
+        alert('No hay datos para exportar');
+        return;
+    }
+    
+    let csv = 'Fecha/Hora,Usuario,Acción,Nombre,Cédula,Licencia\n';
+    
+    allHistoryRecords.forEach(record => {
+        let accionText = record.tipo_operacion;
+        if (record.tipo_operacion === 'INSERT') accionText = 'Creación';
+        else if (record.tipo_operacion === 'UPDATE') accionText = 'Edición';
+        else if (record.tipo_operacion === 'DELETE') accionText = 'Eliminación';
+        
+        csv += `"${record.fecha_hora}","${record.usuario_nombre}","${accionText}","${record.nombre_apellido}","${record.cedula || ''}","${record.licencia || ''}"\n`;
+    });
+    
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `historial_inquilino_${currentHistoryId}_${new Date().toISOString().slice(0,10)}.csv`;
+    link.click();
+}
+
+// ==========================================
+// FILTROS
+// ==========================================
+function applyFilters() {
+    const filterDocs = document.getElementById('filterDocs')?.value || '';
+    const conReferencias = document.getElementById('conReferencias')?.checked || false;
+    const conGarantes = document.getElementById('conGarantes')?.checked || false;
+    
+    filteredRows = allRows.filter(row => {
+        let show = true;
+        
+        // Filtrar por documentos
+        if (filterDocs) {
+            const hasDocs = row.getAttribute('data-has-docs') === 'true';
+            if (filterDocs === 'completos') show = show && hasDocs;
+            else if (filterDocs === 'sin_docs') show = show && !hasDocs;
+        }
+        
+        // Filtrar por referencias
+        if (conReferencias) {
+            show = show && row.getAttribute('data-has-refs') === 'true';
+        }
+        
+        // Filtrar por garantes
+        if (conGarantes) {
+            show = show && row.getAttribute('data-has-garantes') === 'true';
+        }
+        
+        return show;
+    });
+    
+    currentPage = 1;
+    updatePagination();
+    closeModal('filterModal');
+}
+
+function clearFilters() {
+    document.getElementById('filterDocs').value = '';
+    document.getElementById('conReferencias').checked = false;
+    document.getElementById('conGarantes').checked = false;
+    
+    filteredRows = [...allRows];
+    currentPage = 1;
+    updatePagination();
+}
+
+// ==========================================
+// UTILIDADES MODALES
+// ==========================================
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.classList.add('active');
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.classList.remove('active');
+}
+</script>
+
+{% endblock %}
