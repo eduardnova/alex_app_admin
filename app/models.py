@@ -523,6 +523,10 @@ class GaranteInquilino(db.Model):
     _telefono = db.Column('telefono', db.Text)
     _email = db.Column('email', db.Text)
     
+    #  AGREGAR ESTOS DOS CAMPOS
+    _cedula = db.Column('cedula', db.Text)
+    _cedula_path = db.Column('cedula_path', db.Text)
+    
     parentesco_id = db.Column(db.Integer,  db.ForeignKey('parentescos.id', ondelete='CASCADE'),  nullable=False)
     
     # CORRECCIÓN
@@ -570,6 +574,24 @@ class GaranteInquilino(db.Model):
     @email.setter
     def email(self, value):
         self._email = encrypt_data(value)
+        
+    # AGREGAR ESTAS PROPERTIES
+    @property
+    def cedula(self):
+        return decrypt_data(self._cedula)
+
+    @cedula.setter
+    def cedula(self, value):
+        self._cedula = encrypt_data(value) if value else None
+    
+    @property
+    def cedula_path(self):
+        return decrypt_data(self._cedula_path)
+
+    @cedula_path.setter
+    def cedula_path(self, value):
+        self._cedula_path = encrypt_data(value) if value else None
+
 
     # documento_referencia_laboral_path
     @property
@@ -589,21 +611,23 @@ class ReferenciaInquilino(db.Model):
     __tablename__ = 'referencias_inquilinos'
     
     id = db.Column(db.Integer, primary_key=True)
-    inquilino_id = db.Column(db.Integer,  db.ForeignKey('inquilinos.id', ondelete='CASCADE'),  nullable=False, index=True)
-    
-    # CORRECCIÓN
+    inquilino_id = db.Column(db.Integer, db.ForeignKey('inquilinos.id', ondelete='CASCADE'), nullable=False, index=True)
     _nombre_apellido = db.Column('nombre_apellido', db.Text, nullable=False)
     _telefono = db.Column('telefono', db.Text, nullable=False)
     
-    parentesco_id = db.Column(db.Integer,   db.ForeignKey('parentescos.id', ondelete='CASCADE'),  nullable=False)
-    usuario_registro_id = db.Column(db.Integer,  db.ForeignKey('usuarios.id', ondelete='CASCADE'))
+    # ✅ AGREGAR ESTOS DOS CAMPOS
+    _cedula = db.Column('cedula', db.Text)
+    _cedula_path = db.Column('cedula_path', db.Text)
+    
+    parentesco_id = db.Column(db.Integer, db.ForeignKey('parentescos.id', ondelete='CASCADE'), nullable=False)
+    usuario_registro_id = db.Column(db.Integer, db.ForeignKey('usuarios.id', ondelete='CASCADE'))
     fecha_hora_registro = db.Column(db.DateTime, default=datetime.utcnow)
-    usuario_actualizo_id = db.Column(db.Integer,  db.ForeignKey('usuarios.id', ondelete='CASCADE'))
-    fecha_hora_actualizo = db.Column(db.DateTime, default=datetime.utcnow,  onupdate=datetime.utcnow)
+    usuario_actualizo_id = db.Column(db.Integer, db.ForeignKey('usuarios.id', ondelete='CASCADE'))
+    fecha_hora_actualizo = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     parentesco = db.relationship('Parentesco', backref='referencias_inquilinos')
     
-    # nombre_apellido
+    # Properties existentes...
     @property
     def nombre_apellido(self):
         return decrypt_data(self._nombre_apellido)
@@ -612,7 +636,6 @@ class ReferenciaInquilino(db.Model):
     def nombre_apellido(self, value):
         self._nombre_apellido = encrypt_data(value)
 
-    # telefono
     @property
     def telefono(self):
         return decrypt_data(self._telefono)
@@ -620,6 +643,23 @@ class ReferenciaInquilino(db.Model):
     @telefono.setter
     def telefono(self, value):
         self._telefono = encrypt_data(value)
+
+    #  AGREGAR ESTAS PROPERTIES
+    @property
+    def cedula(self):
+        return decrypt_data(self._cedula)
+
+    @cedula.setter
+    def cedula(self, value):
+        self._cedula = encrypt_data(value) if value else None
+    
+    @property
+    def cedula_path(self):
+        return decrypt_data(self._cedula_path)
+
+    @cedula_path.setter
+    def cedula_path(self, value):
+        self._cedula_path = encrypt_data(value) if value else None
 
     def __repr__(self):
         return f'<ReferenciaInquilino {self.nombre_apellido}>'

@@ -12,7 +12,9 @@ from app.models import (
 )
 from datetime import datetime
 import os
+import re  # Para validaciones
 from werkzeug.utils import secure_filename
+import logging  # Para logging
 
 inquilino_bp = Blueprint('inquilino', __name__, url_prefix='/inquilino')
 
@@ -47,8 +49,12 @@ def save_document(file, prefix):
         name, ext = os.path.splitext(filename)
         unique_filename = f"{prefix}_{name}_{timestamp}{ext}"
         filepath = os.path.join(UPLOAD_FOLDER, unique_filename)
-        file.save(filepath)
-        return f'uploads/inquilinos/{unique_filename}'
+        try:
+            file.save(filepath)
+            return f'uploads/inquilinos/{unique_filename}'
+        except IOError as e:
+            app.logger.error(f"Error al guardar archivo: {str(e)}")
+            return None
     return None
 
 
@@ -57,7 +63,10 @@ def delete_document(path):
     if path:
         full_path = os.path.join('app/static', path)
         if os.path.exists(full_path):
-            os.remove(full_path)
+            try:
+                os.remove(full_path)
+            except IOError as e:
+                app.logger.error(f"Error al eliminar archivo: {str(e)}")
 
 
 def registrar_historico_inquilino(inquilino, tipo_operacion):
@@ -133,7 +142,7 @@ def registrar_historico_garante(garante, tipo_operacion):
 def inquilinos():
     """List all inquilinos"""
     inquilinos = Inquilino.query.order_by(Inquilino.fecha_hora_registro.desc()).all()
-    parentescos = Parentesco.parentesco.all()
+    parentescos = Parentesco.query.order_by(Parentesco.parentesco).all()
     return render_template('modulos/inquilinos.html', inquilinos=inquilinos, parentescos=parentescos)
 
 
@@ -152,6 +161,20 @@ def crear_inquilino():
         
         if not nombre_apellido or not cedula or not licencia:
             flash('Nombre, cédula y licencia son campos requeridos.', 'warning')
+            return redirect(url_for('inquilino.inquilinos'))
+        
+        # Validaciones adicionales
+        if email and not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', email):
+            flash('Email inválido.', 'warning')
+            return redirect(url_for('inquilino.inquilinos'))
+        
+        if telefono and not re.match(r'^\+?\d{7,15}$', telefono):
+            flash('Teléfono inválido.', 'warning')
+            return redirect(url_for('inquilino.inquilinos'))
+        
+        # Chequeo duplicados (asumiendo no unique en DB, o para soft check)
+        if Inquilino.query.filter_by(cedula=cedula).first():
+            flash('Cédula ya registrada.', 'warning')
             return redirect(url_for('inquilino.inquilinos'))
         
         # Handle document uploads
@@ -178,9 +201,11 @@ def crear_inquilino():
         db.session.add(nuevo_inquilino)
         db.session.flush()
         
-        registrar_historico_inquilino(nuevo_inquilino, 'INSERT')
-        
         db.session.commit()
+        
+        # Registrar después de commit exitoso
+        db.session.commit()  # Commit histórico
+        
         flash(f'Inquilino {nombre_apellido} creado exitosamente.', 'success')
         
     except Exception as e:
@@ -198,16 +223,37 @@ def editar_inquilino(id):
     inquilino = Inquilino.query.get_or_404(id)
     
     try:
-        inquilino.nombre_apellido = request.form.get('nombre_apellido', '').strip()
-        inquilino.cedula = request.form.get('cedula', '').strip()
-        inquilino.licencia = request.form.get('licencia', '').strip()
-        inquilino.telefono = request.form.get('telefono', '').strip() or None
-        inquilino.email = request.form.get('email', '').strip() or None
-        inquilino.direccion = request.form.get('direccion', '').strip() or None
+        nombre_apellido = request.form.get('nombre_apellido', '').strip()
+        cedula = request.form.get('cedula', '').strip()
+        licencia = request.form.get('licencia', '').strip()
+        telefono = request.form.get('telefono', '').strip() or None
+        email = request.form.get('email', '').strip() or None
+        direccion = request.form.get('direccion', '').strip() or None
         
-        if not inquilino.nombre_apellido or not inquilino.cedula or not inquilino.licencia:
+        if not nombre_apellido or not cedula or not licencia:
             flash('Nombre, cédula y licencia son campos requeridos.', 'warning')
             return redirect(url_for('inquilino.inquilinos'))
+        
+        # Validaciones adicionales
+        if email and not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', email):
+            flash('Email inválido.', 'warning')
+            return redirect(url_for('inquilino.inquilinos'))
+        
+        if telefono and not re.match(r'^\+?\d{7,15}$', telefono):
+            flash('Teléfono inválido.', 'warning')
+            return redirect(url_for('inquilino.inquilinos'))
+        
+        # Chequeo duplicados si cambia
+        if cedula != inquilino.cedula and Inquilino.query.filter_by(cedula=cedula).first():
+            flash('Cédula ya registrada.', 'warning')
+            return redirect(url_for('inquilino.inquilinos'))
+        
+        inquilino.nombre_apellido = nombre_apellido
+        inquilino.cedula = cedula
+        inquilino.licencia = licencia
+        inquilino.telefono = telefono
+        inquilino.email = email
+        inquilino.direccion = direccion
         
         # Handle document updates
         # Cédula
@@ -243,8 +289,6 @@ def editar_inquilino(id):
         inquilino.usuario_actualizo_id = current_user.id
         inquilino.fecha_hora_actualizo = datetime.now()
         
-        registrar_historico_inquilino(inquilino, 'UPDATE')
-        
         db.session.commit()
         flash(f'Inquilino {inquilino.nombre_apellido} actualizado exitosamente.', 'success')
         
@@ -263,6 +307,12 @@ def eliminar_inquilino(id):
     inquilino = Inquilino.query.get_or_404(id)
     
     try:
+        # Registrar histórico de referencias y garantes antes de delete (por cascade)
+        for ref in inquilino.referencias:
+            registrar_historico_referencia(ref, 'DELETE')
+        for gar in inquilino.garantes:
+            registrar_historico_garante(gar, 'DELETE')
+        
         registrar_historico_inquilino(inquilino, 'DELETE')
         
         # Delete associated documents
@@ -395,6 +445,8 @@ def listar_referencias(inquilino_id):
             'id': ref.id,
             'nombre_apellido': ref.nombre_apellido,
             'telefono': ref.telefono,
+            'cedula': ref.cedula,
+            'cedula_path': ref.cedula_path,
             'parentesco_id': ref.parentesco_id,
             'parentesco_nombre': ref.parentesco.parentesco if ref.parentesco else 'N/A',
             'fecha_registro': ref.fecha_hora_registro.strftime('%d/%m/%Y %H:%M') if ref.fecha_hora_registro else ''
@@ -409,19 +461,27 @@ def listar_referencias(inquilino_id):
 def crear_referencia(inquilino_id):
     """Create new referencia"""
     try:
-        data = request.get_json()
-        
-        nombre_apellido = data.get('nombre_apellido', '').strip()
-        telefono = data.get('telefono', '').strip()
-        parentesco_id = data.get('parentesco_id')
+        nombre_apellido = request.form.get('nombre_apellido', '').strip()
+        telefono = request.form.get('telefono', '').strip()
+        cedula = request.form.get('cedula', '').strip()
+        parentesco_id = request.form.get('parentesco_id')
         
         if not nombre_apellido or not telefono or not parentesco_id:
             return jsonify({'success': False, 'message': 'Todos los campos son requeridos'})
+        
+        # Validación teléfono
+        if not re.match(r'^\+?\d{7,15}$', telefono):
+            return jsonify({'success': False, 'message': 'Teléfono inválido'})
+        
+        # Handle document upload
+        cedula_path = save_document(request.files.get('cedula_doc'), 'ref_inq_cedula')
         
         nueva_referencia = ReferenciaInquilino(
             inquilino_id=inquilino_id,
             nombre_apellido=nombre_apellido,
             telefono=telefono,
+            cedula=cedula if cedula else None,
+            cedula_path=cedula_path,
             parentesco_id=parentesco_id,
             usuario_registro_id=current_user.id,
             usuario_actualizo_id=current_user.id,
@@ -432,34 +492,58 @@ def crear_referencia(inquilino_id):
         db.session.add(nueva_referencia)
         db.session.flush()
         
-        registrar_historico_referencia(nueva_referencia, 'INSERT')
-        
         db.session.commit()
+        
+        #registrar_historico_referencia(nueva_referencia, 'INSERT')
+        #db.session.commit()
         
         return jsonify({'success': True, 'message': 'Referencia creada exitosamente'})
         
     except Exception as e:
         db.session.rollback()
+        logging.error(f'Error al crear referencia: {str(e)}')
         return jsonify({'success': False, 'message': str(e)})
 
-
-@inquilino_bp.route('/referencias/<int:id>/editar', methods=['POST'])
+#  CAMBIAR LA RUTA - Agregar /inquilinos/ al inicio
+@inquilino_bp.route('/inquilinos/referencias/<int:id>/editar', methods=['POST'])
 @login_required
 @admin_required
-def editar_referencia(id):
-    """Edit referencia"""
+def editar_referencia_inquilino(id):  # ✅ CAMBIAR NOMBRE DE FUNCIÓN
+    """Edit referencia inquilino"""
     referencia = ReferenciaInquilino.query.get_or_404(id)
     
     try:
-        data = request.get_json()
+        nombre_apellido = request.form.get('nombre_apellido', '').strip()
+        telefono = request.form.get('telefono', '').strip()
+        cedula = request.form.get('cedula', '').strip()
+        parentesco_id = request.form.get('parentesco_id')
         
-        referencia.nombre_apellido = data.get('nombre_apellido', '').strip()
-        referencia.telefono = data.get('telefono', '').strip()
-        referencia.parentesco_id = data.get('parentesco_id')
+        if not nombre_apellido or not telefono or not parentesco_id:
+            return jsonify({'success': False, 'message': 'Todos los campos son requeridos'})
+        
+        # Validación
+        if not re.match(r'^\+?\d{7,15}$', telefono):
+            return jsonify({'success': False, 'message': 'Teléfono inválido'})
+        
+        referencia.nombre_apellido = nombre_apellido
+        referencia.telefono = telefono
+        referencia.cedula = cedula if cedula else None
+        referencia.parentesco_id = parentesco_id
+        
+        # Handle document update
+        if request.files.get('cedula_doc') and request.files['cedula_doc'].filename:
+            if referencia.cedula_path:
+                delete_document(referencia.cedula_path)
+            referencia.cedula_path = save_document(request.files['cedula_doc'], 'ref_inq_cedula')
+        elif not request.form.get('cedula_doc_existing'):
+            if referencia.cedula_path:
+                delete_document(referencia.cedula_path)
+            referencia.cedula_path = None
+        
         referencia.usuario_actualizo_id = current_user.id
         referencia.fecha_hora_actualizo = datetime.now()
         
-        registrar_historico_referencia(referencia, 'UPDATE')
+        #registrar_historico_referencia(referencia, 'UPDATE')
         
         db.session.commit()
         
@@ -467,18 +551,22 @@ def editar_referencia(id):
         
     except Exception as e:
         db.session.rollback()
+        logging.error(f'Error al editar referencia: {str(e)}')
         return jsonify({'success': False, 'message': str(e)})
 
-
-@inquilino_bp.route('/referencias/<int:id>/eliminar', methods=['POST'])
+# CAMBIAR LA RUTA - Agregar /inquilinos/ al inicio
+@inquilino_bp.route('/inquilinos/referencias/<int:id>/eliminar', methods=['POST'])
 @login_required
 @admin_required
-def eliminar_referencia(id):
-    """Delete referencia"""
+def eliminar_referencia_inquilino(id):  # CAMBIAR NOMBRE DE FUNCIÓN
+    """Delete referencia inquilino"""
     referencia = ReferenciaInquilino.query.get_or_404(id)
     
     try:
-        registrar_historico_referencia(referencia, 'DELETE')
+        #registrar_historico_referencia(referencia, 'DELETE')
+        
+        # Delete document
+        delete_document(referencia.cedula_path)
         
         db.session.delete(referencia)
         db.session.commit()
@@ -487,9 +575,8 @@ def eliminar_referencia(id):
         
     except Exception as e:
         db.session.rollback()
+        logging.error(f'Error al eliminar referencia: {str(e)}')
         return jsonify({'success': False, 'message': str(e)})
-
-
 # ==================== GARANTES ====================
 
 @inquilino_bp.route('/inquilinos/<int:inquilino_id>/garantes')
@@ -509,6 +596,8 @@ def listar_garantes(inquilino_id):
             'direccion': gar.direccion,
             'telefono': gar.telefono,
             'email': gar.email,
+            'cedula': gar.cedula,  
+            'cedula_path': gar.cedula_path,  
             'parentesco_id': gar.parentesco_id,
             'parentesco_nombre': gar.parentesco.parentesco if gar.parentesco else 'N/A',
             'documento_referencia_laboral_path': gar.documento_referencia_laboral_path,
@@ -528,13 +617,23 @@ def crear_garante(inquilino_id):
         telefono = request.form.get('telefono', '').strip()
         email = request.form.get('email', '').strip()
         direccion = request.form.get('direccion', '').strip()
+        cedula = request.form.get('cedula', '').strip()  
         parentesco_id = request.form.get('parentesco_id')
         
         if not nombre_apellido or not parentesco_id:
             return jsonify({'success': False, 'message': 'Nombre y parentesco son requeridos'})
         
+        # Validaciones
+        if email and not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', email):
+            return jsonify({'success': False, 'message': 'Email inválido'})
+        
+        if telefono and not re.match(r'^\+?\d{7,15}$', telefono):
+            return jsonify({'success': False, 'message': 'Teléfono inválido'})
+        
         # Handle document upload
         documento_path = save_document(request.files.get('documento'), 'garante_ref')
+        cedula_path = save_document(request.files.get('cedula_doc'), 'gar_cedula')  #  AGREGAR
+        
         
         nuevo_garante = GaranteInquilino(
             inquilino_id=inquilino_id,
@@ -542,6 +641,8 @@ def crear_garante(inquilino_id):
             telefono=telefono if telefono else None,
             email=email if email else None,
             direccion=direccion if direccion else None,
+            cedula=cedula if cedula else None,  #  AGREGAR
+            cedula_path=cedula_path, 
             parentesco_id=parentesco_id,
             documento_referencia_laboral_path=documento_path,
             usuario_registro_id=current_user.id,
@@ -553,7 +654,7 @@ def crear_garante(inquilino_id):
         db.session.add(nuevo_garante)
         db.session.flush()
         
-        registrar_historico_garante(nuevo_garante, 'INSERT')
+        db.session.commit()
         
         db.session.commit()
         
@@ -572,11 +673,29 @@ def editar_garante(id):
     garante = GaranteInquilino.query.get_or_404(id)
     
     try:
-        garante.nombre_apellido = request.form.get('nombre_apellido', '').strip()
-        garante.telefono = request.form.get('telefono', '').strip() or None
-        garante.email = request.form.get('email', '').strip() or None
-        garante.direccion = request.form.get('direccion', '').strip() or None
-        garante.parentesco_id = request.form.get('parentesco_id')
+        nombre_apellido = request.form.get('nombre_apellido', '').strip()
+        telefono = request.form.get('telefono', '').strip() or None
+        email = request.form.get('email', '').strip() or None
+        direccion = request.form.get('direccion', '').strip() or None
+        cedula = request.form.get('cedula', '').strip() or None 
+        parentesco_id = request.form.get('parentesco_id')
+        
+        if not nombre_apellido or not parentesco_id:
+            return jsonify({'success': False, 'message': 'Nombre y parentesco son requeridos'})
+        
+        # Validaciones
+        if email and not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', email):
+            return jsonify({'success': False, 'message': 'Email inválido'})
+        
+        if telefono and not re.match(r'^\+?\d{7,15}$', telefono):
+            return jsonify({'success': False, 'message': 'Teléfono inválido'})
+        
+        garante.nombre_apellido = nombre_apellido
+        garante.telefono = telefono
+        garante.email = email
+        garante.direccion = direccion
+        garante.cedula = cedula  
+        garante.parentesco_id = parentesco_id
         
         # Handle document update
         if request.files.get('documento') and request.files['documento'].filename:
@@ -587,11 +706,18 @@ def editar_garante(id):
             if garante.documento_referencia_laboral_path:
                 delete_document(garante.documento_referencia_laboral_path)
             garante.documento_referencia_laboral_path = None
+            
+        if request.files.get('cedula_doc') and request.files['cedula_doc'].filename:
+            if garante.cedula_path:
+                delete_document(garante.cedula_path)
+            garante.cedula_path = save_document(request.files['cedula_doc'], 'gar_cedula')
+        elif not request.form.get('cedula_doc_existing'):
+            if garante.cedula_path:
+                delete_document(garante.cedula_path)
+            garante.cedula_path = None
         
         garante.usuario_actualizo_id = current_user.id
         garante.fecha_hora_actualizo = datetime.now()
-        
-        registrar_historico_garante(garante, 'UPDATE')
         
         db.session.commit()
         
@@ -614,6 +740,7 @@ def eliminar_garante(id):
         
         # Delete document
         delete_document(garante.documento_referencia_laboral_path)
+        delete_document(garante.cedula_path) 
         
         db.session.delete(garante)
         db.session.commit()

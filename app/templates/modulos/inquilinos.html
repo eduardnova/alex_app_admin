@@ -6,6 +6,14 @@
 <span class="breadcrumb-item">Inquilinos</span>
 {% endblock %}
 {% block content %}
+<!-- FilePond CSS -->
+<link href="https://unpkg.com/filepond/dist/filepond.min.css" rel="stylesheet">
+<link href="https://unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css" rel="stylesheet">
+
+<!-- FilePond JS -->
+<script src="https://unpkg.com/filepond-plugin-file-validate-type/dist/filepond-plugin-file-validate-type.min.js"></script>
+<script src="https://unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.js"></script>
+<script src="https://unpkg.com/filepond/dist/filepond.min.js"></script>
 
 <div class="content-area">
     <!-- Table Card -->
@@ -355,7 +363,13 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button>
+                <button type="button" class="btn btn-secondary" data-modal-close>
+                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-square" viewBox="0 0 16 16">
+                        <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"/>
+                        <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/>
+                    </svg>
+                    Cancelar
+                </button>
                 <button type="submit" class="btn btn-primary">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
@@ -395,7 +409,13 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button>
+                <button type="button" class="btn btn-secondary" data-modal-close>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-square" viewBox="0 0 16 16">
+                        <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"/>
+                        <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/>
+                    </svg>
+                    Cancelar
+                </button>
                 <button type="submit" class="btn btn-danger">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="3 6 5 6 21 6"></polyline>
@@ -442,7 +462,7 @@
             <!-- Formulario agregar/editar referencia -->
             <div id="referenciaFormContainer" style="display: none; background: var(--bg-secondary); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
                 <h5 style="margin-bottom: 16px; font-size: 14px; font-weight: 600;" id="referenciaFormTitle">Nueva Referencia</h5>
-                <form id="referenciaForm">
+                <form id="referenciaForm" enctype="multipart/form-data">
                     <input type="hidden" id="referenciaId">
                     <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
                         <div class="form-group">
@@ -453,34 +473,55 @@
                             <label class="form-label required">Teléfono</label>
                             <input type="tel" id="refTelefono" class="form-input" placeholder="809-000-0000" required>
                         </div>
-                        <div class="alert alert-info">
-    <h5>DEBUG: Parentescos recibidos</h5>
-    <p>Total: {{ parentescos|length }}</p>
-    {% if parentescos %}
-        <ul>
-        {% for p in parentescos %}
-            <li>ID: {{ p.id }} - Nombre: {{ p.parentesco }}</li>
-        {% endfor %}
-        </ul>
-    {% else %}
-        <p style="color: red;">¡La lista de parentescos está VACÍA!</p>
-    {% endif %}
-</div>
+                        <!--  AGREGAR CAMPO CÉDULA -->
+                        <div class="form-group">
+                            <label class="form-label">Cédula</label>
+                            <input type="text" id="refCedula" class="form-input" placeholder="001-0000000-0">
+                        </div>
 
-<!-- Tu select original -->
-<div class="form-group">
-    <label class="form-label required">Parentesco</label>
-    <select id="refParentescoId" class="form-select" required>
-        <option value="">Seleccionar...</option>
-        {% for parentesco in parentescos %}
-        <option value="{{ parentesco.id }}">{{ parentesco.parentesco }}</option>
-        {% endfor %}
-    </select>
-</div>
+                                                <!-- Tu select original -->
+                        <div class="form-group">
+                            <label class="form-label required">Parentesco</label>
+                            <select id="refParentescoId" class="form-select" required>
+                                <option value="">Seleccionar...</option>
+                                {% for parentesco in parentescos %}
+                                <option value="{{ parentesco.id }}">{{ parentesco.parentesco }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Doc. Cédula</label>
+                            <div class="file-upload">
+                                <input type="file" id="refCedulaDocInput" class="file-input" accept="image/*,.pdf" onchange="handleRefCedulaDocPreview(this)">
+                                <label for="refCedulaDocInput" class="file-label" style="padding: 8px 12px;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                    </svg>
+                                    <span id="refCedulaDocText" style="font-size: 12px;">Subir</span>
+                                </label>
+                            </div>
+                            <div id="refCedulaDocPreview" style="margin-top: 8px; display: none;">
+                                <div style="position: relative; display: inline-block;">
+                                    <img id="refCedulaDocPreviewImg" src="" style="max-width: 80px; max-height: 60px; border-radius: 6px;">
+                                    <button type="button" onclick="clearRefCedulaDoc()" style="position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%; background: var(--danger); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px;">×</button>
+                                </div>
+                            </div>
+                            <input type="hidden" id="refCedulaDocExisting">
+                        </div>
+                 
+
+
 
                     </div>
                     <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px;">
-                        <button type="button" class="btn btn-secondary btn-sm" onclick="hideReferenciaForm()">Cancelar</button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="hideReferenciaForm()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-square" viewBox="0 0 16 16">
+                                <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"/>
+                                <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/>
+                            </svg>
+                            Cancelar
+                        </button>
                         <button type="submit" class="btn btn-primary btn-sm" id="refSubmitBtn">Guardar</button>
                     </div>
                 </form>
@@ -503,6 +544,8 @@
                             <th>ID</th>
                             <th>Nombre</th>
                             <th>Teléfono</th>
+                            <th>Cédula</th>
+                            <th>Doc. Cédula</th>
                             <th>Parentesco</th>
                             <th>Fecha Registro</th>
                             <th>Acciones</th>
@@ -521,7 +564,13 @@
             </div>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button>
+            <button type="button" class="btn btn-secondary" data-modal-close>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-square" viewBox="0 0 16 16">
+                    <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"/>
+                    <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/>
+                </svg>
+                Cerrar
+            </button>
         </div>
     </div>
 </div>
@@ -575,6 +624,12 @@
                             <label class="form-label">Email</label>
                             <input type="email" id="garEmail" class="form-input" placeholder="correo@ejemplo.com">
                         </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Cédula</label>
+                            <input type="text" id="garCedula" class="form-input" placeholder="001-0000000-0">
+                        </div>
+
                         <div class="form-group">
                             <label class="form-label">Dirección</label>
                             <input type="text" id="garDireccion" class="form-input" placeholder="Dirección completa">
@@ -588,6 +643,28 @@
                                 {% endfor %}
                             </select>
                         </div>
+      
+                        <!-- AGREGAR CAMPO DOC CÉDULA -->
+                        <div class="form-group">
+                            <label class="form-label">Doc. Cédula</label>
+                            <div class="file-upload">
+                                <input type="file" id="garCedulaDocInput" class="file-input" accept="image/*,.pdf" onchange="handleGarCedulaDocPreview(this)">
+                                <label for="garCedulaDocInput" class="file-label" style="padding: 8px 12px;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                    </svg>
+                                    <span id="garCedulaDocText" style="font-size: 12px;">Subir</span>
+                                </label>
+                            </div>
+                            <div id="garCedulaDocPreview" style="margin-top: 8px; display: none;">
+                                <div style="position: relative; display: inline-block;">
+                                    <img id="garCedulaDocPreviewImg" src="" style="max-width: 80px; max-height: 60px; border-radius: 6px;">
+                                    <button type="button" onclick="clearGarCedulaDoc()" style="position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%; background: var(--danger); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px;">×</button>
+                                </div>
+                            </div>
+                            <input type="hidden" id="garCedulaDocExisting">
+                        </div>
+
                         <div class="form-group">
                             <label class="form-label">Referencia Laboral</label>
                             <div class="file-upload">
@@ -609,7 +686,13 @@
                         </div>
                     </div>
                     <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px;">
-                        <button type="button" class="btn btn-secondary btn-sm" onclick="hideGaranteForm()">Cancelar</button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="hideGaranteForm()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-square" viewBox="0 0 16 16">
+                                <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"/>
+                                <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/>
+                            </svg>
+                            Cancelar
+                        </button>
                         <button type="submit" class="btn btn-primary btn-sm" id="garSubmitBtn">Guardar</button>
                     </div>
                 </form>
@@ -633,6 +716,8 @@
                             <th>Nombre</th>
                             <th>Teléfono</th>
                             <th>Email</th>
+                            <th>Cédula</th>
+                            <th>Doc. Cédula</th>
                             <th>Parentesco</th>
                             <th>Documento</th>
                             <th>Fecha Registro</th>
@@ -652,11 +737,72 @@
             </div>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button>
+            <button type="button" class="btn btn-secondary" data-modal-close>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-square" viewBox="0 0 16 16">
+                    <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"/>
+                    <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/>
+                </svg>
+                Cerrar
+            </button>
         </div>
     </div>
 </div>
-
+<!-- ========================================= -->
+<!-- MODAL: Visualizar Documento -->
+<!-- ========================================= -->
+<div class="modal-overlay" id="documentModal">
+    <div class="modal modal-lg">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                </svg>
+                Documento - <span id="documentOwnerName"></span>
+            </h3>
+            <button class="modal-close" data-modal-close>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body" style="max-height: 70vh; overflow: auto;">
+            <!-- Contenedor para imágenes -->
+            <div id="imageContainer" style="display: none; text-align: center;">
+                <img id="documentImage" src="" alt="Documento" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+            </div>
+            
+            <!-- Contenedor para PDFs -->
+            <div id="pdfContainer" style="display: none; width: 100%; height: 600px;">
+                <iframe id="documentPdf" src="" style="width: 100%; height: 100%; border: none; border-radius: 8px;"></iframe>
+            </div>
+            
+            <!-- Loading -->
+            <div id="documentLoading" style="text-align: center; padding: 60px;">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="animation: spin 1s linear infinite;">
+                    <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="0" opacity="0.25"/>
+                    <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="8"/>
+                </svg>
+                <p style="margin-top: 16px; color: var(--text-secondary);">Cargando documento...</p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a id="downloadDocLink" href="" download class="btn btn-primary" style="text-decoration: none;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="margin-right: 8px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Descargar
+            </a>
+            <button type="button" class="btn btn-secondary" data-modal-close>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-square" viewBox="0 0 16 16">
+                    <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"/>
+                    <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/>
+                </svg>
+                Cerrar
+            </button>
+        </div>
+    </div>
+</div>
 <!-- ========================================= -->
 <!-- MODAL: Historial de Modificaciones -->
 <!-- ========================================= -->
@@ -729,7 +875,13 @@
             </div>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button>
+            <button type="button" class="btn btn-secondary" data-modal-close>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-square" viewBox="0 0 16 16">
+                    <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"/>
+                    <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/>
+                </svg>
+                Cerrar
+            </button>
             <button type="button" class="btn btn-primary" onclick="exportHistory()">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -781,7 +933,7 @@
         </div>
         <div class="modal-footer">
             <button type="button" class="btn btn-secondary" onclick="clearFilters()">Limpiar</button>
-            <button type="button" class="btn btn-primary" onclick="applyFilters()">Aplicar Filtros</button>
+            <button type="button" class="btn btn-primary" onclick="applyFilters()" data-modal-close>Aplicar Filtros</button>
         </div>
     </div>
 </div>
@@ -1128,6 +1280,17 @@ function renderReferencias(referencias) {
             <td>#${ref.id}</td>
             <td><strong>${ref.nombre_apellido}</strong></td>
             <td>${ref.telefono}</td>
+            <td>${ref.cedula || '—'}</td>
+            <td>
+                ${ref.cedula_path 
+                    ? `<button onclick='viewDocument("${ref.cedula_path}", "${ref.nombre_apellido}")' class="badge badge-success" style="border:none;cursor:pointer;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-richtext" viewBox="0 0 16 16">
+                            <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5z"/>
+                            <path d="M4.5 12.5A.5.5 0 0 1 5 12h3a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5m0-2A.5.5 0 0 1 5 10h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5m1.639-3.708 1.33.886 1.854-1.855a.25.25 0 0 1 .289-.047l1.888.974V8.5a.5.5 0 0 1-.5.5H5a.5.5 0 0 1-.5-.5V8s1.54-1.274 1.639-1.208M6.25 6a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5"/>
+                        </svg>
+                        Ver Doc</button>` 
+                    : '<span style="color: var(--text-tertiary);">—</span>'}
+            </td>
             <td><span class="badge badge-info">${ref.parentesco_nombre}</span></td>
             <td>${ref.fecha_registro}</td>
             <td>
@@ -1163,8 +1326,24 @@ function editReferencia(ref) {
     document.getElementById('referenciaId').value = ref.id;
     document.getElementById('refNombreApellido').value = ref.nombre_apellido;
     document.getElementById('refTelefono').value = ref.telefono;
+    document.getElementById('refCedula').value = ref.cedula || '';  // AGREGAR
     document.getElementById('refParentescoId').value = ref.parentesco_id;
     document.getElementById('refSubmitBtn').textContent = 'Actualizar';
+    
+    //  AGREGAR: Documento existente
+    if (ref.cedula_path) {
+        document.getElementById('refCedulaDocExisting').value = ref.cedula_path;
+        document.getElementById('refCedulaDocText').textContent = 'Cambiar';
+        if (!ref.cedula_path.toLowerCase().endsWith('.pdf')) {
+            document.getElementById('refCedulaDocPreviewImg').src = '/static/' + ref.cedula_path;
+            document.getElementById('refCedulaDocPreview').style.display = 'block';
+        }
+    } else {
+        document.getElementById('refCedulaDocPreview').style.display = 'none';
+        document.getElementById('refCedulaDocExisting').value = '';
+        document.getElementById('refCedulaDocText').textContent = 'Subir';
+    }
+    
     document.getElementById('referenciaFormContainer').style.display = 'block';
 }
 
@@ -1175,21 +1354,27 @@ async function handleReferenciaSubmit(e) {
     const referenciaId = document.getElementById('referenciaId').value;
     const isEdit = !!referenciaId;
     
-    const formData = {
-        nombre_apellido: document.getElementById('refNombreApellido').value,
-        telefono: document.getElementById('refTelefono').value,
-        parentesco_id: document.getElementById('refParentescoId').value
-    };
+    const formData = new FormData();
+    formData.append('nombre_apellido', document.getElementById('refNombreApellido').value);
+    formData.append('telefono', document.getElementById('refTelefono').value);
+    formData.append('cedula', document.getElementById('refCedula').value);
+    formData.append('parentesco_id', document.getElementById('refParentescoId').value);
+    formData.append('cedula_doc_existing', document.getElementById('refCedulaDocExisting').value);
     
+    const cedulaDocInput = document.getElementById('refCedulaDocInput');
+    if (cedulaDocInput.files[0]) {
+        formData.append('cedula_doc', cedulaDocInput.files[0]);
+    }
+    
+    // ✅ CAMBIAR LAS URLs - Agregar /inquilinos/ antes de /referencias/
     const url = isEdit 
-        ? `/referencias/${referenciaId}/editar`
+        ? `/inquilinos/referencias/${referenciaId}/editar`  // ✅ CAMBIO AQUÍ
         : `/inquilinos/${inquilinoId}/referencias/crear`;
     
     try {
         const response = await fetch(url, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(formData)
+            body: formData
         });
         
         const data = await response.json();
@@ -1206,13 +1391,17 @@ async function handleReferenciaSubmit(e) {
     }
 }
 
+
 async function deleteReferencia(id) {
     if (!confirm('¿Estás seguro de eliminar esta referencia?')) return;
     
     const inquilinoId = document.getElementById('referenciasInquilinoId').value;
     
     try {
-        const response = await fetch(`/referencias/${id}/eliminar`, { method: 'POST' });
+        // CAMBIAR URL - Agregar /inquilinos/ antes de /referencias/
+        const response = await fetch(`/inquilinos/referencias/${id}/eliminar`, { 
+            method: 'POST' 
+        });
         const data = await response.json();
         
         if (data.success) {
@@ -1276,10 +1465,22 @@ function renderGarantes(garantes) {
             </td>
             <td>${gar.telefono || '—'}</td>
             <td>${gar.email || '—'}</td>
+            <td>${gar.cedula || '—'}</td>
+            <td>
+                ${gar.cedula_path 
+                    ? `<button onclick='viewDocument("${gar.cedula_path}", "${gar.nombre_apellido}")' class="badge badge-info" style="border:none;cursor:pointer;">Cédula</button>` 
+                    : '<span style="color: var(--text-tertiary);">—</span>'}
+            </td>
             <td><span class="badge badge-info">${gar.parentesco_nombre}</span></td>
             <td>
                 ${gar.documento_referencia_laboral_path 
-                    ? `<a href="/static/${gar.documento_referencia_laboral_path}" target="_blank" class="badge badge-success">Ver Doc</a>` 
+                    ? `<button onclick='viewDocument("${gar.documento_referencia_laboral_path}", "${gar.nombre_apellido}")' class="badge badge-success" style="border:none;cursor:pointer;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-richtext" viewBox="0 0 16 16">
+                                <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5z"/>
+                                <path d="M4.5 12.5A.5.5 0 0 1 5 12h3a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5m0-2A.5.5 0 0 1 5 10h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5m1.639-3.708 1.33.886 1.854-1.855a.25.25 0 0 1 .289-.047l1.888.974V8.5a.5.5 0 0 1-.5.5H5a.5.5 0 0 1-.5-.5V8s1.54-1.274 1.639-1.208M6.25 6a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5"/>
+                            </svg>
+                            Ref. Lab.
+                        </button>` 
                     : '<span style="color: var(--text-tertiary);">—</span>'}
             </td>
             <td>${gar.fecha_registro}</td>
@@ -1321,9 +1522,24 @@ function editGarante(gar) {
     document.getElementById('garTelefono').value = gar.telefono || '';
     document.getElementById('garEmail').value = gar.email || '';
     document.getElementById('garDireccion').value = gar.direccion || '';
+    document.getElementById('garCedula').value = gar.cedula || ''; 
     document.getElementById('garParentescoId').value = gar.parentesco_id;
     document.getElementById('garSubmitBtn').textContent = 'Actualizar';
     
+    // AGREGAR: Doc Cédula existente
+    if (gar.cedula_path) {
+        document.getElementById('garCedulaDocExisting').value = gar.cedula_path;
+        document.getElementById('garCedulaDocText').textContent = 'Cambiar';
+        if (!gar.cedula_path.toLowerCase().endsWith('.pdf')) {
+            document.getElementById('garCedulaDocPreviewImg').src = '/static/' + gar.cedula_path;
+            document.getElementById('garCedulaDocPreview').style.display = 'block';
+        }
+    } else {
+        document.getElementById('garCedulaDocPreview').style.display = 'none';
+        document.getElementById('garCedulaDocExisting').value = '';
+        document.getElementById('garCedulaDocText').textContent = 'Subir';
+    }
+
     // Documento existente
     if (gar.documento_referencia_laboral_path) {
         document.getElementById('garDocExisting').value = gar.documento_referencia_laboral_path;
@@ -1369,6 +1585,68 @@ function clearGaranteDoc() {
     document.getElementById('garDocText').textContent = 'Subir';
 }
 
+// ==========================================
+// PREVIEW DOCUMENTOS - REFERENCIAS
+// ==========================================
+function handleRefCedulaDocPreview(input) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    if (file.size > 5 * 1024 * 1024) {
+        alert('El archivo excede el tamaño máximo de 5MB');
+        input.value = '';
+        return;
+    }
+    
+    if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('refCedulaDocPreviewImg').src = e.target.result;
+            document.getElementById('refCedulaDocPreview').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+    document.getElementById('refCedulaDocText').textContent = file.name.substring(0, 10) + '...';
+}
+
+function clearRefCedulaDoc() {
+    document.getElementById('refCedulaDocInput').value = '';
+    document.getElementById('refCedulaDocPreview').style.display = 'none';
+    document.getElementById('refCedulaDocExisting').value = '';
+    document.getElementById('refCedulaDocText').textContent = 'Subir';
+}
+
+// ==========================================
+// PREVIEW DOCUMENTOS - GARANTES CÉDULA
+// ==========================================
+function handleGarCedulaDocPreview(input) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    if (file.size > 5 * 1024 * 1024) {
+        alert('El archivo excede el tamaño máximo de 5MB');
+        input.value = '';
+        return;
+    }
+    
+    if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('garCedulaDocPreviewImg').src = e.target.result;
+            document.getElementById('garCedulaDocPreview').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+    document.getElementById('garCedulaDocText').textContent = file.name.substring(0, 10) + '...';
+}
+
+function clearGarCedulaDoc() {
+    document.getElementById('garCedulaDocInput').value = '';
+    document.getElementById('garCedulaDocPreview').style.display = 'none';
+    document.getElementById('garCedulaDocExisting').value = '';
+    document.getElementById('garCedulaDocText').textContent = 'Subir';
+}
+
 async function handleGaranteSubmit(e) {
     e.preventDefault();
     
@@ -1380,6 +1658,7 @@ async function handleGaranteSubmit(e) {
     formData.append('nombre_apellido', document.getElementById('garNombreApellido').value);
     formData.append('telefono', document.getElementById('garTelefono').value);
     formData.append('email', document.getElementById('garEmail').value);
+    formData.append('cedula', document.getElementById('garCedula').value);  
     formData.append('direccion', document.getElementById('garDireccion').value);
     formData.append('parentesco_id', document.getElementById('garParentescoId').value);
     formData.append('documento_existing', document.getElementById('garDocExisting').value);
@@ -1389,6 +1668,12 @@ async function handleGaranteSubmit(e) {
         formData.append('documento', docInput.files[0]);
     }
     
+    // AGREGAR: Archivo de cédula
+    const cedulaDocInput = document.getElementById('garCedulaDocInput');
+    if (cedulaDocInput.files[0]) {
+        formData.append('cedula_doc', cedulaDocInput.files[0]);
+    }
+
     const url = isEdit 
         ? `/garantes/${garanteId}/editar`
         : `/inquilinos/${inquilinoId}/garantes/crear`;
@@ -1431,6 +1716,58 @@ async function deleteGarante(id) {
         console.error('Error:', error);
         alert('Error al eliminar garante');
     }
+}
+
+// ==========================================
+// VISUALIZAR DOCUMENTOS
+// ==========================================
+function viewDocument(path, ownerName) {
+    if (!path) return;
+    
+    document.getElementById('documentOwnerName').textContent = ownerName;
+    
+    // Mostrar loading
+    document.getElementById('documentLoading').style.display = 'block';
+    document.getElementById('imageContainer').style.display = 'none';
+    document.getElementById('pdfContainer').style.display = 'none';
+    
+    openModal('documentModal');
+    
+    const fullPath = '/static/' + path;
+    const fileExtension = path.toLowerCase().split('.').pop();
+    
+    // Configurar enlace de descarga
+    document.getElementById('downloadDocLink').href = fullPath;
+    document.getElementById('downloadDocLink').download = path.split('/').pop();
+    
+    // Pequeño delay para efecto visual
+    setTimeout(() => {
+        document.getElementById('documentLoading').style.display = 'none';
+        
+        if (fileExtension === 'pdf') {
+            // Mostrar PDF
+            document.getElementById('documentPdf').src = fullPath;
+            document.getElementById('pdfContainer').style.display = 'block';
+        } else {
+            // Mostrar imagen
+            const img = document.getElementById('documentImage');
+            img.src = fullPath;
+            img.onload = () => {
+                document.getElementById('imageContainer').style.display = 'block';
+            };
+            img.onerror = () => {
+                document.getElementById('documentLoading').innerHTML = `
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" style="margin: 0 auto 16px;">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    <p style="color: var(--danger);">Error al cargar el documento</p>
+                `;
+                document.getElementById('documentLoading').style.display = 'block';
+            };
+        }
+    }, 300);
 }
 
 // ==========================================

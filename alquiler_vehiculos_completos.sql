@@ -1675,6 +1675,35 @@ ALTER TABLE historico_inquilinos
 ALTER TABLE historico_bancos
     MODIFY COLUMN cuenta VARCHAR(255),
     MODIFY COLUMN cedula VARCHAR(255);
+
+
+-- Referencias Propietarios
+ALTER TABLE referencias_propietarios 
+ADD COLUMN cedula TEXT AFTER telefono,
+ADD COLUMN cedula_path TEXT AFTER cedula;
+
+-- Referencias Inquilinos
+ALTER TABLE referencias_inquilinos 
+ADD COLUMN cedula TEXT AFTER telefono,
+ADD COLUMN cedula_path TEXT AFTER cedula;
+
+-- Garantes Inquilinos
+ALTER TABLE garantes_inquilinos 
+ADD COLUMN cedula TEXT AFTER email,
+ADD COLUMN cedula_path TEXT AFTER cedula;
+
+-- Históricos
+ALTER TABLE historico_referencias_propietarios 
+ADD COLUMN cedula VARCHAR(20) AFTER telefono,
+ADD COLUMN cedula_path VARCHAR(255) AFTER cedula;
+
+ALTER TABLE historico_referencias_inquilinos 
+ADD COLUMN cedula VARCHAR(20) AFTER telefono,
+ADD COLUMN cedula_path VARCHAR(255) AFTER cedula;
+
+ALTER TABLE historico_garantes_inquilinos 
+ADD COLUMN cedula VARCHAR(20) AFTER email,
+ADD COLUMN cedula_path VARCHAR(255) AFTER cedula;
 -- ================================================================================
 -- SECCIÓN 4: DATOS INICIALES (INSERTS)
 -- ================================================================================

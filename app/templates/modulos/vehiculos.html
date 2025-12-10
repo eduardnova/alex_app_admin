@@ -1,81 +1,1161 @@
-<!-- ==================== app/templates/modulos/vehiculos.html ==================== -->
 {% extends "base.html" %}
 
-{% block title %}Vehículos - AlexRentaCar{% endblock %}
-
+{% block title %}Gestión de Vehículos{% endblock %}
+{% block breadcrumb %}
+<span class="breadcrumb-item">Catálogo</span>
+<span class="breadcrumb-item">Vehículos</span>
+{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
-    <h1 class="h2">Vehículos</h1>
-    <div class="btn-toolbar mb-2 mb-md-0">
-        <a href="{{ url_for('modulos.crear_vehiculo') }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Nuevo Vehículo
-        </a>
-    </div>
-</div>
 
-<div class="mb-3">
-    <a href="{{ url_for('modulos.vehiculos', disponible='true') }}" class="btn btn-sm btn-outline-success">
-        Solo Disponibles
-    </a>
-    <a href="{{ url_for('modulos.vehiculos') }}" class="btn btn-sm btn-outline-secondary">
-        Todos
-    </a>
-</div>
+<div class="content-area">
+    <!-- Table Card -->
+    <div class="table-container">
+        <div class="table-header">
+            <div>
+                <h3 class="table-title">Lista de Vehículos</h3>
+                <p class="card-subtitle">Gestiona los vehículos registrados en el sistema</p>
+            </div>
+            <div class="table-actions">
+                <div class="input-group" style="width: 400px;">
+                    <span class="input-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35"/>
+                        </svg>
+                    </span>
+                    <input type="text" class="form-input" id="searchInput" placeholder="Buscar vehículo...">
+                </div>
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <button class="btn btn-secondary" data-modal="filterModal">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                    </svg>
+                    Filtros
+                </button>
+                <button class="btn btn-primary" onclick="createNewVehiculo()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Nuevo Vehículo
+                </button>
+            </div>
+        </div>
 
-<div class="row">
-    {% for vehiculo in vehiculos.items %}
-    <div class="col-md-4 mb-4">
-        <div class="card h-100">
-            <div class="card-body">
-                <h5 class="card-title">
-                    {{ vehiculo.marca_modelo.marca }} {{ vehiculo.marca_modelo.modelo }}
-                </h5>
-                <p class="card-text">
-                    <strong>Placa:</strong> {{ vehiculo.placa }}<br>
-                    <strong>Año:</strong> {{ vehiculo.ano }}<br>
-                    <strong>Color:</strong> {{ vehiculo.color }}<br>
-                    <strong>Precio:</strong> ${{ "%.2f"|format(vehiculo.precio_semanal) }}/semana<br>
-                    <strong>Estado:</strong> 
-                    {% if vehiculo.disponible %}
-                    <span class="badge bg-success">Disponible</span>
-                    {% else %}
-                    <span class="badge bg-warning text-dark">No Disponible</span>
-                    {% endif %}
-                </p>
-                <a href="{{ url_for('modulos.ver_vehiculo', vehiculo_id=vehiculo.id) }}" 
-                   class="btn btn-primary btn-sm">
-                    Ver Detalles
-                </a>
+        <div class="table-wrapper">
+            <table class="table" id="vehiculosTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Vehículo</th>
+                        <th>Placa</th>
+                        <th>Año</th>
+                        <th>Color</th>
+                        <th>Precio Semanal</th>
+                        <th>Disponible</th>
+                        <th>Propietario</th>
+                        <th>Alquileres</th>
+                        <th>Reparaciones</th>
+                        <th>Fecha Registro</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    {% for vehiculo in vehiculos %}
+                    <tr data-id="{{ vehiculo.id }}" 
+                        data-marca="{{ vehiculo.marca_modelo.marca }}"
+                        data-modelo="{{ vehiculo.marca_modelo.modelo }}"
+                        data-placa="{{ vehiculo.placa or '' }}"
+                        data-ano="{{ vehiculo.ano or '' }}"
+                        data-disponible="{{ 'true' if vehiculo.disponible else 'false' }}"
+                        data-has-alquileres="{{ 'true' if vehiculo.alquileres.count() > 0 else 'false' }}"
+                        data-has-reparaciones="{{ 'true' if vehiculo.trabajos.count() > 0 else 'false' }}">
+                        <td>#{{ vehiculo.id }}</td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div class="user-avatar" style="width: 36px; height: 36px; font-size: 13px; background: linear-gradient(135deg, var(--primary), var(--primary-dark));">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                        <circle cx="12" cy="7" r="4"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <strong>{{ vehiculo.marca_modelo.marca }} {{ vehiculo.marca_modelo.modelo }}</strong>
+                                    {% if vehiculo.descripcion %}
+                                    <div style="font-size: 12px; color: var(--text-tertiary);">{{ vehiculo.descripcion[:30] }}{% if vehiculo.descripcion|length > 30 %}...{% endif %}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            {% if vehiculo.placa %}
+                            <span style="font-family: monospace;">{{ vehiculo.placa }}</span>
+                            {% else %}
+                            <span style="color: var(--text-tertiary);">—</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ vehiculo.ano or '—' }}</td>
+                        <td>{{ vehiculo.color or '—' }}</td>
+                        <td>{{ vehiculo.precio_semanal or '—' }}</td>
+                        <td>
+                            <span class="badge {{ 'badge-success' if vehiculo.disponible else 'badge-danger' }}">
+                                {{ 'Sí' if vehiculo.disponible else 'No' }}
+                            </span>
+                        </td>
+                        <td>{{ vehiculo.propietario.nombre_apellido or '—' }}</td>
+                        <td>
+                            <span class="badge badge-primary" style="cursor: pointer;" onclick="viewAlquileres({{ vehiculo.id }}, '{{ vehiculo.marca_modelo.marca | e }} {{ vehiculo.marca_modelo.modelo | e }}')">
+                                {{ vehiculo.alquileres.count() }} alq.
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge badge-secondary" style="cursor: pointer;" onclick="viewReparaciones({{ vehiculo.id }}, '{{ vehiculo.marca_modelo.marca | e }} {{ vehiculo.marca_modelo.modelo | e }}')">
+                                {{ vehiculo.trabajos.count() }} rep.
+                            </span>
+                        </td>
+                        <td>
+                            <div style="font-weight: 600; color: var(--text-primary);">
+                                {{ vehiculo.fecha_hora_registro.strftime('%d/%m/%Y') }}
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-tertiary);">
+                                {{ vehiculo.fecha_hora_registro.strftime('%H:%M:%S') }}
+                            </div>
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-sm btn-secondary" onclick="viewHistory({{ vehiculo.id }})" title="Ver Historial">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </button>
+                                <button class="btn btn-sm btn-primary" onclick='editVehiculo({{ vehiculo.id }})' title="Editar">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-danger" onclick='deleteVehiculo({{ vehiculo.id }}, "{{ vehiculo.marca_modelo.marca | e }} {{ vehiculo.marca_modelo.modelo | e }}")' title="Eliminar">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-footer">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 14px; color: var(--text-secondary);">
+                    Mostrando <strong id="showingStart">1</strong>-<strong id="showingEnd">5</strong> de <strong id="totalRecords">{{ vehiculos|length }}</strong> registros
+                </span>
+                <select id="itemsPerPage" class="form-select" style="width: 80px; height: 36px; padding: 6px 10px;">
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="20" selected>20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
+            <div class="pagination" id="paginationContainer">
+                <!-- Pagination buttons will be generated by JavaScript -->
             </div>
         </div>
     </div>
-    {% endfor %}
 </div>
 
-<!-- Pagination -->
-{% if vehiculos.has_prev or vehiculos.has_next %}
-<nav aria-label="Page navigation">
-    <ul class="pagination">
-        {% if vehiculos.has_prev %}
-        <li class="page-item">
-            <a class="page-link" href="{{ url_for('modulos.vehiculos', page=vehiculos.prev_num) }}">Anterior</a>
-        </li>
-        {% endif %}
+<!-- Modal: Filtros Avanzados -->
+<div class="modal-overlay" id="filterModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                Filtros Avanzados
+            </h3>
+            <button class="modal-close" data-modal-close>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">Disponibilidad</label>
+                <select id="filterDisponible" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="disponibles">Disponibles</option>
+                    <option value="no_disponibles">No Disponibles</option>
+                </select>
+            </div>
+            <div class="checkbox-wrapper">
+                <input type="checkbox" class="checkbox" id="conAlquileres"> 
+                <label for="conAlquileres" class="checkbox-label">Con Historial de Alquileres</label>
+            </div>
+            <div class="checkbox-wrapper">
+                <input type="checkbox" class="checkbox" id="conReparaciones">
+                <label for="conReparaciones" class="checkbox-label">Con Reparaciones</label>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="clearFilters()">Limpiar</button>
+            <button class="btn btn-primary" onclick="applyFilters()">Aplicar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Nuevo/Editar Vehículo -->
+<div class="modal-overlay" id="vehiculoModal">
+    <div class="modal modal-lg">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                <span id="vehiculoModalTitle">Nuevo Vehículo</span>
+            </h3>
+            <button class="modal-close" data-modal-close>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <form id="vehiculoForm" method="POST" enctype="multipart/form-data">
+            <input type="hidden" id="vehiculoId" name="id">
+            <div class="modal-body">
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+                    <div class="form-group">
+                        <label class="form-label required">Marca y Modelo</label>
+                        <select id="marcaModeloId" name="marca_modelo_id" class="form-select" required>
+                            <option value="">Seleccionar...</option>
+                            {% for mm in marca_modelos %}
+                            <option value="{{ mm.id }}">{{ mm.marca }} {{ mm.modelo }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Propietario</label>
+                        <select id="propietarioId" name="propietario_id" class="form-select" required>
+                            <option value="">Seleccionar...</option>
+                            {% for prop in propietarios %}
+                            <option value="{{ prop.id }}">{{ prop.nombre_apellido }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Placa</label>
+                        <input type="text" id="placa" name="placa" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Año</label>
+                        <input type="number" id="ano" name="ano" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Color</label>
+                        <input type="text" id="color" name="color" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Precio Semanal</label>
+                        <input type="number" step="0.01" id="precioSemanal" name="precio_semanal" class="form-input" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Descripción</label>
+                    <textarea id="descripcion" name="descripcion" class="form-textarea" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Condiciones</label>
+                    <textarea id="condiciones" name="condiciones" class="form-textarea" rows="3"></textarea>
+                </div>
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" class="checkbox" id="disponible" name="disponible">
+                    <label for="disponible" class="checkbox-label">Disponible</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button>
+                <button type="submit" class="btn btn-primary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span id="submitBtnText">Guardar</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Delete Confirmation -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal modal-sm">
+        <div class="modal-header">
+            <h3 class="modal-title">Confirmar Eliminación</h3>
+            <button class="modal-close" data-modal-close>×</button>
+        </div>
+        <form id="deleteForm" method="POST">
+            <div class="modal-body">
+                <input type="hidden" id="deleteVehiculoId" name="vehiculo_id">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <div style="width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 50%; background: rgba(245, 101, 101, 0.1); display: flex; align-items: center; justify-content: center;">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                    </div>
+                    <p style="font-size: 15px; color: var(--text-primary); font-weight: 600; margin-bottom: 8px;">
+                        ¿Estás seguro de eliminar este vehículo?
+                    </p>
+                    <p style="font-size: 14px; color: var(--text-secondary);">
+                        El vehículo <strong id="deleteVehiculoName"></strong> será eliminado permanentemente. Esta acción no se puede deshacer.
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button>
+                <button type="submit" class="btn btn-danger">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    Eliminar Vehículo
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Alquileres (Historial de Inquilinos) -->
+<div class="modal-overlay" id="alquileresModal">
+    <div class="modal modal-xl">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                Historial de Alquileres - <span id="alquileresVehiculoName"></span>
+            </h3>
+            <button class="modal-close" data-modal-close>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="alquileresVehiculoId">
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Inquilino</th>
+                            <th>Fecha Inicio</th>
+                            <th>Fecha Fin</th>
+                            <th>Ingreso</th>
+                            <th>Notas</th>
+                        </tr>
+                    </thead>
+                    <tbody id="alquileresTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" data-modal-close>Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Reparaciones -->
+<div class="modal-overlay" id="reparacionesModal">
+    <div class="modal modal-xl">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                Reparaciones - <span id="reparacionesVehiculoName"></span>
+            </h3>
+            <button class="modal-close" data-modal-close>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="reparacionesVehiculoId">
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Tipo de Trabajo</th>
+                            <th>Fecha Inicio</th>
+                            <th>Fecha Fin</th>
+                            <th>Costo</th>
+                            <th>Notas</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reparacionesTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" data-modal-close>Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Historial de Modificaciones -->
+<div class="modal-overlay" id="historyModal">
+    <div class="modal modal-xl">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Historial de Modificaciones - <span id="historyVehiculoName">Cargando...</span>
+            </h3>
+            <button class="modal-close" data-modal-close>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <!-- Loading State -->
+            <div id="historyLoading" style="text-align: center; padding: 40px; display: none;">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="animation: spin 1s linear infinite;">
+                    <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="0" opacity="0.25"/>
+                    <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="8"/>
+                </svg>
+                <p style="margin-top: 12px; color: var(--text-secondary);">Cargando historial...</p>
+            </div>
+
+            <!-- Filters -->
+            <div id="historyFilters" style="display: none; gap: 12px; margin-bottom: 20px;">
+                <div class="input-group" style="flex: 1;">
+                    <span class="input-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35"/>
+                        </svg>
+                    </span>
+                    <input type="text" class="form-input" id="historySearch" placeholder="Buscar en historial...">
+                </div>
+                <select class="form-select" id="historyFilterAction" style="width: 200px;">
+                    <option value="">Todas las acciones</option>
+                    <option value="INSERT">Creación</option>
+                    <option value="UPDATE">Edición</option>
+                    <option value="DELETE">Eliminación</option>
+                </select>
+            </div>
+
+            <!-- History Table -->
+            <div class="table-wrapper" id="historyTableContainer" style="display: none;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Fecha/Hora</th>
+                            <th>Usuario</th>
+                            <th>Acción</th>
+                            <th>Detalles</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                        <!-- Will be populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty State -->
+            <div id="historyEmpty" style="text-align: center; padding: 40px; display: none;">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" style="margin: 0 auto 16px;">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 6v6l4 2"/>
+                </svg>
+                <p style="color: var(--text-secondary); font-size: 15px;">No hay historial disponible para este vehículo.</p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button>
+            <button type="button" class="btn btn-primary" onclick="exportHistory()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Exportar Historial
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- CSS for loading animation -->
+<style>
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+</style>
+
+<script>
+// ==========================================
+// INICIALIZACIÓN
+// ==========================================
+let allRows = [];
+let filteredRows = [];
+let currentPage = 1;
+let itemsPerPage = 20;
+let allHistoryRecords = [];
+let currentHistoryId = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 Initializing Vehículos page...');
+    
+    allRows = Array.from(document.querySelectorAll('#vehiculosTable tbody tr'));
+    filteredRows = [...allRows];
+    updatePagination();
+    initSearch();
+    initFormListeners();
+    
+    console.log(`📊 Loaded ${allRows.length} records`);
+});
+
+// ==========================================
+// SEARCH Y PAGINATION
+// ==========================================
+function initSearch() {
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            filteredRows = allRows.filter(row => {
+                const text = row.textContent.toLowerCase();
+                return text.includes(searchTerm);
+            });
+            currentPage = 1;
+            updatePagination();
+        });
+    }
+    
+    const itemsPerPageSelect = document.getElementById('itemsPerPage');
+    if (itemsPerPageSelect) {
+        itemsPerPageSelect.addEventListener('change', function(e) {
+            itemsPerPage = parseInt(e.target.value);
+            currentPage = 1;
+            updatePagination();
+        });
+    }
+}
+
+function updatePagination() {
+    const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    
+    // Hide all rows
+    allRows.forEach(row => row.style.display = 'none');
+    
+    // Show current page rows
+    filteredRows.slice(start, end).forEach(row => row.style.display = '');
+    
+    // Update showing text
+    const actualEnd = Math.min(end, filteredRows.length);
+    const showingStart = document.getElementById('showingStart');
+    const showingEnd = document.getElementById('showingEnd');
+    const totalRecords = document.getElementById('totalRecords');
+    
+    if (showingStart) showingStart.textContent = filteredRows.length > 0 ? start + 1 : 0;
+    if (showingEnd) showingEnd.textContent = actualEnd;
+    if (totalRecords) totalRecords.textContent = filteredRows.length;
+    
+    // Generate pagination buttons
+    generatePaginationButtons(totalPages);
+}
+
+function generatePaginationButtons(totalPages) {
+    const container = document.getElementById('paginationContainer');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    // Previous button
+    const prevBtn = createPaginationButton('prev', currentPage === 1);
+    prevBtn.onclick = () => {
+        if (currentPage > 1) {
+            currentPage--;
+            updatePagination();
+        }
+    };
+    container.appendChild(prevBtn);
+    
+    // Page number buttons
+    const maxButtons = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+    let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+    
+    if (endPage - startPage < maxButtons - 1) {
+        startPage = Math.max(1, endPage - maxButtons + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'pagination-item' + (i === currentPage ? ' active' : '');
+        btn.textContent = i;
+        btn.onclick = () => {
+            currentPage = i;
+            updatePagination();
+        };
+        container.appendChild(btn);
+    }
+    
+    // Next button
+    const nextBtn = createPaginationButton('next', currentPage === totalPages || totalPages === 0);
+    nextBtn.onclick = () => {
+        if (currentPage < totalPages) {
+            currentPage++;
+            updatePagination();
+        }
+    };
+    container.appendChild(nextBtn);
+}
+
+function createPaginationButton(type, disabled) {
+    const btn = document.createElement('button');
+    btn.className = 'pagination-item';
+    if (disabled) btn.disabled = true;
+    
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', '16');
+    svg.setAttribute('height', '16');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
+    path.setAttribute('stroke-width', '2');
+    path.setAttribute('d', type === 'prev' ? 'M15 19l-7-7 7-7' : 'M9 5l7 7-7 7');
+    
+    svg.appendChild(path);
+    btn.appendChild(svg);
+    
+    return btn;
+}
+
+// ==========================================
+// CRUD VEHÍCULOS
+// ==========================================
+function createNewVehiculo() {
+    const modalTitle = document.getElementById('vehiculoModalTitle');
+    const submitBtnText = document.getElementById('submitBtnText');
+    const vehiculoForm = document.getElementById('vehiculoForm');
+    const vehiculoId = document.getElementById('vehiculoId');
+    
+    if (modalTitle) modalTitle.textContent = 'Nuevo Vehículo';
+    if (submitBtnText) submitBtnText.textContent = 'Guardar';
+    if (vehiculoForm) {
+        vehiculoForm.action = '{{ url_for("vehiculo.crear_vehiculo") }}';
+        vehiculoForm.reset();
+    }
+    if (vehiculoId) vehiculoId.value = '';
+    
+    if (window.AppUtils && window.AppUtils.openModal) {
+        window.AppUtils.openModal('vehiculoModal');
+    } else {
+        const modal = document.getElementById('vehiculoModal');
+        if (modal) modal.classList.add('active');
+    }
+}
+
+async function editVehiculo(id) {
+    try {
+        const response = await fetch(`/vehiculos/${id}`);
+        const data = await response.json();
         
-        {% for page_num in vehiculos.iter_pages() %}
-            {% if page_num %}
-                <li class="page-item {% if page_num == vehiculos.page %}active{% endif %}">
-                    <a class="page-link" href="{{ url_for('modulos.vehiculos', page=page_num) }}">{{ page_num }}</a>
-                </li>
-            {% endif %}
-        {% endfor %}
+        if (data.success) {
+            const modalTitle = document.getElementById('vehiculoModalTitle');
+            const submitBtnText = document.getElementById('submitBtnText');
+            const vehiculoForm = document.getElementById('vehiculoForm');
+            const vehiculo = data.vehiculo;
+            
+            if (modalTitle) modalTitle.textContent = 'Editar Vehículo';
+            if (submitBtnText) submitBtnText.textContent = 'Actualizar';
+            if (vehiculoForm) vehiculoForm.action = `/vehiculos/${id}/editar`;
+            
+            document.getElementById('vehiculoId').value = vehiculo.id;
+            document.getElementById('marcaModeloId').value = vehiculo.marca_modelo_vehiculo_id;
+            document.getElementById('propietarioId').value = vehiculo.propietario_id;
+            document.getElementById('placa').value = vehiculo.placa || '';
+            document.getElementById('ano').value = vehiculo.ano || '';
+            document.getElementById('color').value = vehiculo.color || '';
+            document.getElementById('descripcion').value = vehiculo.descripcion || '';
+            document.getElementById('precioSemanal').value = vehiculo.precio_semanal || '';
+            document.getElementById('condiciones').value = vehiculo.condiciones || '';
+            document.getElementById('disponible').checked = vehiculo.disponible;
+            
+            if (window.AppUtils && window.AppUtils.openModal) {
+                window.AppUtils.openModal('vehiculoModal');
+            } else {
+                const modal = document.getElementById('vehiculoModal');
+                if (modal) modal.classList.add('active');
+            }
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al cargar los datos del vehículo');
+    }
+}
+
+function initFormListeners() {
+    const vehiculoForm = document.getElementById('vehiculoForm');
+    if (vehiculoForm) {
+        vehiculoForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const url = e.target.action;
+            
+            try {
+                const response = await fetch(url, { 
+                    method: 'POST', 
+                    body: formData 
+                });
+                
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert('Error al guardar el vehículo');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al guardar el vehículo');
+            }
+        });
+    }
+}
+
+function deleteVehiculo(id, name) {
+    const deleteVehiculoId = document.getElementById('deleteVehiculoId');
+    const deleteVehiculoName = document.getElementById('deleteVehiculoName');
+    const deleteForm = document.getElementById('deleteForm');
+    
+    if (deleteVehiculoId) deleteVehiculoId.value = id;
+    if (deleteVehiculoName) deleteVehiculoName.textContent = name;
+    if (deleteForm) {
+        deleteForm.action = `/vehiculos/${id}/eliminar`;
         
-        {% if vehiculos.has_next %}
-        <li class="page-item">
-            <a class="page-link" href="{{ url_for('modulos.vehiculos', page=vehiculos.next_num) }}">Siguiente</a>
-        </li>
-        {% endif %}
-    </ul>
-</nav>
-{% endif %}
+        deleteForm.onsubmit = async (e) => {
+            e.preventDefault();
+            
+            try {
+                const response = await fetch(`/vehiculos/${id}/eliminar`, { 
+                    method: 'POST' 
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.message || 'Error al eliminar el vehículo');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al eliminar el vehículo');
+            }
+        };
+    }
+    
+    if (window.AppUtils && window.AppUtils.openModal) {
+        window.AppUtils.openModal('deleteModal');
+    } else {
+        const modal = document.getElementById('deleteModal');
+        if (modal) modal.classList.add('active');
+    }
+}
+
+// ==========================================
+// ALQUILERES (Historial Inquilinos)
+// ==========================================
+async function viewAlquileres(id, name) {
+    document.getElementById('alquileresVehiculoName').textContent = name;
+    document.getElementById('alquileresVehiculoId').value = id;
+    document.getElementById('alquileresTableBody').innerHTML = '<tr><td colspan="5" style="text-align: center;">Cargando...</td></tr>';
+    
+    if (window.AppUtils && window.AppUtils.openModal) {
+        window.AppUtils.openModal('alquileresModal');
+    } else {
+        const modal = document.getElementById('alquileresModal');
+        if (modal) modal.classList.add('active');
+    }
+    
+    try {
+        const response = await fetch(`/vehiculos/${id}/alquileres`);
+        const data = await response.json();
+        if (data.success) {
+            renderAlquileres(data.alquileres);
+        } else {
+            document.getElementById('alquileresTableBody').innerHTML = '<tr><td colspan="5" style="text-align: center;">No hay alquileres</td></tr>';
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('alquileresTableBody').innerHTML = '<tr><td colspan="5" style="text-align: center;">Error al cargar</td></tr>';
+    }
+}
+
+function renderAlquileres(alquileres) {
+    const tbody = document.getElementById('alquileresTableBody');
+    tbody.innerHTML = '';
+    
+    if (alquileres.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: var(--text-secondary);">No hay alquileres registrados</td></tr>';
+        return;
+    }
+    
+    alquileres.forEach(alq => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${alq.inquilino_nombre || 'N/A'}</td>
+            <td>${alq.fecha_inicio ? new Date(alq.fecha_inicio).toLocaleDateString() : '—'}</td>
+            <td>${alq.fecha_fin ? new Date(alq.fecha_fin).toLocaleDateString() : '—'}</td>
+            <td>${alq.ingreso || '—'}</td>
+            <td>${alq.notas || '—'}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// ==========================================
+// REPARACIONES
+// ==========================================
+async function viewReparaciones(id, name) {
+    document.getElementById('reparacionesVehiculoName').textContent = name;
+    document.getElementById('reparacionesVehiculoId').value = id;
+    document.getElementById('reparacionesTableBody').innerHTML = '<tr><td colspan="5" style="text-align: center;">Cargando...</td></tr>';
+    
+    if (window.AppUtils && window.AppUtils.openModal) {
+        window.AppUtils.openModal('reparacionesModal');
+    } else {
+        const modal = document.getElementById('reparacionesModal');
+        if (modal) modal.classList.add('active');
+    }
+    
+    try {
+        const response = await fetch(`/vehiculos/${id}/reparaciones`);
+        const data = await response.json();
+        if (data.success) {
+            renderReparaciones(data.reparaciones);
+        } else {
+            document.getElementById('reparacionesTableBody').innerHTML = '<tr><td colspan="5" style="text-align: center;">No hay reparaciones</td></tr>';
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('reparacionesTableBody').innerHTML = '<tr><td colspan="5" style="text-align: center;">Error al cargar</td></tr>';
+    }
+}
+
+function renderReparaciones(reparaciones) {
+    const tbody = document.getElementById('reparacionesTableBody');
+    tbody.innerHTML = '';
+    
+    if (reparaciones.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: var(--text-secondary);">No hay reparaciones registradas</td></tr>';
+        return;
+    }
+    
+    reparaciones.forEach(rep => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${rep.tipo_trabajo_nombre || 'N/A'}</td>
+            <td>${rep.fecha_inicio ? new Date(rep.fecha_inicio).toLocaleDateString() : '—'}</td>
+            <td>${rep.fecha_fin ? new Date(rep.fecha_fin).toLocaleDateString() : '—'}</td>
+            <td>${rep.costo || '—'}</td>
+            <td>${rep.notas || '—'}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// ==========================================
+// HISTORIAL
+// ==========================================
+async function viewHistory(id) {
+    console.log('📜 Opening history for ID:', id);
+    currentHistoryId = id;
+    
+    const loadingEl = document.getElementById('historyLoading');
+    const filtersEl = document.getElementById('historyFilters');
+    const tableEl = document.getElementById('historyTableContainer');
+    const emptyEl = document.getElementById('historyEmpty');
+    const vehiculoNameEl = document.getElementById('historyVehiculoName');
+    
+    if (!loadingEl || !filtersEl || !tableEl || !emptyEl || !vehiculoNameEl) {
+        console.error('❌ History modal elements not found');
+        alert('Error: No se pudo cargar el modal de historial');
+        return;
+    }
+    
+    loadingEl.style.display = 'block';
+    filtersEl.style.display = 'none';
+    tableEl.style.display = 'none';
+    emptyEl.style.display = 'none';
+    
+    if (window.AppUtils && window.AppUtils.openModal) {
+        window.AppUtils.openModal('historyModal');
+    } else {
+        const modal = document.getElementById('historyModal');
+        if (modal) modal.classList.add('active');
+    }
+    
+    try {
+        const response = await fetch(`/vehiculos/${id}/historial`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            allHistoryRecords = data.historial || [];
+            vehiculoNameEl.textContent = data.vehiculo_nombre || 'Desconocido';
+            
+            initHistoryFilters();
+            renderHistory(allHistoryRecords);
+            
+            loadingEl.style.display = 'none';
+            
+            if (allHistoryRecords.length > 0) {
+                filtersEl.style.display = 'flex';
+                tableEl.style.display = 'block';
+            } else {
+                emptyEl.style.display = 'block';
+            }
+        } else {
+            throw new Error(data.message || 'Error al cargar historial');
+        }
+    } catch (error) {
+        console.error('❌ Error loading history:', error);
+        loadingEl.style.display = 'none';
+        emptyEl.style.display = 'block';
+    }
+}
+
+function renderHistory(records) {
+    const tbody = document.getElementById('historyTableBody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    if (records.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 40px; color: var(--text-secondary);">No hay registros para mostrar</td></tr>';
+        return;
+    }
+    
+    records.forEach(record => {
+        const row = document.createElement('tr');
+        
+        const fechaCell = document.createElement('td');
+        fechaCell.textContent = record.fecha_hora;
+        row.appendChild(fechaCell);
+        
+        const usuarioCell = document.createElement('td');
+        usuarioCell.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="user-avatar" style="width: 28px; height: 28px; font-size: 11px;">${record.usuario_iniciales}</div>
+                <span>${record.usuario_nombre}</span>
+            </div>
+        `;
+        row.appendChild(usuarioCell);
+        
+        const accionCell = document.createElement('td');
+        let badgeClass = 'badge-info';
+        let accionText = record.tipo_operacion;
+        
+        if (record.tipo_operacion === 'INSERT') {
+            badgeClass = 'badge-success';
+            accionText = 'Creación';
+        } else if (record.tipo_operacion === 'UPDATE') {
+            badgeClass = 'badge-warning';
+            accionText = 'Edición';
+        } else if (record.tipo_operacion === 'DELETE') {
+            badgeClass = 'badge-danger';
+            accionText = 'Eliminación';
+        }
+        
+        accionCell.innerHTML = `<span class="badge ${badgeClass}">${accionText}</span>`;
+        row.appendChild(accionCell);
+        
+        const detallesCell = document.createElement('td');
+        detallesCell.innerHTML = formatHistoryDetails(record);
+        row.appendChild(detallesCell);
+        
+        tbody.appendChild(row);
+    });
+}
+
+function formatHistoryDetails(record) {
+    if (record.tipo_operacion === 'INSERT') {
+        return `
+            <div style="font-size: 13px;">
+                <strong>Registro Inicial:</strong> ${record.marca} ${record.modelo}<br>
+                <span style="color: var(--text-secondary);">Placa: ${record.placa || 'N/A'}</span>
+            </div>
+        `;
+    } else if (record.tipo_operacion === 'DELETE') {
+        return `
+            <div style="font-size: 13px;">
+                <strong>Registro Eliminado:</strong> ${record.marca} ${record.modelo}<br>
+                <span style="color: var(--text-secondary);">Placa: ${record.placa || 'N/A'}</span>
+            </div>
+        `;
+    } else if (record.tipo_operacion === 'UPDATE') {
+        let changes = [];
+        
+        if (record.cambios && record.cambios.length > 0) {
+            record.cambios.forEach(cambio => {
+                changes.push(`
+                    <div style="margin-bottom: 8px; padding: 8px; background: var(--bg-secondary); border-radius: 6px;">
+                        <strong>${cambio.campo}:</strong><br>
+                        <span style="color: var(--text-secondary); font-size: 12px;">
+                            <code style="background: rgba(245, 101, 101, 0.1); padding: 2px 6px; border-radius: 3px;">${cambio.valor_anterior || 'N/A'}</code>
+                            →
+                            <code style="background: rgba(76, 175, 80, 0.1); padding: 2px 6px; border-radius: 3px;">${cambio.valor_nuevo || 'N/A'}</code>
+                        </span>
+                    </div>
+                `);
+            });
+        }
+        
+        return changes.length > 0 ? changes.join('') : '<span style="color: var(--text-secondary);">Sin cambios específicos registrados</span>';
+    }
+    
+    return '-';
+}
+
+function initHistoryFilters() {
+    const searchInput = document.getElementById('historySearch');
+    const actionSelect = document.getElementById('historyFilterAction');
+    
+    if (searchInput) {
+        searchInput.removeEventListener('input', filterHistory);
+        searchInput.addEventListener('input', filterHistory);
+        searchInput.value = '';
+    }
+    
+    if (actionSelect) {
+        actionSelect.removeEventListener('change', filterHistory);
+        actionSelect.addEventListener('change', filterHistory);
+        actionSelect.value = '';
+    }
+}
+
+function filterHistory() {
+    if (!allHistoryRecords || allHistoryRecords.length === 0) return;
+    
+    const searchInput = document.getElementById('historySearch');
+    const actionSelect = document.getElementById('historyFilterAction');
+    
+    if (!searchInput || !actionSelect) return;
+    
+    const searchTerm = searchInput.value.toLowerCase();
+    const actionFilter = actionSelect.value;
+    
+    let filtered = allHistoryRecords;
+    
+    if (searchTerm) {
+        filtered = filtered.filter(record => {
+            const searchableText = `${record.marca} ${record.modelo} ${record.placa} ${record.usuario_nombre}`.toLowerCase();
+            return searchableText.includes(searchTerm);
+        });
+    }
+    
+    if (actionFilter) {
+        filtered = filtered.filter(record => record.tipo_operacion === actionFilter);
+    }
+    
+    renderHistory(filtered);
+}
+
+function exportHistory() {
+    if (!allHistoryRecords || allHistoryRecords.length === 0) {
+        alert('No hay datos para exportar');
+        return;
+    }
+    
+    try {
+        let csv = 'Fecha/Hora,Usuario,Acción,Marca,Modelo,Placa\n';
+        
+        allHistoryRecords.forEach(record => {
+            let accionText = record.tipo_operacion;
+            if (record.tipo_operacion === 'INSERT') accionText = 'Creación';
+            else if (record.tipo_operacion === 'UPDATE') accionText = 'Edición';
+            else if (record.tipo_operacion === 'DELETE') accionText = 'Eliminación';
+            
+            csv += `"${record.fecha_hora}","${record.usuario_nombre}","${accionText}","${record.marca}","${record.modelo}","${record.placa || 'N/A'}"\n`;
+        });
+        
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+        const filename = `historial_vehiculo_${currentHistoryId}_${timestamp}.csv`;
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+    } catch (error) {
+        console.error('❌ Error exporting history:', error);
+        alert('Error al exportar el historial');
+    }
+}
+
+// ==========================================
+// FILTROS
+// ==========================================
+function applyFilters() {
+    const filterDisponible = document.getElementById('filterDisponible')?.value || '';
+    const conAlquileres = document.getElementById('conAlquileres')?.checked || false;
+    const conReparaciones = document.getElementById('conReparaciones')?.checked || false;
+    
+    filteredRows = allRows.filter(row => {
+        let show = true;
+        
+        if (filterDisponible) {
+            const disponible = row.getAttribute('data-disponible') === 'true';
+            if (filterDisponible === 'disponibles') show = show && disponible;
+            else if (filterDisponible === 'no_disponibles') show = show && !disponible;
+        }
+        
+        if (conAlquileres) {
+            show = show && row.getAttribute('data-has-alquileres') === 'true';
+        }
+        
+        if (conReparaciones) {
+            show = show && row.getAttribute('data-has-reparaciones') === 'true';
+        }
+        
+        return show;
+    });
+    
+    currentPage = 1;
+    updatePagination();
+    
+    if (window.AppUtils && window.AppUtils.closeModal) {
+        window.AppUtils.closeModal('filterModal');
+    } else {
+        const modal = document.getElementById('filterModal');
+        if (modal) modal.classList.remove('active');
+    }
+}
+
+function clearFilters() {
+    document.getElementById('filterDisponible').value = '';
+    document.getElementById('conAlquileres').checked = false;
+    document.getElementById('conReparaciones').checked = false;
+    
+    filteredRows = [...allRows];
+    currentPage = 1;
+    updatePagination();
+}
+</script>
+
 {% endblock %}

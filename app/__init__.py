@@ -101,8 +101,9 @@ def create_app(config_name=None):
     from app.routes.reportes_routes import reportes_bp
     from app.routes.catalogos_routes import catalogo_bp
     from app.routes.mecanicos_routes import mecanicos_bp
-    from app.routes.inquilinos_routes_1 import inquilino_bp
+    from app.routes.inquilinos_routes import inquilino_bp
     from app.routes.propietarios_routes import propietario_bp
+    from app.routes.vehiculos_routes import vehiculo_bp
     
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(admin_bp, url_prefix='/admin')
@@ -113,7 +114,8 @@ def create_app(config_name=None):
     app.register_blueprint(mecanicos_bp, url_prefix='/mecanicos')
     app.register_blueprint(inquilino_bp, url_prefix='/')
     app.register_blueprint(propietario_bp, url_prefix='/')
-       
+    app.register_blueprint(vehiculo_bp, url_prefix='/') 
+    
     # Root route
     @app.route('/')
     def index():
