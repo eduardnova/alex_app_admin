@@ -6,7 +6,8 @@ from flask_login import login_required, current_user
 from functools import wraps
 from app import db
 from app.models import (
-    Usuario, Propietario, HistoricoPropietario, ReferenciaPropietario
+    Usuario, Propietario, HistoricoPropietario, ReferenciaPropietario,
+    Vehiculo, VehiculoMarcaModelo, VehiculoImagen, TrabajoVehiculo 
 )
 from datetime import datetime
 import os
@@ -419,3 +420,260 @@ def buscar_propietarios():
             })
     
     return jsonify(results[:10])
+
+@propietario_bp.route('/propietarios/<int:id>/vehiculos')
+@login_required
+@admin_required
+def vehiculos_propietario(id):
+    """Obtener vehículos del propietario"""
+    try:
+        propietario = Propietario.query.get_or_404(id)
+        vehiculos = propietario.vehiculos.all()
+        
+        vehiculos_data = []
+        for v in vehiculos:
+            imagenes = v.imagenes.order_by(VehiculoImagen.es_principal.desc(), VehiculoImagen.orden).all()
+            vehiculos_data.append({
+                'id': v.id,
+                'placa': v.placa,
+                'marca_modelo': f"{v.marca_modelo.marca} {v.marca_modelo.modelo}" if v.marca_modelo else 'N/A',
+                'ano': v.ano,
+                'color': v.color,
+                'descripcion': v.descripcion,
+                'precio_semanal': float(v.precio_semanal) if v.precio_semanal else 0,
+                'disponible': v.disponible,
+                'imagenes': [{
+                    'id': img.id,
+                    'tipo': img.tipo,
+                    'ruta': img.ruta,
+                    'es_principal': img.es_principal
+                } for img in imagenes]
+            })
+        
+        return jsonify({
+            'success': True,
+            'propietario': propietario.nombre_apellido,
+            'vehiculos': vehiculos_data
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@propietario_bp.route('/propietarios/<int:id>/reparaciones')
+@login_required
+@admin_required
+def reparaciones_propietario(id):
+    """Obtener todas las reparaciones de vehículos del propietario"""
+    try:
+        propietario = Propietario.query.get_or_404(id)
+        
+        # Obtener todos los trabajos de todos los vehículos del propietario
+        reparaciones = []
+        for vehiculo in propietario.vehiculos:
+            trabajos = vehiculo.trabajos.all()
+            for trabajo in trabajos:
+                reparaciones.append({
+                    'id': trabajo.id,
+                    'vehiculo_placa': vehiculo.placa,
+                    'vehiculo_marca': f"{vehiculo.marca_modelo.marca} {vehiculo.marca_modelo.modelo}",
+                    'mecanico': trabajo.mecanico.nombre if trabajo.mecanico else 'N/A',
+                    'tipo_trabajo': trabajo.tipo_trabajo.nombre if trabajo.tipo_trabajo else 'N/A',
+                    'fecha_inicio': trabajo.fecha_inicio.strftime('%d/%m/%Y') if trabajo.fecha_inicio else None,
+                    'fecha_fin': trabajo.fecha_fin.strftime('%d/%m/%Y') if trabajo.fecha_fin else None,
+                    'descripcion': trabajo.descripcion,
+                    'costo': float(trabajo.costo) if trabajo.costo else 0,
+                    'estado': trabajo.estado,
+                    'notas': trabajo.notas
+                })
+        
+        # Ordenar por fecha más reciente
+        reparaciones.sort(key=lambda x: x['fecha_inicio'] if x['fecha_inicio'] else '', reverse=True)
+        
+        return jsonify({
+            'success': True,
+            'propietario': propietario.nombre_apellido,
+            'total_vehiculos': propietario.vehiculos.count(),
+            'total_reparaciones': len(reparaciones),
+            'reparaciones': reparaciones
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+# ==================== CRUD VEHÍCULO CON IMÁGENES ====================
+
+ALLOWED_VEHICLE_MEDIA = {'png', 'jpg', 'jpeg', 'mp4'}
+UPLOAD_FOLDER_VEHICLES = 'app/static/uploads/vehiculos'
+os.makedirs(UPLOAD_FOLDER_VEHICLES, exist_ok=True)
+
+def allowed_vehicle_media(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_VEHICLE_MEDIA
+
+def save_vehicle_media(file, vehiculo_id):
+    """Guardar imagen o video del vehículo"""
+    if file and file.filename and allowed_vehicle_media(file.filename):
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = secure_filename(file.filename)
+        name, ext = os.path.splitext(filename)
+        unique_filename = f"vehiculo_{vehiculo_id}_{timestamp}{ext}"
+        
+        filepath = os.path.join(UPLOAD_FOLDER_VEHICLES, unique_filename)
+        file.save(filepath)
+        return f'uploads/vehiculos/{unique_filename}'
+    return None
+
+
+@propietario_bp.route('/propietario/vehiculos/crear', methods=['POST'])
+@login_required
+@admin_required
+def crear_vehiculo():
+    """Crear vehículo con múltiples imágenes"""
+    try:
+        propietario_id = request.form.get('propietario_id')
+        placa = request.form.get('placa', '').strip()
+        marca_modelo_id = request.form.get('marca_modelo_vehiculo_id')
+        ano = request.form.get('ano')
+        color = request.form.get('color', '').strip()
+        descripcion = request.form.get('descripcion', '').strip()
+        precio_semanal = request.form.get('precio_semanal')
+        condiciones = request.form.get('condiciones', '').strip()
+        disponible = request.form.get('disponible') == 'true'
+        
+        if not placa or not marca_modelo_id or not precio_semanal:
+            return jsonify({'success': False, 'message': 'Placa, marca/modelo y precio son requeridos'}), 400
+        
+        # Crear vehículo
+        nuevo_vehiculo = Vehiculo(
+            propietario_id=propietario_id,
+            placa=placa,
+            marca_modelo_vehiculo_id=marca_modelo_id,
+            ano=ano if ano else None,
+            color=color if color else None,
+            descripcion=descripcion if descripcion else None,
+            precio_semanal=precio_semanal,
+            condiciones=condiciones if condiciones else None,
+            disponible=disponible,
+            usuario_registro_id=current_user.id,
+            usuario_actualizo_id=current_user.id
+        )
+        
+        db.session.add(nuevo_vehiculo)
+        db.session.flush()
+        
+        # Procesar imágenes/videos
+        files = request.files.getlist('media_files')
+        for i, file in enumerate(files):
+            if file and file.filename:
+                ruta = save_vehicle_media(file, nuevo_vehiculo.id)
+                if ruta:
+                    extension = file.filename.rsplit('.', 1)[1].lower()
+                    tipo = 'video' if extension == 'mp4' else 'imagen'
+                    
+                    imagen = VehiculoImagen(
+                        vehiculo_id=nuevo_vehiculo.id,
+                        tipo=tipo,
+                        ruta=ruta,
+                        nombre_archivo=file.filename,
+                        orden=i,
+                        es_principal=(i == 0),
+                        usuario_registro_id=current_user.id
+                    )
+                    db.session.add(imagen)
+        
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Vehículo creado exitosamente', 'vehiculo_id': nuevo_vehiculo.id})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@propietario_bp.route('/propietario/vehiculos/<int:id>/editar', methods=['POST'])
+@login_required
+@admin_required
+def editar_vehiculo(id):
+    """Editar vehículo"""
+    try:
+        vehiculo = Vehiculo.query.get_or_404(id)
+        
+        vehiculo.placa = request.form.get('placa', '').strip()
+        vehiculo.marca_modelo_vehiculo_id = request.form.get('marca_modelo_vehiculo_id')
+        vehiculo.ano = request.form.get('ano')
+        vehiculo.color = request.form.get('color', '').strip()
+        vehiculo.descripcion = request.form.get('descripcion', '').strip()
+        vehiculo.precio_semanal = request.form.get('precio_semanal')
+        vehiculo.condiciones = request.form.get('condiciones', '').strip()
+        vehiculo.disponible = request.form.get('disponible') == 'true'
+        vehiculo.usuario_actualizo_id = current_user.id
+        vehiculo.fecha_hora_actualizo = datetime.now()
+        
+        # Agregar nuevas imágenes si hay
+        files = request.files.getlist('media_files')
+        if files and files[0].filename:
+            orden_actual = vehiculo.imagenes.count()
+            for i, file in enumerate(files):
+                if file and file.filename:
+                    ruta = save_vehicle_media(file, vehiculo.id)
+                    if ruta:
+                        extension = file.filename.rsplit('.', 1)[1].lower()
+                        tipo = 'video' if extension == 'mp4' else 'imagen'
+                        
+                        imagen = VehiculoImagen(
+                            vehiculo_id=vehiculo.id,
+                            tipo=tipo,
+                            ruta=ruta,
+                            nombre_archivo=file.filename,
+                            orden=orden_actual + i,
+                            es_principal=False,
+                            usuario_registro_id=current_user.id
+                        )
+                        db.session.add(imagen)
+        
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Vehículo actualizado exitosamente'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@propietario_bp.route('/propietario/vehiculos/<int:id>', methods=['DELETE'])
+@login_required
+@admin_required
+def eliminar_vehiculo(id):
+    """Eliminar vehículo y sus imágenes"""
+    try:
+        vehiculo = Vehiculo.query.get_or_404(id)
+        
+        # Eliminar archivos de imágenes
+        for imagen in vehiculo.imagenes:
+            delete_document(imagen.ruta)
+        
+        db.session.delete(vehiculo)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Vehículo eliminado exitosamente'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@propietario_bp.route('/propietario/vehiculos/imagenes/<int:id>', methods=['DELETE'])
+@login_required
+@admin_required
+def eliminar_imagen_vehiculo(id):
+    """Eliminar imagen específica del vehículo"""
+    try:
+        imagen = VehiculoImagen.query.get_or_404(id)
+        delete_document(imagen.ruta)
+        db.session.delete(imagen)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Imagen eliminada exitosamente'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500

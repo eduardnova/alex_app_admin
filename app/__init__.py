@@ -3,7 +3,7 @@ AlexRentaCar Admin Application Factory
 Initializes Flask app with all extensions and blueprints
 """
 import os
-from flask import Flask, render_template
+from flask import Flask, request, render_template, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
@@ -12,6 +12,8 @@ from flask_talisman import Talisman
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_caching import Cache
+from sqlalchemy.exc import OperationalError, DatabaseError
+import logging
 
 # Initialize extensions
 db = SQLAlchemy()
@@ -25,6 +27,9 @@ limiter = Limiter(
 )
 cache = Cache()
 
+# Configurar logging
+logging.basicConfig(level=logging.ERROR)
+logger = logging.getLogger(__name__)
 
 def create_app(config_name=None):
     """Application factory pattern"""
@@ -166,4 +171,37 @@ def create_app(config_name=None):
         else:
             print("Error creating admin user")
     
+    # Manejador de error para OperationalError (problemas de conexión)
+    @app.errorhandler(OperationalError)
+    def handle_db_connection_error(e):
+        logger.error(f"Error de conexión a la base de datos: {str(e)}")
+        
+        # Si es una petición AJAX/JSON
+        if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({
+                'error': 'database_unavailable',
+                'message': 'El servicio no está disponible temporalmente. Por favor, intenta nuevamente en unos momentos.'
+            }), 503
+        
+        # Para peticiones HTML normales
+        return render_template('errors/database_error.html'), 503
+
+    # Manejador genérico para errores de base de datos
+    @app.errorhandler(DatabaseError)
+    def handle_database_error(e):
+        logger.error(f"Error de base de datos: {str(e)}")
+        
+        if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({
+                'error': 'database_error',
+                'message': 'Error al procesar la solicitud. Por favor, contacta al administrador.'
+            }), 500
+        
+        return render_template('errors/database_error.html'), 500
+
+    # Manejador para errores 500 genéricos
+    @app.errorhandler(500)
+    def handle_internal_error(e):
+        logger.error(f"Error interno del servidor: {str(e)}")
+        return render_template('errors/500.html'), 500
     return app

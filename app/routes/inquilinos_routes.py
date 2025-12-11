@@ -146,7 +146,7 @@ def inquilinos():
     return render_template('modulos/inquilinos.html', inquilinos=inquilinos, parentescos=parentescos)
 
 
-@inquilino_bp.route('/inquilinos/crear', methods=['POST'])
+@inquilino_bp.route('/inquilinos/crear_inquilino', methods=['POST'])
 @login_required
 @admin_required
 def crear_inquilino():
@@ -168,9 +168,9 @@ def crear_inquilino():
             flash('Email inválido.', 'warning')
             return redirect(url_for('inquilino.inquilinos'))
         
-        if telefono and not re.match(r'^\+?\d{7,15}$', telefono):
-            flash('Teléfono inválido.', 'warning')
-            return redirect(url_for('inquilino.inquilinos'))
+        #if telefono and not re.match(r'^\+?\d{7,15}$', telefono):
+        #    flash('Teléfono inválido.', 'warning')
+        #    return redirect(url_for('inquilino.inquilinos'))
         
         # Chequeo duplicados (asumiendo no unique en DB, o para soft check)
         if Inquilino.query.filter_by(cedula=cedula).first():
@@ -239,9 +239,9 @@ def editar_inquilino(id):
             flash('Email inválido.', 'warning')
             return redirect(url_for('inquilino.inquilinos'))
         
-        if telefono and not re.match(r'^\+?\d{7,15}$', telefono):
-            flash('Teléfono inválido.', 'warning')
-            return redirect(url_for('inquilino.inquilinos'))
+        #if telefono and not re.match(r'^\+?\d{7,15}$', telefono):
+        #    flash('Teléfono inválido.', 'warning')
+        #    return redirect(url_for('inquilino.inquilinos'))
         
         # Chequeo duplicados si cambia
         if cedula != inquilino.cedula and Inquilino.query.filter_by(cedula=cedula).first():
@@ -470,8 +470,8 @@ def crear_referencia(inquilino_id):
             return jsonify({'success': False, 'message': 'Todos los campos son requeridos'})
         
         # Validación teléfono
-        if not re.match(r'^\+?\d{7,15}$', telefono):
-            return jsonify({'success': False, 'message': 'Teléfono inválido'})
+        #if not re.match(r'^\+?\d{7,15}$', telefono):
+        #    return jsonify({'success': False, 'message': 'Teléfono inválido'})
         
         # Handle document upload
         cedula_path = save_document(request.files.get('cedula_doc'), 'ref_inq_cedula')
@@ -508,7 +508,7 @@ def crear_referencia(inquilino_id):
 @inquilino_bp.route('/inquilinos/referencias/<int:id>/editar', methods=['POST'])
 @login_required
 @admin_required
-def editar_referencia_inquilino(id):  # ✅ CAMBIAR NOMBRE DE FUNCIÓN
+def editar_referencia_inquilino(id):  # CAMBIAR NOMBRE DE FUNCIÓN
     """Edit referencia inquilino"""
     referencia = ReferenciaInquilino.query.get_or_404(id)
     
@@ -627,8 +627,8 @@ def crear_garante(inquilino_id):
         if email and not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', email):
             return jsonify({'success': False, 'message': 'Email inválido'})
         
-        if telefono and not re.match(r'^\+?\d{7,15}$', telefono):
-            return jsonify({'success': False, 'message': 'Teléfono inválido'})
+        #if telefono and not re.match(r'^\+?\d{7,15}$', telefono):
+        #    return jsonify({'success': False, 'message': 'Teléfono inválido'})
         
         # Handle document upload
         documento_path = save_document(request.files.get('documento'), 'garante_ref')

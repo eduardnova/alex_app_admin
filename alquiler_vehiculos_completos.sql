@@ -1704,6 +1704,21 @@ ADD COLUMN cedula_path VARCHAR(255) AFTER cedula;
 ALTER TABLE historico_garantes_inquilinos 
 ADD COLUMN cedula VARCHAR(20) AFTER email,
 ADD COLUMN cedula_path VARCHAR(255) AFTER cedula;
+
+CREATE TABLE vehiculos_imagenes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    vehiculo_id INT NOT NULL,
+    tipo ENUM('imagen', 'video') DEFAULT 'imagen' NOT NULL,
+    ruta VARCHAR(500) NOT NULL,
+    nombre_archivo VARCHAR(255),
+    orden INT DEFAULT 0,
+    es_principal BOOLEAN DEFAULT FALSE,
+    usuario_registro_id INT,
+    fecha_hora_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (vehiculo_id) REFERENCES vehiculos(id) ON DELETE CASCADE,
+    FOREIGN KEY (usuario_registro_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    INDEX idx_vehiculo (vehiculo_id)
+);
 -- ================================================================================
 -- SECCIÓN 4: DATOS INICIALES (INSERTS)
 -- ================================================================================

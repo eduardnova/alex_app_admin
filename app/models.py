@@ -359,6 +359,28 @@ class Propietario(db.Model):
     @email.setter
     def email(self, value):
         self._email = encrypt_data(value)
+        
+    @property
+    def tipo_socio(self):
+        """Calcula el tipo de socio según cantidad de vehículos"""
+        cantidad_vehiculos = self.vehiculos.count()
+        if cantidad_vehiculos >= 3:
+            return 'SOCIO_POTENCIAL'
+        elif cantidad_vehiculos >= 1:
+            return 'SOCIO_MINORISTA'
+        else:
+            return 'SIN_VEHICULOS'
+    
+    @property
+    def badge_socio(self):
+        """Retorna el badge CSS según el tipo de socio"""
+        tipo = self.tipo_socio
+        if tipo == 'SOCIO_POTENCIAL':
+            return 'badge-success'
+        elif tipo == 'SOCIO_MINORISTA':
+            return 'badge-info'
+        else:
+            return 'badge-secondary'
 
     def __repr__(self):
         return f'<Propietario {self.nombre_apellido}>'
@@ -779,7 +801,24 @@ class Vehiculo(db.Model):
     def __repr__(self):
         return f'<Vehiculo {self.placa}>'
 
-
+class VehiculoImagen(db.Model):
+    __tablename__ = 'vehiculos_imagenes'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    vehiculo_id = db.Column(db.Integer, db.ForeignKey('vehiculos.id', ondelete='CASCADE'), nullable=False, index=True)
+    tipo = db.Column(db.Enum('imagen', 'video'), default='imagen', nullable=False)
+    ruta = db.Column(db.String(500), nullable=False)
+    nombre_archivo = db.Column(db.String(255))
+    orden = db.Column(db.Integer, default=0)
+    es_principal = db.Column(db.Boolean, default=False)
+    usuario_registro_id = db.Column(db.Integer, db.ForeignKey('usuarios.id', ondelete='CASCADE'))
+    fecha_hora_registro = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    vehiculo = db.relationship('Vehiculo', backref=db.backref('imagenes', lazy='dynamic', cascade='all, delete-orphan'))
+    
+    def __repr__(self):
+        return f'<VehiculoImagen {self.id} - Vehiculo {self.vehiculo_id}>'
+    
 # ==================== TABLA: mecanicos ====================
 class Mecanico(db.Model):
     __tablename__ = 'mecanicos'

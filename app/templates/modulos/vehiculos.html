@@ -646,7 +646,7 @@ function createNewVehiculo() {
     if (modalTitle) modalTitle.textContent = 'Nuevo Vehículo';
     if (submitBtnText) submitBtnText.textContent = 'Guardar';
     if (vehiculoForm) {
-        vehiculoForm.action = '{{ url_for("vehiculo.crear_vehiculo") }}';
+        vehiculoForm.action = '{{ url_for("propietario.crear_vehiculo") }}';
         vehiculoForm.reset();
     }
     if (vehiculoId) vehiculoId.value = '';
@@ -672,7 +672,7 @@ async function editVehiculo(id) {
             
             if (modalTitle) modalTitle.textContent = 'Editar Vehículo';
             if (submitBtnText) submitBtnText.textContent = 'Actualizar';
-            if (vehiculoForm) vehiculoForm.action = `/vehiculos/${id}/editar`;
+            if (vehiculoForm) vehiculoForm.action = `/propietario/vehiculos/${id}/editar`;
             
             document.getElementById('vehiculoId').value = vehiculo.id;
             document.getElementById('marcaModeloId').value = vehiculo.marca_modelo_vehiculo_id;
