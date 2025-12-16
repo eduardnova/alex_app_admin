@@ -109,6 +109,7 @@ def create_app(config_name=None):
     from app.routes.inquilinos_routes import inquilino_bp
     from app.routes.propietarios_routes import propietario_bp
     from app.routes.vehiculos_routes import vehiculo_bp
+    from app.routes.alquileres_routes import alquileres_bp
     
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(admin_bp, url_prefix='/admin')
@@ -117,6 +118,7 @@ def create_app(config_name=None):
     app.register_blueprint(reportes_bp, url_prefix='/reportes')
     app.register_blueprint(catalogo_bp, url_prefix='/')
     app.register_blueprint(mecanicos_bp, url_prefix='/mecanicos')
+    app.register_blueprint(alquileres_bp, url_prefix='/')
     app.register_blueprint(inquilino_bp, url_prefix='/')
     app.register_blueprint(propietario_bp, url_prefix='/')
     app.register_blueprint(vehiculo_bp, url_prefix='/') 

@@ -7,9 +7,10 @@
     <!-- Table Card -->
     <div class="table-container">
         <div class="table-header">
-            <h3 class="table-title"> Lista de Estados de Alquiler
-               <p class="card-subtitle">Gestiona los diferentes estados del proceso de alquiler</p>
-            </h3>
+            <div>
+                <h3 class="table-title">Lista de Estados de Alquiler</h3>
+                <p class="card-subtitle">Gestiona los diferentes estados del proceso de alquiler</p>
+            </div>
                
             <div class="input-group" style="width: 400px;">
                 <span class="input-icon">
@@ -20,7 +21,7 @@
                 </span>
                 <input type="text" class="form-input" id="searchEstados" placeholder="Buscar estado...">
             </div>
-            <button class="btn btn-primary" data-modal="createEstadoModal">
+            <button class="btn btn-primary" onclick="createNewEstado()">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                 </svg>
@@ -61,8 +62,8 @@
                         <td>
                             <span class="badge badge-primary">15 alquileres</span>
                         </td>
-                        <td>{{ estado.fecha_registro.strftime('%d/%m/%Y') if estado.fecha_registro else 'N/A' }}</td>
-                        <td>{{ estado.fecha_actualizacion.strftime('%d/%m/%Y %H:%M') if estado.fecha_actualizacion else 'N/A' }}</td>
+                        <td>{{ estado.fecha_hora_registro.strftime('%d/%m/%Y') if estado.fecha_hora_registro else 'N/A' }}</td>
+                        <td>{{ estado.fecha_hora_actualizo.strftime('%d/%m/%Y %H:%M') if estado.fecha_hora_actualizo else 'N/A' }}</td>
                         <td>
                             <div style="display: flex; gap: 8px;">
                                 <button class="btn btn-sm btn-secondary" onclick="viewHistory({{ estado.id }})" data-tooltip="Historial">
@@ -75,13 +76,11 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                     </svg>
                                 </button>
-                                <form action="{{ url_for('catalogo.eliminar_estado_alquiler', id=estado.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('¿Eliminar este estado?');">
-                                    <button type="submit" class="btn btn-sm btn-danger" data-tooltip="Eliminar">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                        </svg>
-                                    </button>
-                                </form>
+                                <button type="button" class="btn btn-sm btn-danger" onclick='deleteEstado({{ estado.id }}, {{ estado.nombre | tojson }})' data-tooltip="Eliminar">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -183,7 +182,7 @@
 <div class="modal-overlay" id="historyModal">
     <div class="modal modal-lg">
         <div class="modal-header">
-            <h3 class="modal-title">Historial de Modificaciones</h3>
+            <h3 class="modal-title">Historial de Modificaciones - <span id="historyEstadoName">Cargando...</span></h3>
             <button class="modal-close">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -191,40 +190,81 @@
             </button>
         </div>
         <div class="modal-body">
-            <div class="table-wrapper">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Usuario</th>
-                            <th>Acción</th>
-                            <th>Detalles</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>30/11/2024 10:30</td>
-                            <td>Admin User</td>
-                            <td><span class="badge badge-success">Creación</span></td>
-                            <td>Registro inicial del estado</td>
-                        </tr>
-                        <tr>
-                            <td>30/11/2024 14:15</td>
-                            <td>John Doe</td>
-                            <td><span class="badge badge-warning">Edición</span></td>
-                            <td>Descripción actualizada</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <!-- Loading State -->
+            <div id="historyLoading" style="text-align: center; padding: 40px; display: none;">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="animation: spin 1s linear infinite;">
+                    <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="0" opacity="0.25"/>
+                    <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="8"/>
+                </svg>
+                <p style="margin-top: 12px; color: var(--text-secondary);">Cargando historial...</p>
+            </div>
+
+            <!-- Content -->
+            <div id="historyContent" style="display: none;">
+                <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+                    <input type="text" id="historySearch" class="form-input" placeholder="Buscar en historial...">
+                    <select id="historyFilterAction" class="form-select" style="width: 180px;">
+                        <option value="">Todas las acciones</option>
+                        <option value="INSERT">Creación</option>
+                        <option value="UPDATE">Edición</option>
+                        <option value="DELETE">Eliminación</option>
+                    </select>
+                </div>
+                <div class="table-wrapper">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Fecha/Hora</th>
+                                <th>Usuario</th>
+                                <th>Acción</th>
+                                <th>Detalles</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody">
+                            <!-- Will be populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div id="historyEmpty" style="text-align: center; padding: 40px; display: none;">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" style="margin: 0 auto 16px;">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 6v6l4 2"/>
+                </svg>
+                <p style="color: var(--text-secondary); font-size: 15px;">No hay historial disponible para este estado.</p>
             </div>
         </div>
         <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button>
+            <button type="button" class="btn btn-primary" onclick="exportHistory()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Exportar
+            </button>
         </div>
     </div>
 </div>
 
+<style>
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+</style>
+
 <script>
+// ==========================================
+// GLOBAL VARIABLES
+// ==========================================
+let allHistoryRecords = [];
+let currentHistoryId = null;
+
+// ==========================================
+// SEARCH FUNCTIONALITY
+// ==========================================
 document.getElementById('searchEstados').addEventListener('input', function(e) {
     const searchTerm = e.target.value.toLowerCase();
     const rows = document.querySelectorAll('#estadosTable tbody tr');
@@ -234,14 +274,365 @@ document.getElementById('searchEstados').addEventListener('input', function(e) {
     });
 });
 
-function editEstado(id) {
-    document.getElementById('estadoModalTitle').textContent = 'Editar Estado';
-    document.getElementById('estadoForm').action = `/estados_alquiler/${id}/editar`;
+// ==========================================
+// CREATE NEW ESTADO
+// ==========================================
+function createNewEstado() {
+    // Reset form
+    document.getElementById('estadoForm').reset();
+    
+    // Change title
+    document.getElementById('estadoModalTitle').textContent = 'Nuevo Estado de Alquiler';
+    
+    // Set action URL for create
+    document.getElementById('estadoForm').action = '{{ url_for("catalogo.crear_estado_alquiler") }}';
+    
+    // Open modal
     window.AppUtils.openModal('createEstadoModal');
+    
+    console.log('✅ Create modal opened');
 }
 
-function viewHistory(id) {
-    window.AppUtils.openModal('historyModal');
+// ==========================================
+// EDIT ESTADO
+// ==========================================
+function editEstado(id) {
+    console.log('📝 Editing estado:', id);
+    
+    // Change title
+    document.getElementById('estadoModalTitle').textContent = 'Editar Estado de Alquiler';
+    
+    // Change form action
+    document.getElementById('estadoForm').action = `/catalogo/estados-alquiler/${id}/editar`;
+    
+    // Fetch estado data
+    fetch(`/catalogo/estados-alquiler/${id}/json`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error al cargar datos');
+            }
+            return response.json();
+        })
+        .then(result => {
+            if (result.success) {
+                const data = result.data;
+                
+                // Fill form
+                document.querySelector('[name="nombre"]').value = data.nombre || '';
+                document.querySelector('[name="descripcion"]').value = data.descripcion || '';
+                
+                // Open modal
+                window.AppUtils.openModal('createEstadoModal');
+                
+                console.log('✅ Estado data loaded:', data);
+            } else {
+                showAlert('Error', result.message || 'No se pudo cargar el estado', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('❌ Error loading estado:', error);
+            showAlert('Error', 'Error al cargar datos del estado', 'error');
+        });
 }
+
+// ==========================================
+// DELETE ESTADO
+// ==========================================
+function deleteEstado(id, nombre) {
+    console.log('🗑️ Deleting estado:', id, nombre);
+    
+    showConfirm(
+        '¿Eliminar Estado de Alquiler?',
+        `El estado "${nombre}" será eliminado permanentemente. Esta acción no se puede deshacer.`,
+        function() {
+            // Create and submit form
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/catalogo/estados-alquiler/${id}/eliminar`;
+            document.body.appendChild(form);
+            form.submit();
+            
+            console.log('✅ Delete form submitted');
+        }
+    );
+}
+
+// ==========================================
+// VIEW HISTORY
+// ==========================================
+function viewHistory(id) {
+    console.log('📜 Loading history for estado:', id);
+    
+    currentHistoryId = id;
+    
+    // Show loading state
+    document.getElementById('historyLoading').style.display = 'block';
+    document.getElementById('historyContent').style.display = 'none';
+    document.getElementById('historyEmpty').style.display = 'none';
+    
+    // Open modal
+    window.AppUtils.openModal('historyModal');
+    
+    // Fetch history
+    fetch(`/catalogo/estados-alquiler/${id}/historial`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error al cargar historial');
+            }
+            return response.json();
+        })
+        .then(result => {
+            document.getElementById('historyLoading').style.display = 'none';
+            
+            if (result.success && result.historial && result.historial.length > 0) {
+                // Update title
+                document.getElementById('historyEstadoName').textContent = result.estado_nombre;
+                
+                // Store records
+                allHistoryRecords = result.historial;
+                
+                // Render history
+                renderHistory(result.historial);
+                
+                // Show content
+                document.getElementById('historyContent').style.display = 'block';
+                
+                // Initialize filters
+                initHistoryFilters();
+                
+                console.log('✅ History loaded:', result.historial.length, 'records');
+            } else {
+                document.getElementById('historyEmpty').style.display = 'block';
+                console.log('ℹ️ No history available');
+            }
+        })
+        .catch(error => {
+            console.error('❌ Error loading history:', error);
+            document.getElementById('historyLoading').style.display = 'none';
+            document.getElementById('historyEmpty').style.display = 'block';
+            showAlert('Error', 'Error al cargar el historial', 'error');
+        });
+}
+
+// ==========================================
+// RENDER HISTORY
+// ==========================================
+function renderHistory(historial) {
+    const tbody = document.getElementById('historyTableBody');
+    tbody.innerHTML = '';
+    
+    if (!historial || historial.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: var(--text-secondary);">No hay registros</td></tr>';
+        return;
+    }
+    
+    historial.forEach(record => {
+        const row = document.createElement('tr');
+        
+        // Fecha/Hora
+        const fechaCell = document.createElement('td');
+        fechaCell.innerHTML = `
+            <div style="font-weight: 600; color: var(--text-primary);">${record.fecha_hora.split(' ')[0]}</div>
+            <div style="font-size: 12px; color: var(--text-tertiary);">${record.fecha_hora.split(' ')[1]}</div>
+        `;
+        row.appendChild(fechaCell);
+        
+        // Usuario
+        const usuarioCell = document.createElement('td');
+        usuarioCell.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 12px;">
+                    ${record.usuario_iniciales}
+                </div>
+                <span>${record.usuario_nombre}</span>
+            </div>
+        `;
+        row.appendChild(usuarioCell);
+        
+        // Acción
+        const accionCell = document.createElement('td');
+        let badgeClass = 'badge-info';
+        let accionText = record.tipo_operacion;
+        
+        if (record.tipo_operacion === 'INSERT') {
+            badgeClass = 'badge-success';
+            accionText = 'Creación';
+        } else if (record.tipo_operacion === 'UPDATE') {
+            badgeClass = 'badge-warning';
+            accionText = 'Edición';
+        } else if (record.tipo_operacion === 'DELETE') {
+            badgeClass = 'badge-danger';
+            accionText = 'Eliminación';
+        }
+        
+        accionCell.innerHTML = `<span class="badge ${badgeClass}">${accionText}</span>`;
+        row.appendChild(accionCell);
+        
+        // Detalles
+        const detallesCell = document.createElement('td');
+        detallesCell.innerHTML = formatHistoryDetails(record);
+        row.appendChild(detallesCell);
+        
+        tbody.appendChild(row);
+    });
+}
+
+// ==========================================
+// FORMAT HISTORY DETAILS
+// ==========================================
+function formatHistoryDetails(record) {
+    if (record.tipo_operacion === 'INSERT') {
+        return `
+            <div style="font-size: 13px;">
+                <strong>Registro Inicial:</strong> ${record.nombre}<br>
+                <span style="color: var(--text-secondary);">Descripción: ${record.descripcion || 'N/A'}</span>
+            </div>
+        `;
+    } else if (record.tipo_operacion === 'DELETE') {
+        return `
+            <div style="font-size: 13px;">
+                <strong>Registro Eliminado:</strong> ${record.nombre}<br>
+                <span style="color: var(--text-secondary);">Descripción: ${record.descripcion || 'N/A'}</span>
+            </div>
+        `;
+    } else if (record.tipo_operacion === 'UPDATE') {
+        let changes = [];
+        
+        if (record.cambios && record.cambios.length > 0) {
+            record.cambios.forEach(cambio => {
+                changes.push(`
+                    <div style="margin-bottom: 8px; padding: 8px; background: var(--bg-secondary); border-radius: 6px;">
+                        <strong>${cambio.campo}:</strong><br>
+                        <span style="color: var(--text-secondary); font-size: 12px;">
+                            <code style="background: rgba(245, 101, 101, 0.1); padding: 2px 6px; border-radius: 3px;">${cambio.valor_anterior || 'N/A'}</code>
+                            →
+                            <code style="background: rgba(76, 175, 80, 0.1); padding: 2px 6px; border-radius: 3px;">${cambio.valor_nuevo || 'N/A'}</code>
+                        </span>
+                    </div>
+                `);
+            });
+        }
+        
+        return changes.length > 0 ? changes.join('') : '<span style="color: var(--text-secondary);">Sin cambios específicos registrados</span>';
+    }
+    
+    return '-';
+}
+
+// ==========================================
+// INITIALIZE HISTORY FILTERS
+// ==========================================
+function initHistoryFilters() {
+    const searchInput = document.getElementById('historySearch');
+    const actionSelect = document.getElementById('historyFilterAction');
+    
+    if (searchInput) {
+        searchInput.removeEventListener('input', filterHistory);
+        searchInput.addEventListener('input', filterHistory);
+        searchInput.value = '';
+    }
+    
+    if (actionSelect) {
+        actionSelect.removeEventListener('change', filterHistory);
+        actionSelect.addEventListener('change', filterHistory);
+        actionSelect.value = '';
+    }
+}
+
+// ==========================================
+// FILTER HISTORY
+// ==========================================
+function filterHistory() {
+    if (!allHistoryRecords || allHistoryRecords.length === 0) return;
+    
+    const searchInput = document.getElementById('historySearch');
+    const actionSelect = document.getElementById('historyFilterAction');
+    
+    if (!searchInput || !actionSelect) return;
+    
+    const searchTerm = searchInput.value.toLowerCase();
+    const actionFilter = actionSelect.value;
+    
+    let filtered = allHistoryRecords;
+    
+    // Filter by search term
+    if (searchTerm) {
+        filtered = filtered.filter(record => {
+            const searchableText = `${record.nombre} ${record.descripcion} ${record.usuario_nombre}`.toLowerCase();
+            return searchableText.includes(searchTerm);
+        });
+    }
+    
+    // Filter by action type
+    if (actionFilter) {
+        filtered = filtered.filter(record => record.tipo_operacion === actionFilter);
+    }
+    
+    renderHistory(filtered);
+}
+
+// ==========================================
+// EXPORT HISTORY
+// ==========================================
+function exportHistory() {
+    if (!allHistoryRecords || allHistoryRecords.length === 0) {
+        showAlert('Sin datos', 'No hay datos para exportar', 'warning');
+        return;
+    }
+    
+    try {
+        // CSV header
+        let csv = 'Fecha/Hora,Usuario,Acción,Estado,Descripción,Cambios\n';
+        
+        // CSV rows
+        allHistoryRecords.forEach(record => {
+            let accionText = record.tipo_operacion;
+            if (record.tipo_operacion === 'INSERT') accionText = 'Creación';
+            else if (record.tipo_operacion === 'UPDATE') accionText = 'Edición';
+            else if (record.tipo_operacion === 'DELETE') accionText = 'Eliminación';
+            
+            const descripcion = (record.descripcion || '').replace(/"/g, '""');
+            
+            let cambios = '';
+            if (record.cambios && record.cambios.length > 0) {
+                cambios = record.cambios.map(c => `${c.campo}: ${c.valor_anterior} → ${c.valor_nuevo}`).join('; ');
+            }
+            
+            csv += `"${record.fecha_hora}","${record.usuario_nombre}","${accionText}","${record.nombre}","${descripcion}","${cambios}"\n`;
+        });
+        
+        // Create download link
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+        const filename = `historial_estado_alquiler_${currentHistoryId}_${timestamp}.csv`;
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Clean up
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+        
+        showAlert('Éxito', 'Historial exportado correctamente', 'success');
+        console.log('✅ History exported successfully');
+    } catch (error) {
+        console.error('❌ Error exporting history:', error);
+        showAlert('Error', 'Error al exportar el historial', 'error');
+    }
+}
+
+// ==========================================
+// INITIALIZE ON LOAD
+// ==========================================
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Estados de Alquiler page initialized');
+});
 </script>
 {% endblock %}

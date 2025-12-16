@@ -1,0 +1,413 @@
+{% extends "base.html" %}
+
+{% block title %}Porcentajes de Ganancia{% endblock %}
+
+{% block content %}
+<div class="content-area">
+    <!-- Info Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
+        <div class="card">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="width: 50px; height: 50px; background: linear-gradient(135deg, var(--success), var(--success-light)); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <div style="font-size: 28px; font-weight: 700; color: var(--text-primary);">{{ porcentajes_activos }}</div>
+                    <div style="font-size: 13px; color: var(--text-secondary);">Porcentajes Activos</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="width: 50px; height: 50px; background: linear-gradient(135deg, var(--primary), var(--primary-light)); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+                    </svg>
+                </div>
+                <div>
+                    <div style="font-size: 28px; font-weight: 700; color: var(--text-primary);">
+                        {{ porcentaje_defecto.porcentaje if porcentaje_defecto else '0' }}%
+                    </div>
+                    <div style="font-size: 13px; color: var(--text-secondary);">Porcentaje por Defecto</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="width: 50px; height: 50px; background: linear-gradient(135deg, var(--info), var(--info-light)); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <div style="font-size: 28px; font-weight: 700; color: var(--text-primary);">{{ semanas_con_porcentaje }}</div>
+                    <div style="font-size: 13px; color: var(--text-secondary);">Semanas Configuradas</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-container">
+        <div class="table-header">
+            <div>
+                <h1 class="card-title">Porcentajes de Ganancia</h1>
+                <p class="card-subtitle">Configura los porcentajes que la empresa aplica a los ingresos de alquiler</p>
+            </div>
+            <div class="input-group" style="width: 350px;">
+                <span class="input-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="M21 21l-4.35-4.35"/>
+                    </svg>
+                </span>
+                <input type="text" class="form-input" id="searchPorcentajes" placeholder="Buscar porcentaje...">
+            </div>
+            <button class="btn btn-primary" onclick="createNewPorcentaje()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Nuevo Porcentaje
+            </button>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="table" id="porcentajesTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Descripción</th>
+                        <th>Porcentaje</th>
+                        <th>Estado</th>
+                        <th>Por Defecto</th>
+                        <th>Semanas Usadas</th>
+                        <th>Fecha Creación</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for porcentaje in porcentajes %}
+                    <tr>
+                        <td><strong>#{{ porcentaje.id }}</strong></td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="width: 40px; height: 40px; background: var(--bg-primary); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                    </svg>
+                                </div>
+                                <strong>{{ porcentaje.descripcion }}</strong>
+                            </div>
+                        </td>
+                        <td>
+                            <div style="display: inline-flex; align-items: center; gap: 8px; background: var(--bg-primary); padding: 6px 12px; border-radius: var(--radius-md);">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--success)">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+                                </svg>
+                                <span style="font-size: 18px; font-weight: 700; color: var(--success);">{{ porcentaje.porcentaje }}%</span>
+                            </div>
+                        </td>
+                        <td>
+                            {% if porcentaje.activo %}
+                            <span class="badge badge-success">Activo</span>
+                            {% else %}
+                            <span class="badge badge-secondary">Inactivo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if porcentaje.por_defecto %}
+                            <span class="badge badge-primary">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="margin-right: 4px;">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+                                </svg>
+                                Por Defecto
+                            </span>
+                            {% else %}
+                            <span class="badge badge-secondary">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge badge-info">{{ porcentaje.semanas_alquiler.count() }} semanas</span>
+                        </td>
+                        <td>{{ porcentaje.fecha_hora_registro.strftime('%d/%m/%Y') if porcentaje.fecha_hora_registro else 'N/A' }}</td>
+                        <td>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-sm btn-secondary" onclick="viewHistory({{ porcentaje.id }})" data-tooltip="Historial">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </button>
+                                <button class="btn btn-sm btn-primary" onclick="editPorcentaje({{ porcentaje.id }})" data-tooltip="Editar">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </button>
+                                {% if porcentaje.semanas_alquiler.count() == 0 %}
+                                <button type="button" class="btn btn-sm btn-danger" onclick='deletePorcentaje({{ porcentaje.id }}, {{ porcentaje.descripcion | tojson }})' data-tooltip="Eliminar">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                                {% else %}
+                                <button type="button" class="btn btn-sm btn-secondary" disabled data-tooltip="No se puede eliminar (en uso)">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                    </svg>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Crear/Editar -->
+<div class="modal-overlay" id="createPorcentajeModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title" id="porcentajeTitle">Nuevo Porcentaje de Ganancia</h3>
+            <button class="modal-close">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <form action="{{ url_for('alquiler.crear_porcentaje_ganancia') }}" method="POST" id="porcentajeForm">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label required">Descripción</label>
+                    <input type="text" name="descripcion" class="form-input" placeholder="Ej: Ganancia Estándar 2025" required>
+                    <span class="form-help">Nombre descriptivo del porcentaje</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label required">Porcentaje (%)</label>
+                    <div class="input-group">
+                        <input type="number" name="porcentaje" class="form-input" placeholder="15.50" step="0.01" min="0" max="100" required>
+                        <span class="input-addon">%</span>
+                    </div>
+                    <span class="form-help">Porcentaje de ganancia que se aplicará (0-100)</span>
+                </div>
+
+                <div class="form-group">
+                    <div class="checkbox-wrapper">
+                        <input type="checkbox" name="activo" class="checkbox" id="activoCheckbox" checked>
+                        <label for="activoCheckbox" class="checkbox-label">Porcentaje activo</label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="checkbox-wrapper">
+                        <input type="checkbox" name="por_defecto" class="checkbox" id="porDefectoCheckbox">
+                        <label for="porDefectoCheckbox" class="checkbox-label">Establecer como porcentaje por defecto</label>
+                    </div>
+                    <span class="form-help">Se usará automáticamente al crear nuevas semanas de trabajo</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button>
+                <button type="submit" class="btn btn-primary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Historial -->
+<div class="modal-overlay" id="historyModal">
+    <div class="modal modal-lg">
+        <div class="modal-header">
+            <h3 class="modal-title">Historial - <span id="historyPorcentajeName">Cargando...</span></h3>
+            <button class="modal-close">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <!-- Loading State -->
+            <div id="historyLoading" style="text-align: center; padding: 40px; display: none;">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="animation: spin 1s linear infinite;">
+                    <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="0" opacity="0.25"/>
+                    <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="8"/>
+                </svg>
+                <p style="margin-top: 12px; color: var(--text-secondary);">Cargando historial...</p>
+            </div>
+
+            <!-- Content -->
+            <div id="historyContent" style="display: none;">
+                <div class="table-wrapper">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Fecha/Hora</th>
+                                <th>Usuario</th>
+                                <th>Acción</th>
+                                <th>Detalles</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div id="historyEmpty" style="text-align: center; padding: 40px; display: none;">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" style="margin: 0 auto 16px;">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 6v6l4 2"/>
+                </svg>
+                <p style="color: var(--text-secondary); font-size: 15px;">No hay historial disponible.</p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" data-modal-close>Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+</style>
+
+<script>
+// Search functionality
+document.getElementById('searchPorcentajes').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const rows = document.querySelectorAll('#porcentajesTable tbody tr');
+    rows.forEach(row => {
+        row.style.display = row.textContent.toLowerCase().includes(searchTerm) ? '' : 'none';
+    });
+});
+
+// Create new
+function createNewPorcentaje() {
+    document.getElementById('porcentajeForm').reset();
+    document.getElementById('porcentajeTitle').textContent = 'Nuevo Porcentaje de Ganancia';
+    document.getElementById('porcentajeForm').action = '{{ url_for("alquiler.crear_porcentaje_ganancia") }}';
+    window.AppUtils.openModal('createPorcentajeModal');
+    console.log('✅ Create modal opened');
+}
+
+// Edit
+function editPorcentaje(id) {
+    console.log('📝 Editing porcentaje:', id);
+    document.getElementById('porcentajeTitle').textContent = 'Editar Porcentaje de Ganancia';
+    document.getElementById('porcentajeForm').action = `/alquiler/porcentajes_ganancia/${id}/editar`;
+    
+    fetch(`/alquiler/porcentajes_ganancia/${id}/json`)
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                const data = result.data;
+                document.querySelector('[name="descripcion"]').value = data.descripcion || '';
+                document.querySelector('[name="porcentaje"]').value = data.porcentaje || '';
+                document.querySelector('[name="activo"]').checked = data.activo || false;
+                document.querySelector('[name="por_defecto"]').checked = data.por_defecto || false;
+                window.AppUtils.openModal('createPorcentajeModal');
+                console.log('✅ Porcentaje data loaded:', data);
+            } else {
+                showAlert('Error', result.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('❌ Error loading porcentaje:', error);
+            showAlert('Error', 'Error al cargar datos', 'error');
+        });
+}
+
+// Delete
+function deletePorcentaje(id, descripcion) {
+    console.log('🗑️ Deleting porcentaje:', id, descripcion);
+    showConfirm(
+        '¿Eliminar Porcentaje?',
+        `El porcentaje "${descripcion}" será eliminado permanentemente.`,
+        function() {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/alquiler/porcentajes_ganancia/${id}/eliminar`;
+            document.body.appendChild(form);
+            form.submit();
+            console.log('✅ Delete form submitted');
+        }
+    );
+}
+
+// View history
+function viewHistory(id) {
+    console.log('📜 Loading history for porcentaje:', id);
+    document.getElementById('historyLoading').style.display = 'block';
+    document.getElementById('historyContent').style.display = 'none';
+    document.getElementById('historyEmpty').style.display = 'none';
+    window.AppUtils.openModal('historyModal');
+    
+    fetch(`/alquiler/porcentajes_ganancia/${id}/historial`)
+        .then(response => response.json())
+        .then(result => {
+            document.getElementById('historyLoading').style.display = 'none';
+            if (result.success && result.historial && result.historial.length > 0) {
+                document.getElementById('historyPorcentajeName').textContent = result.porcentaje_nombre;
+                renderHistory(result.historial);
+                document.getElementById('historyContent').style.display = 'block';
+                console.log('✅ History loaded:', result.historial.length, 'records');
+            } else {
+                document.getElementById('historyEmpty').style.display = 'block';
+            }
+        })
+        .catch(error => {
+            console.error('❌ Error loading history:', error);
+            document.getElementById('historyLoading').style.display = 'none';
+            document.getElementById('historyEmpty').style.display = 'block';
+            showAlert('Error', 'Error al cargar historial', 'error');
+        });
+}
+
+function renderHistory(historial) {
+    const tbody = document.getElementById('historyTableBody');
+    tbody.innerHTML = '';
+    
+    historial.forEach(record => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>
+                <div style="font-weight: 600;">${record.fecha_hora.split(' ')[0]}</div>
+                <div style="font-size: 12px; color: var(--text-tertiary);">${record.fecha_hora.split(' ')[1]}</div>
+            </td>
+            <td>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 12px;">
+                        ${record.usuario_iniciales}
+                    </div>
+                    <span>${record.usuario_nombre}</span>
+                </div>
+            </td>
+            <td><span class="badge badge-${record.tipo_operacion === 'INSERT' ? 'success' : record.tipo_operacion === 'UPDATE' ? 'warning' : 'danger'}">${record.tipo_operacion === 'INSERT' ? 'Creación' : record.tipo_operacion === 'UPDATE' ? 'Edición' : 'Eliminación'}</span></td>
+            <td>
+                <strong>${record.descripcion}</strong> - ${record.porcentaje}%
+                ${record.por_defecto ? '<span class="badge badge-primary">Por Defecto</span>' : ''}
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Porcentajes Ganancia page initialized');
+});
+</script>
+{% endblock %}

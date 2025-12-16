@@ -984,6 +984,250 @@ class Alquiler(db.Model):
     def __repr__(self):
         return f'<Alquiler {self.id} - Vehículo {self.vehiculo_id}>'
 
+# ==================== TABLA: porcentajes_ganancia ====================
+class PorcentajeGanancia(db.Model):
+    """
+    Tabla para gestionar los porcentajes de ganancia de la empresa
+    que se aplican al calcular la nómina en los alquileres
+    """
+    __tablename__ = 'porcentajes_ganancia'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    descripcion = db.Column(db.String(100), nullable=False)
+    porcentaje = db.Column(db.Numeric(5, 2), nullable=False)  # Ej: 15.50 = 15.5%
+    activo = db.Column(db.Boolean, default=True)
+    por_defecto = db.Column(db.Boolean, default=False)  # Solo uno puede ser por defecto
+    
+    usuario_registro_id = db.Column(db.Integer, 
+                                    db.ForeignKey('usuarios.id', ondelete='CASCADE'))
+    fecha_hora_registro = db.Column(db.DateTime, default=datetime.utcnow)
+    usuario_actualizo_id = db.Column(db.Integer, 
+                                     db.ForeignKey('usuarios.id', ondelete='CASCADE'))
+    fecha_hora_actualizo = db.Column(db.DateTime, default=datetime.utcnow, 
+                                     onupdate=datetime.utcnow)
+    
+    # Relationship
+    semanas_alquiler = db.relationship('SemanaAlquiler', backref='porcentaje_ganancia', 
+                                       lazy='dynamic')
+    
+    def __repr__(self):
+        return f'<PorcentajeGanancia {self.descripcion} - {self.porcentaje}%>'
+
+
+# ==================== TABLA: semanas_alquiler ====================
+class SemanaAlquiler(db.Model):
+    """
+    Tabla para gestionar semanas de trabajo de alquileres
+    Cada registro representa una semana completa con su configuración
+    """
+    __tablename__ = 'semanas_alquiler'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    fecha_inicio = db.Column(db.Date, nullable=False, index=True)
+    fecha_fin = db.Column(db.Date, nullable=False, index=True)
+    numero_semana = db.Column(db.Integer)  # Número de semana del año
+    anio = db.Column(db.Integer, nullable=False, index=True)
+    
+    # Porcentaje de ganancia aplicado a esta semana
+    porcentaje_ganancia_id = db.Column(db.Integer, 
+                                       db.ForeignKey('porcentajes_ganancia.id', 
+                                                     ondelete='RESTRICT'),
+                                       nullable=False)
+    
+    # Estado de la semana
+    estado = db.Column(db.Enum('abierta', 'cerrada', 'cancelada'), 
+                      default='abierta', nullable=False)
+    
+    # Totales calculados
+    total_vehiculos = db.Column(db.Integer, default=0)
+    total_socios = db.Column(db.Integer, default=0)
+    total_inquilinos = db.Column(db.Integer, default=0)
+    ingreso_total = db.Column(db.Numeric(12, 2), default=0.00)
+    
+    # Notas
+    notas = db.Column(db.Text)
+    
+    usuario_registro_id = db.Column(db.Integer, 
+                                    db.ForeignKey('usuarios.id', ondelete='CASCADE'))
+    fecha_hora_registro = db.Column(db.DateTime, default=datetime.utcnow)
+    usuario_actualizo_id = db.Column(db.Integer, 
+                                     db.ForeignKey('usuarios.id', ondelete='CASCADE'))
+    fecha_hora_actualizo = db.Column(db.DateTime, default=datetime.utcnow, 
+                                     onupdate=datetime.utcnow)
+    
+    # Relationships
+    detalles_alquiler = db.relationship('DetalleAlquilerSemanal', 
+                                        backref='semana', 
+                                        cascade='all, delete-orphan',
+                                        lazy='dynamic')
+    
+    def __repr__(self):
+        return f'<SemanaAlquiler {self.fecha_inicio} - {self.fecha_fin}>'
+    
+    @property
+    def dias_semana(self):
+        """Calcula los días de la semana"""
+        if self.fecha_inicio and self.fecha_fin:
+            return (self.fecha_fin - self.fecha_inicio).days + 1
+        return 0
+
+
+# ==================== TABLA: detalles_alquiler_semanal ====================
+class DetalleAlquilerSemanal(db.Model):
+    """
+    Tabla detallada de cada alquiler en una semana específica
+    Contiene toda la información por vehículo/inquilino en esa semana
+    """
+    __tablename__ = 'detalles_alquiler_semanal'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Relaciones principales
+    semana_alquiler_id = db.Column(db.Integer, 
+                                   db.ForeignKey('semanas_alquiler.id', 
+                                                 ondelete='CASCADE'),
+                                   nullable=False, index=True)
+    alquiler_id = db.Column(db.Integer, 
+                           db.ForeignKey('alquileres.id', ondelete='CASCADE'),
+                           nullable=False, index=True)
+    vehiculo_id = db.Column(db.Integer, 
+                           db.ForeignKey('vehiculos.id', ondelete='CASCADE'),
+                           nullable=False, index=True)
+    inquilino_id = db.Column(db.Integer, 
+                            db.ForeignKey('inquilinos.id', ondelete='CASCADE'),
+                            nullable=False, index=True)
+    propietario_id = db.Column(db.Integer, 
+                              db.ForeignKey('propietarios.id', ondelete='CASCADE'),
+                              nullable=False, index=True)
+    
+    # Campos de pago
+    precio_semanal = db.Column(db.Numeric(10, 2), nullable=False)  # Valor semanal
+    dias_trabajo = db.Column(db.Integer, nullable=False)  # DT
+    ingreso_calculado = db.Column(db.Numeric(10, 2), nullable=False)  # precio_semanal * dias_trabajo
+    
+    # Inversión mecánica
+    inversion_mecanica = db.Column(db.Numeric(10, 2), default=0.00)
+    concepto_inversion = db.Column(db.Text)
+    trabajo_vehiculo_id = db.Column(db.Integer, 
+                                    db.ForeignKey('trabajos_vehiculos.id', 
+                                                  ondelete='SET NULL'))  # Referencia opcional
+    
+    # Descuentos
+    monto_descuento = db.Column(db.Numeric(10, 2), default=0.00)
+    concepto_descuento = db.Column(db.Text)
+    
+    # Nómina y ganancia empresa
+    porcentaje_empresa = db.Column(db.Numeric(5, 2), nullable=False)  # % aplicado
+    nomina_empresa = db.Column(db.Numeric(10, 2), nullable=False)  # ingreso * % empresa
+    
+    # Deuda
+    tiene_deuda = db.Column(db.Boolean, default=False)
+    monto_deuda = db.Column(db.Numeric(10, 2), default=0.00)
+    fecha_limite_pago = db.Column(db.Date)  # Jueves de la semana
+    
+    # Nómina final
+    nomina_final = db.Column(db.Numeric(10, 2), nullable=False)  # ingreso + deuda
+    
+    # Pago
+    banco_id = db.Column(db.Integer, 
+                        db.ForeignKey('bancos.id', ondelete='SET NULL'))
+    fecha_confirmacion_pago = db.Column(db.Date)
+    pago_confirmado = db.Column(db.Boolean, default=False)
+    
+    # Notas adicionales
+    notas = db.Column(db.Text)
+    
+    usuario_registro_id = db.Column(db.Integer, 
+                                    db.ForeignKey('usuarios.id', ondelete='CASCADE'))
+    fecha_hora_registro = db.Column(db.DateTime, default=datetime.utcnow)
+    usuario_actualizo_id = db.Column(db.Integer, 
+                                     db.ForeignKey('usuarios.id', ondelete='CASCADE'))
+    fecha_hora_actualizo = db.Column(db.DateTime, default=datetime.utcnow, 
+                                     onupdate=datetime.utcnow)
+    
+    # Relationships
+    alquiler = db.relationship('Alquiler', backref='detalles_semanales')
+    vehiculo = db.relationship('Vehiculo', backref='detalles_alquiler_semanal')
+    inquilino = db.relationship('Inquilino', backref='detalles_alquiler_semanal')
+    propietario = db.relationship('Propietario', backref='detalles_alquiler_semanal')
+    banco = db.relationship('Banco', backref='detalles_alquiler_semanal')
+    trabajo_vehiculo = db.relationship('TrabajoVehiculo', backref='detalles_alquiler_semanal')
+    
+    def __repr__(self):
+        return f'<DetalleAlquilerSemanal {self.id} - Semana {self.semana_alquiler_id}>'
+    
+    @property
+    def esta_en_mora(self):
+        """Verifica si el pago está en mora"""
+        if not self.pago_confirmado and self.fecha_limite_pago:
+            from datetime import date
+            return date.today() > self.fecha_limite_pago
+        return False
+    
+    @property
+    def dias_mora(self):
+        """Calcula días de mora"""
+        if self.esta_en_mora:
+            from datetime import date
+            return (date.today() - self.fecha_limite_pago).days
+        return 0
+
+
+# ==================== TABLA: historico_porcentajes_ganancia ====================
+class HistoricoPorcentajeGanancia(db.Model):
+    """Tabla histórica para porcentajes de ganancia"""
+    __tablename__ = 'historico_porcentajes_ganancia'
+    
+    id_historico = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    tipo_operacion = db.Column(db.Enum('INSERT', 'UPDATE', 'DELETE'), nullable=False)
+    fecha_hora_operacion = db.Column(db.DateTime, default=datetime.utcnow)
+    usuario_operacion_id = db.Column(db.Integer)
+    
+    # Campos históricos
+    id = db.Column(db.Integer)
+    descripcion = db.Column(db.String(100))
+    porcentaje = db.Column(db.Numeric(5, 2))
+    activo = db.Column(db.Boolean)
+    por_defecto = db.Column(db.Boolean)
+    usuario_registro_id = db.Column(db.Integer)
+    fecha_hora_registro = db.Column(db.DateTime)
+    usuario_actualizo_id = db.Column(db.Integer)
+    fecha_hora_actualizo = db.Column(db.DateTime)
+    
+    def __repr__(self):
+        return f'<HistoricoPorcentajeGanancia {self.id} - {self.tipo_operacion}>'
+
+
+# ==================== TABLA: historico_semanas_alquiler ====================
+class HistoricoSemanaAlquiler(db.Model):
+    """Tabla histórica para semanas de alquiler"""
+    __tablename__ = 'historico_semanas_alquiler'
+    
+    id_historico = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    tipo_operacion = db.Column(db.Enum('INSERT', 'UPDATE', 'DELETE'), nullable=False)
+    fecha_hora_operacion = db.Column(db.DateTime, default=datetime.utcnow)
+    usuario_operacion_id = db.Column(db.Integer)
+    
+    # Campos históricos
+    id = db.Column(db.Integer)
+    fecha_inicio = db.Column(db.Date)
+    fecha_fin = db.Column(db.Date)
+    numero_semana = db.Column(db.Integer)
+    anio = db.Column(db.Integer)
+    porcentaje_ganancia_id = db.Column(db.Integer)
+    estado = db.Column(db.String(20))
+    total_vehiculos = db.Column(db.Integer)
+    total_socios = db.Column(db.Integer)
+    total_inquilinos = db.Column(db.Integer)
+    ingreso_total = db.Column(db.Numeric(12, 2))
+    notas = db.Column(db.Text)
+    usuario_registro_id = db.Column(db.Integer)
+    fecha_hora_registro = db.Column(db.DateTime)
+    usuario_actualizo_id = db.Column(db.Integer)
+    fecha_hora_actualizo = db.Column(db.DateTime)
+    
+    def __repr__(self):
+        return f'<HistoricoSemanaAlquiler {self.id} - {self.tipo_operacion}>'
 
 # ==================== TABLA: deudas ====================
 class Deuda(db.Model):

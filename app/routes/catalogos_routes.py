@@ -402,6 +402,19 @@ def eliminar_estado_alquiler(id):
     
     return redirect(url_for('catalogo.estados_alquiler'))
 
+@catalogo_bp.route('/estados-alquiler/<int:id>/json')
+@login_required
+@admin_required
+def ver_estado_alquiler_json(id):
+    estado = EstadoAlquiler.query.get_or_404(id)
+    return jsonify({
+        'success': True,
+        'data': {
+            'id': estado.id,
+            'nombre': estado.nombre,
+            'descripcion': estado.descripcion
+        }
+    })
 # ==================== MÉTODOS DE PAGO ====================
 
 @catalogo_bp.route('/metodos_pago')
@@ -570,6 +583,19 @@ def eliminar_tipo_cuenta(id):
     
     return redirect(url_for('catalogo.tipo_cuentas'))
 
+@catalogo_bp.route('/tipo-cuentas/<int:id>/json')
+@login_required
+@admin_required
+def ver_tipo_cuenta_json(id):
+    tipo = TipoCuenta.query.get_or_404(id)
+    return jsonify({
+        'success': True,
+        'data': {
+            'id': tipo.id,
+            'tipo_cuenta': tipo.tipo_cuenta,
+            'descripcion': tipo.descripcion
+        }
+    })
 # ==================== BANCOS ====================
 
 
@@ -874,6 +900,24 @@ def historial_banco(id):
             'message': f'Error al cargar historial: {str(e)}'
         }), 500
 
+@catalogo_bp.route('/catalogos/bancos/<int:id>/json')
+@login_required
+@admin_required
+def ver_banco_json(id):
+    banco = Banco.query.get_or_404(id)
+    return jsonify({
+        'success': True,
+        'data': {
+            'id': banco.id,
+            'banco': banco.banco,
+            'cuenta': banco.cuenta,
+            'tipo_cuenta_id': banco.tipo_cuenta_id,
+            'cedula': banco.cedula,
+            'administrador': banco.administrador,
+            'descripcion': banco.descripcion,
+            'logo_path': banco.logo_path
+        }
+    })
 
 # Helper function to register history
 def registrar_historico_banco(banco, tipo_operacion):
@@ -1089,7 +1133,6 @@ def historial_parentesco(id):
             'success': False,
             'message': f'Error al cargar historial: {str(e)}'
         }), 500
-
 
 # ==================== HELPER FUNCTION ====================
 
