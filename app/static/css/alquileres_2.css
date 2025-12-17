@@ -1,0 +1,798 @@
+/* ==========================================
+   ALQUILERES.CSS - PROFESSIONAL EXCEL DESIGN
+   ========================================== */
+
+:root {
+    --excel-header: #217346;
+    --excel-header-text: #ffffff;
+    --excel-border: #d0d7de;
+    --excel-hover: #f6f8fa;
+    --excel-selected: #ddf4ff;
+    --excel-stripe: #f9fafb;
+    --excel-calculated: #fff3cd;
+    --excel-modified: #fff4e5;
+    --excel-sticky-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* ==========================================
+   STAT CARDS
+   ========================================== */
+.stat-card {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.2;
+}
+
+.stat-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+/* ==========================================
+   ACCORDION STRUCTURE
+   ========================================== */
+.semanas-accordion {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.semana-accordion-item {
+    background: #ffffff;
+    border: 1px solid var(--excel-border);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.semana-accordion-item:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    border-color: var(--excel-header);
+}
+
+.semana-accordion-item.active {
+    box-shadow: 0 4px 16px rgba(33, 115, 70, 0.12);
+    border-color: var(--excel-header);
+}
+
+/* ==========================================
+   SEMANA HEADER (Clickable)
+   ========================================== */
+.semana-header {
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid transparent;
+}
+
+.semana-header:hover {
+    background: linear-gradient(135deg, #e9ecef 0%, #f8f9fa 100%);
+}
+
+.semana-accordion-item.active .semana-header {
+    background: linear-gradient(135deg, var(--excel-header) 0%, #1a5c37 100%);
+    border-bottom: 1px solid var(--excel-border);
+    color: white;
+}
+
+.semana-accordion-item.active .semana-header * {
+    color: white !important;
+}
+
+/* Left Side */
+.semana-header-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex: 1;
+    min-width: 0;
+}
+
+/* Accordion Toggle */
+.accordion-toggle {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    background: #ffffff;
+    border: 1px solid var(--excel-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.accordion-toggle:hover {
+    background: var(--excel-header);
+    border-color: var(--excel-header);
+    transform: scale(1.05);
+}
+
+.accordion-toggle:hover .chevron {
+    color: white;
+}
+
+.accordion-toggle .chevron {
+    transition: transform 0.3s ease, color 0.3s ease;
+    color: var(--excel-header);
+}
+
+.semana-accordion-item.active .accordion-toggle {
+    background: white;
+    border-color: white;
+}
+
+.semana-accordion-item.active .accordion-toggle .chevron {
+    transform: rotate(90deg);
+    color: green;
+}
+
+/* Semana Icon */
+.semana-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--excel-header), #1a5c37);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(33, 115, 70, 0.2);
+}
+
+.semana-accordion-item.active .semana-icon {
+    background: rgb(255, 255, 255);
+     color: green;
+ 
+}
+
+.semana-accordion-item.active .semana-icon svg {
+    stroke: var(--excel-header);
+   color: green;
+}
+
+/* Semana Info */
+.semana-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.semana-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 6px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.semana-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    flex-wrap: wrap;
+}
+
+.semana-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.semana-meta-item svg {
+    width: 16px;
+    height: 16px;
+    opacity: 0.7;
+}
+
+/* Right Side - Actions */
+.semana-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+/* ==========================================
+   SEMANA DETAILS (Expandable)
+   ========================================== */
+.semana-details {
+    padding: 0;
+    background: #fafbfc;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), padding 0.4s ease;
+}
+
+.semana-accordion-item.active .semana-details {
+    max-height: 8000px;
+    padding: 24px;
+}
+
+/* Loading/Empty States */
+.loading-state,
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.loading-state svg {
+    color: var(--excel-header);
+}
+
+.empty-state svg {
+    color: var(--text-tertiary);
+    opacity: 0.5;
+}
+
+/* ==========================================
+   EXCEL TABLE - PROFESSIONAL DESIGN
+   ========================================== */
+.excel-table-wrapper {
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 600px;
+    border: 2px solid var(--excel-border);
+    border-radius: 8px;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.excel-table {
+    width: 100%;
+    min-width: 2200px;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
+    background: white;
+}
+
+/* ==========================================
+   TABLE HEADER - Excel Style
+   ========================================== */
+.excel-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.excel-table th {
+    background: var(--excel-header);
+    color: var(--excel-header-text);
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 14px 12px;
+    border-right: 1px solid rgba(255, 255, 255, 0.2);
+    border-bottom: 2px solid #1a5c37;
+    white-space: nowrap;
+    text-align: left;
+    position: relative;
+}
+
+.excel-table th:last-child {
+    border-right: none;
+}
+
+.excel-table th::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, 
+        rgba(255,255,255,0) 0%, 
+        rgba(255,255,255,0.2) 50%, 
+        rgba(255,255,255,0) 100%
+    );
+}
+
+/* ==========================================
+   STICKY FIRST COLUMN
+   ========================================== */
+.sticky-col {
+    position: sticky;
+    left: 0;
+    z-index: 11;
+    background: var(--excel-header);
+    box-shadow: var(--excel-sticky-shadow);
+}
+
+.excel-table tbody td.sticky-col {
+    background: white;
+    font-weight: 600;
+    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.08);
+    border-right: 2px solid var(--excel-border);
+}
+
+.excel-table tbody tr:nth-child(even) td.sticky-col {
+    background: var(--excel-stripe);
+}
+
+.excel-table tbody tr:hover td.sticky-col {
+    background: var(--excel-selected);
+}
+
+/* ==========================================
+   TABLE BODY - Professional Cells
+   ========================================== */
+.excel-table td {
+    padding: 10px 12px;
+    border-right: 1px solid var(--excel-border);
+    border-bottom: 1px solid var(--excel-border);
+    background: white;
+    vertical-align: middle;
+    transition: background 0.15s ease;
+}
+
+.excel-table td:last-child {
+    border-right: none;
+}
+
+/* Zebra Striping */
+.excel-table tbody tr:nth-child(even) td {
+    background: var(--excel-stripe);
+}
+
+/* Hover Effect */
+.excel-table tbody tr:hover td {
+    background: var(--excel-selected);
+}
+
+/* ==========================================
+   INPUT CELLS - Clean Design
+   ========================================== */
+.excel-table td input,
+.excel-table td select {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    font-size: 13px;
+    background: transparent;
+    transition: all 0.2s ease;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.excel-table td input:hover,
+.excel-table td select:hover {
+    background: white;
+    border-color: var(--excel-border);
+}
+
+.excel-table td input:focus,
+.excel-table td select:focus {
+    outline: none;
+    border-color: var(--excel-header);
+    background: white;
+    box-shadow: 0 0 0 3px rgba(33, 115, 70, 0.1);
+}
+
+.excel-table td input[type="number"] {
+    text-align: right;
+    font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+    font-weight: 500;
+}
+
+.excel-table td input[type="date"] {
+    min-width: 130px;
+}
+
+.excel-table td select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    padding-right: 30px;
+}
+
+/* ==========================================
+   CALCULATED CELLS - Yellow Highlight
+   ========================================== */
+.calculated-cell {
+    background: var(--excel-calculated) !important;
+    font-weight: 700;
+    color: #856404;
+    font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+    text-align: right;
+    position: relative;
+}
+
+.excel-table tbody tr:hover .calculated-cell {
+    background: #ffe8a1 !important;
+}
+
+.calculated-cell::before {
+    content: '=';
+    position: absolute;
+    left: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+    opacity: 0.5;
+}
+
+/* Currency Display */
+.currency-display {
+    font-weight: 600;
+    color: #0a8754;
+    display: block;
+    font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+}
+
+.currency-display.negative {
+    color: #d32f2f;
+}
+
+/* ==========================================
+   BADGES & STATUS
+   ========================================== */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.badge-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.badge-primary {
+    background: #cfe2ff;
+    color: #084298;
+    border: 1px solid #b6d4fe;
+}
+
+.badge-secondary {
+    background: #e2e3e5;
+    color: #41464b;
+    border: 1px solid #d3d6d8;
+}
+
+.badge-warning {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.badge-danger {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.badge-info {
+    background: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+/* Payment Status */
+.payment-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-top: 4px;
+}
+
+.payment-status.confirmed {
+    background: #d4edda;
+    color: #155724;
+}
+
+.payment-status.pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.payment-status.overdue {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* Debt Badge */
+.debt-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 3px 8px;
+    background: #f8d7da;
+    color: #721c24;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 700;
+    margin-top: 4px;
+}
+
+/* ==========================================
+   TABLE FOOTER - Totals
+   ========================================== */
+.excel-table tfoot {
+    position: sticky;
+    bottom: 0;
+    z-index: 9;
+    box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.excel-table tfoot td {
+    background: linear-gradient(180deg, #e9ecef 0%, #dee2e6 100%);
+    font-weight: 700;
+    font-size: 13px;
+    padding: 14px 12px;
+    border-top: 3px solid var(--excel-header);
+    border-right: 1px solid #c5c9cc;
+    border-bottom: none;
+}
+
+.excel-table tfoot td:last-child {
+    border-right: none;
+}
+
+.total-value {
+    font-size: 14px;
+    color: var(--excel-header);
+    font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+    font-weight: 700;
+}
+
+/* ==========================================
+   MODIFIED ROW INDICATOR
+   ========================================== */
+.modified-row {
+    position: relative;
+}
+
+.modified-row::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, #ff9800 0%, #f57c00 100%);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.modified-row td {
+    background: var(--excel-modified) !important;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+/* ==========================================
+   ACTION BUTTONS
+   ========================================== */
+.action-buttons {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+}
+
+/* ==========================================
+   SCROLLBAR - Professional
+   ========================================== */
+.excel-table-wrapper::-webkit-scrollbar {
+    width: 14px;
+    height: 14px;
+}
+
+.excel-table-wrapper::-webkit-scrollbar-track {
+    background: #f1f3f4;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.excel-table-wrapper::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #c1c1c1 0%, #a8a8a8 100%);
+    border-radius: 8px;
+    border: 3px solid #f1f3f4;
+}
+
+.excel-table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #a8a8a8 0%, #8f8f8f 100%);
+}
+
+.excel-table-wrapper::-webkit-scrollbar-corner {
+    background: #f1f3f4;
+}
+
+/* Scrollbar for Firefox */
+.excel-table-wrapper {
+    scrollbar-width: thin;
+    scrollbar-color: #a8a8a8 #f1f3f4;
+}
+
+/* ==========================================
+   RESPONSIVE DESIGN
+   ========================================== */
+@media (max-width: 1200px) {
+    .semana-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    
+    .semana-header-actions {
+        width: 100%;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+    }
+    
+    .semana-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+}
+
+@media (max-width: 768px) {
+    .stat-value {
+        font-size: 22px;
+    }
+    
+    .excel-table {
+        min-width: 2500px;
+    }
+    
+    .excel-table-wrapper {
+        max-height: 400px;
+    }
+    
+    .excel-table th,
+    .excel-table td {
+        padding: 8px 10px;
+        font-size: 12px;
+    }
+    
+    .btn-sm {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+}
+
+/* ==========================================
+   PRINT STYLES
+   ========================================== */
+@media print {
+    .accordion-toggle,
+    .action-buttons,
+    .semana-header-actions {
+        display: none !important;
+    }
+    
+    .semana-details {
+        max-height: none !important;
+        display: block !important;
+        padding: 0 !important;
+    }
+    
+    .excel-table {
+        min-width: 100%;
+    }
+    
+    .excel-table th,
+    .excel-table td {
+        font-size: 8px;
+        padding: 4px;
+    }
+    
+    .sticky-col {
+        position: static;
+        box-shadow: none;
+    }
+    
+    .excel-table thead,
+    .excel-table tfoot {
+        position: static;
+    }
+}
+
+/* ==========================================
+   ANIMATIONS
+   ========================================== */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.excel-table tbody tr {
+    animation: slideIn 0.3s ease;
+}
+
+/* ==========================================
+   ALERT INFO BOX
+   ========================================== */
+.alert-info {
+    display: flex;
+    align-items: start;
+    gap: 12px;
+    padding: 14px 16px;
+    background: #d1ecf1;
+    border: 1px solid #bee5eb;
+    border-left: 4px solid #17a2b8;
+    border-radius: 6px;
+    color: #0c5460;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+.alert-info svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+/* ==========================================
+   UTILITY CLASSES
+   ========================================== */
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+.font-mono { font-family: 'SF Mono', Monaco, 'Courier New', monospace; }
+.font-bold { font-weight: 700; }

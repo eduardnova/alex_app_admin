@@ -874,8 +874,7 @@ class TrabajoVehiculo(db.Model):
                             db.ForeignKey('vehiculos.id', ondelete='CASCADE'), 
                             nullable=False, index=True)
     mecanico_id = db.Column(db.Integer, 
-                            db.ForeignKey('mecanicos.id', ondelete='RESTRICT'), 
-                            nullable=False)
+                            db.ForeignKey('mecanicos.id', ondelete='RESTRICT'))
     tipo_trabajo_id = db.Column(db.Integer, 
                                 db.ForeignKey('tipos_trabajos.id', ondelete='SET NULL'))
     fecha_inicio = db.Column(db.Date, nullable=False, index=True)
@@ -893,11 +892,16 @@ class TrabajoVehiculo(db.Model):
     fecha_hora_actualizo = db.Column(db.DateTime, default=datetime.utcnow, 
                                      onupdate=datetime.utcnow)
     
+    # Relationships
+    #vehiculo = db.relationship('Vehiculo', backref='trabajos')
+    #mecanico = db.relationship('Mecanico', backref='trabajos')
+    #tipo_trabajo = db.relationship('TipoTrabajo', backref='trabajos')
     piezas_usadas = db.relationship('PiezaUsada', backref='trabajo', 
                                     cascade='all, delete-orphan', lazy='dynamic')
     
     def __repr__(self):
         return f'<TrabajoVehiculo {self.id} - {self.estado}>'
+
 
 
 # ==================== TABLA: piezas ====================
@@ -1083,22 +1087,11 @@ class DetalleAlquilerSemanal(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     
     # Relaciones principales
-    semana_alquiler_id = db.Column(db.Integer, 
-                                   db.ForeignKey('semanas_alquiler.id', 
-                                                 ondelete='CASCADE'),
-                                   nullable=False, index=True)
-    alquiler_id = db.Column(db.Integer, 
-                           db.ForeignKey('alquileres.id', ondelete='CASCADE'),
-                           nullable=False, index=True)
-    vehiculo_id = db.Column(db.Integer, 
-                           db.ForeignKey('vehiculos.id', ondelete='CASCADE'),
-                           nullable=False, index=True)
-    inquilino_id = db.Column(db.Integer, 
-                            db.ForeignKey('inquilinos.id', ondelete='CASCADE'),
-                            nullable=False, index=True)
-    propietario_id = db.Column(db.Integer, 
-                              db.ForeignKey('propietarios.id', ondelete='CASCADE'),
-                              nullable=False, index=True)
+    semana_alquiler_id = db.Column(db.Integer,  db.ForeignKey('semanas_alquiler.id',  ondelete='CASCADE'), nullable=False, index=True)
+    alquiler_id = db.Column(db.Integer, db.ForeignKey('alquileres.id', ondelete='CASCADE'), nullable=False, index=True)
+    vehiculo_id = db.Column(db.Integer, db.ForeignKey('vehiculos.id', ondelete='CASCADE'), nullable=False, index=True)
+    inquilino_id = db.Column(db.Integer,  db.ForeignKey('inquilinos.id', ondelete='CASCADE'), nullable=False, index=True)
+    propietario_id = db.Column(db.Integer,  db.ForeignKey('propietarios.id', ondelete='CASCADE'), nullable=False, index=True)
     
     # Campos de pago
     precio_semanal = db.Column(db.Numeric(10, 2), nullable=False)  # Valor semanal
@@ -1108,9 +1101,7 @@ class DetalleAlquilerSemanal(db.Model):
     # Inversión mecánica
     inversion_mecanica = db.Column(db.Numeric(10, 2), default=0.00)
     concepto_inversion = db.Column(db.Text)
-    trabajo_vehiculo_id = db.Column(db.Integer, 
-                                    db.ForeignKey('trabajos_vehiculos.id', 
-                                                  ondelete='SET NULL'))  # Referencia opcional
+    trabajo_vehiculo_id = db.Column(db.Integer,  db.ForeignKey('trabajos_vehiculos.id',  ondelete='SET NULL'))  # Referencia opcional
     
     # Descuentos
     monto_descuento = db.Column(db.Numeric(10, 2), default=0.00)
@@ -1129,21 +1120,17 @@ class DetalleAlquilerSemanal(db.Model):
     nomina_final = db.Column(db.Numeric(10, 2), nullable=False)  # ingreso + deuda
     
     # Pago
-    banco_id = db.Column(db.Integer, 
-                        db.ForeignKey('bancos.id', ondelete='SET NULL'))
+    banco_id = db.Column(db.Integer,  db.ForeignKey('bancos.id', ondelete='SET NULL'))
     fecha_confirmacion_pago = db.Column(db.Date)
     pago_confirmado = db.Column(db.Boolean, default=False)
     
     # Notas adicionales
     notas = db.Column(db.Text)
     
-    usuario_registro_id = db.Column(db.Integer, 
-                                    db.ForeignKey('usuarios.id', ondelete='CASCADE'))
+    usuario_registro_id = db.Column(db.Integer,  db.ForeignKey('usuarios.id', ondelete='CASCADE'))
     fecha_hora_registro = db.Column(db.DateTime, default=datetime.utcnow)
-    usuario_actualizo_id = db.Column(db.Integer, 
-                                     db.ForeignKey('usuarios.id', ondelete='CASCADE'))
-    fecha_hora_actualizo = db.Column(db.DateTime, default=datetime.utcnow, 
-                                     onupdate=datetime.utcnow)
+    usuario_actualizo_id = db.Column(db.Integer, db.ForeignKey('usuarios.id', ondelete='CASCADE'))
+    fecha_hora_actualizo = db.Column(db.DateTime, default=datetime.utcnow,  onupdate=datetime.utcnow)
     
     # Relationships
     alquiler = db.relationship('Alquiler', backref='detalles_semanales')
