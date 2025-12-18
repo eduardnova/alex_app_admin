@@ -7,7 +7,6 @@
 {% endblock %}
 
 {% block content %}
-
 <link rel="stylesheet" href="{{ url_for('static', filename='css/alquileres.css') }}">
 <div class="content-area">
     <!-- Stats Cards -->
@@ -63,11 +62,6 @@
                 </div>
             </div>
       
-    </div>
-
-    <div id="mecanicosList" 
-        data-mecanicos='{{ mecanicos|tojson|safe if mecanicos else "[]" }}'
-        style="display: none;">
     </div>
 
     <!-- Action Bar -->
@@ -200,17 +194,7 @@
                                 <th style="min-width: 100px;">Semanal</th>
                                 <th style="min-width: 70px;">DT</th>
                                 <th style="min-width: 100px;">Ingreso</th>
-                                <!--<th style="min-width: 100px;">InversiÃ³n</th>-->
-                                <th style="min-width: 120px; background: linear-gradient(135deg, var(--excel-header), #1a5c37);">
-                                    <div style="display: flex; align-items: center; gap: 6px;">
-                                        <span>Inversión</span>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" data-tooltip="Inversiones mecánicas del vehículo">
-                                            <circle cx="12" cy="12" r="10"/>
-                                            <path d="M12 16v-4"/>
-                                            <path d="M12 8h.01"/>
-                                        </svg>
-                                    </div>
-                                </th>
+                                <th style="min-width: 100px;">InversiÃ³n</th>
                                 <th style="min-width: 150px;">Concepto Desc.</th>
                                 <th style="min-width: 100px;">NÃ³mina</th>
                                 <th style="min-width: 80px;">% Empresa</th>
@@ -834,15 +818,6 @@
         </form>
     </div>
 </div>
-<script>
-    // Pasar datos del backend a JavaScript
-    window.APP_DATA = {
-        userRol: '{{ current_user.rol }}',
-        userId: {{ current_user.id }},
-        mecanicos: {{ mecanicos|tojson|safe if mecanicos else '[]' }},
-        tiposTrabajo: {{ tipos_trabajo|tojson|safe if tipos_trabajo else '[]' }}
-    };
-</script>
 
 <script src="{{ url_for('static', filename='js/alquileres.js') }}"></script>
 {% endblock %}

@@ -1,0 +1,64 @@
+Quiero que realices un análisis profundo e integral del sistema actual, abarcando:
+* El archivo alquileres_route.py
+* El JavaScript relacionado
+* El HTML, especialmente la estructura del acordeón por semanas
+El objetivo es detectar, corregir y mejorar errores funcionales y de diseño, asegurando coherencia entre backend, frontend y lógica de negocio.
+1. Correcciones en el acordeón de semanas
+1. Analiza y corrige el comportamiento del accordion de semanas para que:
+2. Al crear una semana, los datos de alquiler que se renderizan en la tabla :id="table-{{ semana.id }}"
+   * correspondan únicamente a esa semana.
+   * Al crear un nuevo alquiler, no aparezca automáticamente en otras semanas activas si no pertenece al rango de fechas de dichas semanas.
+3. Asegura que cada semana maneje su propio contexto de datos, evitando fugas de información entre semanas activas. 2. Validación de semanas activas (JavaScript)
+   1. Crea una función en JavaScript que:
+      * Detecte si hay más de una semana activa.
+      * Valide si dichas semanas no corresponden al rango de fecha actual.
+      * En caso de inconsistencia, muestre un modal de advertencia indicando el problema de forma clara al usuario.
+3. Seguridad y control de roles (Admin)
+1. Asegura que las funciones:
+   * Eliminar semana
+   * Cerrar semana
+solo puedan ser ejecutadas por usuarios con rol admin.3. Seguridad y control de roles (Admin)
+   1. Asegura que las funciones:
+      * Eliminar semana
+      * Cerrar semana
+solo puedan ser ejecutadas por usuarios con rol admin.
+   2. Verifica que:
+      * La validación exista tanto en backend (Flask) como en frontend (UI/JS).
+      * Las acciones funcionen correctamente y sin errores lógicos.
+4. Módulo de inversión por alquiler (reparaciones)
+1. Agrega una nueva funcionalidad que permita:
+   * Seleccionar un alquiler activo.
+   * Introducir una inversión asociada (por ejemplo, reparación mecánica).
+2. El alquiler seleccionado debe ser requerido (required) para poder registrar una inversión. 5. Modal de inversiones mecánicas
+1. Al seleccionar un alquiler activo, muestra un modal que permita registrar inversiones con:
+   * Tipo de trabajo mecánico, usando una lista personalizada con íconos:
+      * Reparación mecánica
+      * Cambio de pieza
+      * Mantenimiento preventivo
+      * Ajustes
+      * Otros necesarios
+   * Concepto
+   * Monto
+   * Tipo de inversión:
+      * Falla mecánica
+      * Accidente
+2. El modal debe:
+* Mostrar los datos en un formato de tabla editable.
+* Permitir agregar, editar y eliminar filas antes de confirmar.6. Integración con la tabla semanal
+1. En la tabla:id="table-{{ semana.id }}"
+la columna: <th style="min-width: 100px;">Inversión</th>
+1. debe mostrar:
+* El monto total acumulado de las inversiones asociadas a los alquileres de esa semana.7. Indicadores visuales (colores)
+   1. Agrega un indicador visual por colores en el <th> o en las celdas de la columna Inversión:
+* Color amarillo cuando el monto total de inversión sea igual o mayor al valor de la columna:
+
+<th style="min-width: 100px;">Semanal</th>
+1. El color debe actualizarse de forma dinámica según los valores calculados.
+8. Enfoque del análisis
+* Analiza todo el código existente antes de proponer cambios.
+* Respeta la arquitectura actual siempre que sea posible.
+* Aplica correcciones bien fundamentadas, evitando soluciones improvisadas.
+* Tómate el tiempo necesario para garantizar:
+   * Coherencia de datos
+   * Correcta separación de responsabilidades
+   * Código mantenible y escalable

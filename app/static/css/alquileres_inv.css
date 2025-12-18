@@ -1,0 +1,303 @@
+/* ==========================================
+   ESTILOS ADICIONALES - INVERSIONES Y ALERTAS
+   ========================================== */
+
+/* ==========================================
+   INDICADOR DE INVERSIÓN ALTA
+   ========================================== */
+.inversion-alert {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffe8a1 100%) !important;
+    border-left: 4px solid #ff9800 !important;
+    position: relative;
+    animation: pulseInversion 2s ease-in-out infinite;
+}
+
+@keyframes pulseInversion {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 6px rgba(255, 152, 0, 0);
+    }
+}
+
+.inversion-alert::after {
+    content: '⚠️';
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    font-size: 14px;
+    animation: bounce 1s ease-in-out infinite;
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-4px);
+    }
+}
+
+/* Currency display con colores */
+.currency-display.negative {
+    color: #d32f2f !important;
+    font-weight: 700;
+}
+
+.currency-display.warning {
+    color: #ff9800 !important;
+    font-weight: 700;
+}
+
+/* ==========================================
+   MODAL DE INVERSIONES
+   ========================================== */
+.inversiones-table-wrapper {
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    overflow: hidden;
+    background: white;
+}
+
+.inversiones-table-wrapper table {
+    width: 100%;
+    margin: 0;
+}
+
+.inversiones-table-wrapper thead {
+    background: var(--excel-header);
+    color: white;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.inversiones-table-wrapper th {
+    padding: 10px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-right: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.inversiones-table-wrapper td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 13px;
+}
+
+.inversiones-table-wrapper tbody tr:hover {
+    background: var(--excel-hover);
+}
+
+.inversiones-table-wrapper tbody tr:nth-child(even) {
+    background: var(--excel-stripe);
+}
+
+/* ==========================================
+   BOTÓN AGREGAR INVERSIÓN
+   ========================================== */
+.btn-xs {
+    padding: 3px 8px;
+    font-size: 11px;
+    border-radius: 4px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+.btn-xs.btn-info {
+    background: linear-gradient(135deg, #0dcaf0, #0aa2c0);
+    color: white;
+    border-color: #0dcaf0;
+}
+
+.btn-xs.btn-info:hover {
+    background: linear-gradient(135deg, #0aa2c0, #0891b2);
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(13, 202, 240, 0.3);
+}
+
+/* ==========================================
+   ALERT BOXES MEJORADAS
+   ========================================== */
+.alert-info {
+    background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+    border-left: 4px solid #17a2b8;
+}
+
+.alert-warning {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    border-left: 4px solid #ff9800;
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+    border-left: 4px solid #dc3545;
+}
+
+.alert-success {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    border-left: 4px solid #28a745;
+}
+
+/* ==========================================
+   BADGE DE TIPO DE INVERSIÓN
+   ========================================== */
+.badge-warning {
+    background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.badge-danger {
+    background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* ==========================================
+   FORM IMPROVEMENTS
+   ========================================== */
+.form-label.required::after {
+    content: ' *';
+    color: #dc3545;
+    font-weight: 700;
+}
+
+.form-textarea {
+    resize: vertical;
+    min-height: 60px;
+    font-family: inherit;
+}
+
+/* ==========================================
+   TOOLTIPS
+   ========================================== */
+[data-tooltip] {
+    position: relative;
+}
+
+[data-tooltip]:hover::before {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 1000;
+    margin-bottom: 5px;
+    animation: tooltipFade 0.2s ease;
+}
+
+[data-tooltip]:hover::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.9);
+    z-index: 1000;
+}
+
+@keyframes tooltipFade {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+/* ==========================================
+   LOADING STATES
+   ========================================== */
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn:disabled:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+/* Spin animation for loading */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+/* ==========================================
+   RESPONSIVO ADICIONAL
+   ========================================== */
+@media (max-width: 768px) {
+    .modal-lg {
+        max-width: 95% !important;
+        margin: 10px;
+    }
+    
+    .inversiones-table-wrapper {
+        font-size: 11px;
+    }
+    
+    .inversiones-table-wrapper th,
+    .inversiones-table-wrapper td {
+        padding: 6px 8px;
+    }
+    
+    .inversion-alert::after {
+        font-size: 12px;
+    }
+}
+
+/* ==========================================
+   HIDDEN CLASS (para ocultar botones admin)
+   ========================================== */
+.hidden {
+    display: none !important;
+}
+
+/* ==========================================
+   IMPROVED SCROLLBAR
+   ========================================== */
+.inversiones-table-wrapper::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.inversiones-table-wrapper::-webkit-scrollbar-track {
+    background: #f1f3f4;
+    border-radius: 4px;
+}
+
+.inversiones-table-wrapper::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #c1c1c1 0%, #a8a8a8 100%);
+    border-radius: 4px;
+}
+
+.inversiones-table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #a8a8a8 0%, #8f8f8f 100%);
+}

@@ -1,0 +1,620 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Alquileres Semanales{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/alquileres.css') }}">
+<style>
+/* ESTILOS CRÍTICOS INLINE */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.modal-overlay.show {
+    opacity: 1;
+}
+
+.modal {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: auto;
+    transform: translateY(-20px);
+    transition: transform 0.3s ease;
+}
+
+.modal-overlay.show .modal {
+    transform: translateY(0);
+}
+
+.modal-lg {
+    max-width: 900px;
+}
+
+.btn-icon {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.btn-icon:hover {
+    background: var(--bg-secondary);
+}
+
+.btn-edit { color: var(--info); }
+.btn-delete { color: var(--danger); }
+
+.input-addon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-tertiary);
+    font-weight: 600;
+}
+
+.input-group {
+    position: relative;
+}
+
+.input-group .form-input {
+    padding-left: 32px;
+}
+
+.inversion-warning {
+    background-color: #fff3cd !important;
+    font-weight: bold;
+    color: #856404;
+}
+
+.accordion-toggle .chevron {
+    transition: transform 0.3s ease;
+}
+
+.accordion-toggle.open .chevron {
+    transform: rotate(90deg);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/alquileres_2.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/alquileres.css') }}">
+<div class="content-area">
+    <!-- Stats Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px;">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, var(--primary), var(--primary-light));">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">{{ total_semanas }}</div>
+                <div class="stat-label">Semanas Registradas</div>
+            </div>
+        </div>
+ 
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, var(--success), var(--success-light));">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">{{ semanas_activas }}</div>
+                <div class="stat-label">Semanas Abiertas</div>
+            </div>
+        </div>
+ 
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, var(--warning), #f59e0b);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">{{ pagos_pendientes }}</div>
+                <div class="stat-label">Pagos Pendientes</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, var(--info), #0ea5e9);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+                </svg>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">${{ '{:,.2f}'.format(ingreso_total_mes) }}</div>
+                <div class="stat-label">Ingreso del Mes</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Bar -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div>
+            <h1 style="font-size: 24px; font-weight: 700; color: var(--text-primary); margin: 0;">Alquileres Semanales</h1>
+            <p style="font-size: 14px; color: var(--text-secondary); margin: 4px 0 0 0;">
+                Gestiona los alquileres por semana de trabajo (tipo Excel)
+                {% if user_role == 'admin' %}
+                    <span class="badge badge-danger" style="margin-left: 8px;">ADMIN</span>
+                {% endif %}
+            </p>
+        </div>
+        <div style="display: flex; gap: 12px;">
+            <select class="form-select" id="filtroEstado" style="width: 180px;">
+                <option value="">Todas las semanas</option>
+                <option value="abierta">Abiertas</option>
+                <option value="cerrada">Cerradas</option>
+                <option value="cancelada">Canceladas</option>
+            </select>
+            <button class="btn btn-primary" onclick="openCrearSemanaModal()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Nueva Semana
+            </button>
+        </div>
+    </div>
+
+    <!-- Semanas Accordion -->
+    <div class="semanas-accordion">
+        {% for semana in semanas %}
+        <div class="semana-accordion-item" data-semana-id="{{ semana.id }}" data-estado="{{ semana.estado }}">
+            <!-- Semana Header -->
+            <div class="semana-header" onclick="toggleSemana({{ semana.id }})">
+                <div style="display: flex; align-items: center; gap: 15px; flex: 1;">
+                    <button class="accordion-toggle" id="toggle-{{ semana.id }}">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="chevron">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                    <div class="semana-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="semana-title">
+                            Semana: {{ semana.fecha_inicio.strftime('%d/%m/%Y') }} - {{ semana.fecha_fin.strftime('%d/%m/%Y') }}
+                        </h3>
+                        <div class="semana-meta">
+                            <span>Semana #{{ semana.numero_semana }}</span>
+                            <span>•</span>
+                            <span>{{ semana.total_vehiculos }} Vehículos</span>
+                            <span>•</span>
+                            <span>{{ semana.total_socios }} Socios</span>
+                            <span>•</span>
+                            <span>${{ '{:,.2f}'.format(semana.ingreso_total) }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- BOTONES DE ACCIÓN - CORREGIDOS -->
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;" onclick="event.stopPropagation()">
+                    <span class="badge badge-{{ 'success' if semana.estado == 'abierta' else 'secondary' if semana.estado == 'cerrada' else 'danger' }}">
+                        {{ semana.estado.upper() }}
+                    </span>
+                    
+                    {% if semana.estado == 'abierta' %}
+                        <!-- BOTÓN AGREGAR ALQUILER -->
+                        <button class="btn btn-sm btn-success" onclick="agregarAlquiler({{ semana.id }})">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            Agregar Alquiler
+                        </button>
+                        
+                        <!-- BOTÓN GUARDAR -->
+                        <button class="btn btn-sm btn-primary" onclick="guardarCambiosSemana({{ semana.id }})">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            Guardar
+                        </button>
+                        
+                        {% if user_role == 'admin' %}
+                        <!-- BOTÓN CERRAR (Solo Admin) -->
+                        <button class="btn btn-sm btn-secondary" onclick="cerrarSemana({{ semana.id }})">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                            </svg>
+                            Cerrar
+                        </button>
+                        
+                        <!-- BOTÓN ELIMINAR (Solo Admin) -->
+                        <button class="btn btn-sm btn-danger" onclick="eliminarSemana({{ semana.id }}, {{ semana.total_vehiculos }})">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                            Eliminar
+                        </button>
+                        {% endif %}
+                    {% else %}
+                        <!-- BOTÓN CERRADA (Deshabilitado) -->
+                        <button class="btn btn-sm btn-secondary" disabled>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                            </svg>
+                            Cerrada
+                        </button>
+                    {% endif %}
+                    
+                    <!-- BOTÓN EXCEL (Siempre visible) -->
+                    <button class="btn btn-sm btn-info" onclick="exportarExcelSemana({{ semana.id }})">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        Excel
+                    </button>
+                </div>
+            </div>
+
+            <!-- Semana Details -->
+            <div class="semana-details" id="details-{{ semana.id }}" style="display: none;">
+                <!-- Loading -->
+                <div class="loading-state" id="loading-{{ semana.id }}" style="display: none;">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="animation: spin 1s linear infinite;">
+                        <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32"/>
+                    </svg>
+                    <p>Cargando alquileres...</p>
+                </div>
+
+                <!-- Excel Table -->
+                <div class="excel-table-wrapper" id="table-wrapper-{{ semana.id }}" style="display: none;">
+                    <table class="excel-table" id="table-{{ semana.id }}">
+                        <thead>
+                            <tr>
+                                <th class="sticky-col" style="min-width: 150px;">Propietario</th>
+                                <th style="min-width: 180px;">Vehículo</th>
+                                <th style="min-width: 100px;">Placa</th>
+                                <th style="min-width: 150px;">Inquilino</th>
+                                <th style="min-width: 120px;">Tel. Inquilino</th>
+                                <th style="min-width: 100px;">Semanal</th>
+                                <th style="min-width: 70px;">DT</th>
+                                <th style="min-width: 100px;">Ingreso</th>
+                                <th style="min-width: 100px;">Inversión</th>
+                                <th style="min-width: 150px;">Concepto Desc.</th>
+                                <th style="min-width: 100px;">Nómina</th>
+                                <th style="min-width: 80px;">% Empresa</th>
+                                <th style="min-width: 100px;">Deuda</th>
+                                <th style="min-width: 100px;">Nómina 2</th>
+                                <th style="min-width: 150px;">Banco</th>
+                                <th style="min-width: 130px;">Conf. Pago</th>
+                                <th style="min-width: 70px;">DT2</th>
+                                <th style="min-width: 100px;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-{{ semana.id }}">
+                        </tbody>
+                        <tfoot id="tfoot-{{ semana.id }}">
+                        </tfoot>
+                    </table>
+                </div>
+
+                <!-- Empty State -->
+                <div class="empty-state" id="empty-{{ semana.id }}" style="display: none;">
+                    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <p>No hay alquileres en esta semana</p>
+                    <button class="btn btn-primary" onclick="agregarAlquiler({{ semana.id }})">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Agregar Primer Alquiler
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        {% if semanas|length == 0 %}
+        <div style="text-align: center; padding: 60px 20px;">
+            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" style="margin: 0 auto 20px;">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <h3 style="color: var(--text-secondary); font-size: 18px; margin-bottom: 10px;">No hay semanas registradas</h3>
+            <p style="color: var(--text-tertiary); font-size: 14px;">Crea tu primera semana de trabajo para comenzar</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL 1: CREAR SEMANA -->
+<!-- ========================================== -->
+<div class="modal-overlay " id="crearSemanaModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Nueva Semana de Trabajo</h3>
+            <button class="modal-close" onclick="cerrarModal('crearSemanaModal')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <form action="{{ url_for('alquiler.crear_semana') }}" method="POST" id="crearSemanaForm">
+            <div class="modal-body">
+                <div class="alert alert-info" style="margin-bottom: 20px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 16v-4"/>
+                        <path d="M12 8h.01"/>
+                    </svg>
+                    <div>
+                        <strong>Importante:</strong> Selecciona el rango de la semana. El sistema cargará automáticamente todos los alquileres activos.
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="form-group">
+                        <label class="form-label required">Fecha de Inicio</label>
+                        <input type="date" name="fecha_inicio" class="form-input" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label required">Fecha de Fin</label>
+                        <input type="date" name="fecha_fin" class="form-input" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label required">Porcentaje de Ganancia</label>
+                    <select name="porcentaje_ganancia_id" class="form-select" required>
+                        <option value="">Seleccionar porcentaje...</option>
+                        {% for porcentaje in porcentajes_activos %}
+                        <option value="{{ porcentaje.id }}" {{ 'selected' if porcentaje.por_defecto else '' }}>
+                            {{ porcentaje.descripcion }} - {{ porcentaje.porcentaje }}%
+                            {{ '(Por Defecto)' if porcentaje.por_defecto else '' }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Notas</label>
+                    <textarea name="notas" class="form-textarea" rows="3" placeholder="Observaciones..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="cerrarModal('crearSemanaModal')">Cancelar</button>
+                <button type="submit" class="btn btn-primary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Crear Semana
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL 2: AGREGAR ALQUILER -->
+<!-- ========================================== -->
+<div class="modal-overlay" id="agregarAlquilerModal">
+    <div class="modal modal-lg">
+        <div class="modal-header">
+            <h3 class="modal-title">Agregar Alquiler a la Semana</h3>
+            <button class="modal-close" onclick="cerrarModal('agregarAlquilerModal')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <form id="agregarAlquilerForm">
+            <input type="hidden" name="semana_id" id="agregarAlquilerSemanaId">
+            <div class="modal-body">
+                <div class="alert alert-info" style="margin-bottom: 20px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 16v-4"/>
+                        <path d="M12 8h.01"/>
+                    </svg>
+                    <div>
+                        <strong>Información:</strong> Selecciona un vehículo disponible y un inquilino sin vehículo asignado en esta semana.
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label required">Vehículo</label>
+                    <select name="vehiculo_id" id="vehiculoSelect" class="form-select" required>
+                        <option value="">Cargando vehículos...</option>
+                    </select>
+                    <span class="form-help">Solo vehículos disponibles sin alquiler en esta semana</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label required">Inquilino</label>
+                    <select name="inquilino_id" id="inquilinoSelect" class="form-select" required>
+                        <option value="">Cargando inquilinos...</option>
+                    </select>
+                    <span class="form-help">Solo inquilinos sin vehículo asignado en esta semana</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label required">Días de Trabajo</label>
+                    <input type="number" 
+                           name="dias_trabajo" 
+                           class="form-input" 
+                           min="1" 
+                           max="7" 
+                           value="7" 
+                           required
+                           style="max-width: 150px;">
+                    <span class="form-help">Número de días que trabajará este alquiler en la semana (1-7)</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="cerrarModal('agregarAlquilerModal')">Cancelar</button>
+                <button type="submit" class="btn btn-primary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Agregar Alquiler
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL 3: EDITAR DETALLE -->
+<!-- ========================================== -->
+<div class="modal-overlay" id="editarDetalleModal">
+    <div class="modal modal-lg">
+        <div class="modal-header">
+            <h3 class="modal-title">Editar Detalle de Alquiler</h3>
+            <button class="modal-close" onclick="cerrarModal('editarDetalleModal')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <form id="editarDetalleForm">
+            <input type="hidden" name="detalle_id" id="editDetalleId">
+            <div class="modal-body">
+                <!-- Vehículo e Inquilino -->
+                <div class="form-section" style="background: var(--bg-primary); padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                    <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 12px; color: var(--text-primary);">
+                        Vehículo e Inquilino
+                    </h4>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label required">Vehículo</label>
+                            <select name="vehiculo_id" id="editVehiculoSelect" class="form-select" required>
+                                <option value="">Cargando vehículos...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label required">Inquilino</label>
+                            <select name="inquilino_id" id="editInquilinoSelect" class="form-select" required>
+                                <option value="">Cargando inquilinos...</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Datos de Pago -->
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+                    <div class="form-group">
+                        <label class="form-label">Precio Semanal</label>
+                        <div class="input-group">
+                            <span class="input-addon">$</span>
+                            <input type="number" name="precio_semanal" class="form-input" step="0.01" min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Días de Trabajo (DT)</label>
+                        <input type="number" name="dias_trabajo" class="form-input" min="1" max="7">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Inversión Mecánica</label>
+                        <div class="input-group">
+                            <span class="input-addon">$</span>
+                            <input type="number" name="inversion_mecanica" class="form-input" step="0.01" min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Concepto Inversión</label>
+                        <input type="text" name="concepto_inversion" class="form-input" placeholder="Ej: Cambio de aceite">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Monto Descuento</label>
+                        <div class="input-group">
+                            <span class="input-addon">$</span>
+                            <input type="number" name="monto_descuento" class="form-input" step="0.01" min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Concepto Descuento</label>
+                        <input type="text" name="concepto_descuento" class="form-input">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Deuda</label>
+                        <div class="input-group">
+                            <span class="input-addon">$</span>
+                            <input type="number" name="monto_deuda" class="form-input" step="0.01" min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Banco</label>
+                        <select name="banco_id" class="form-select">
+                            <option value="">Seleccionar banco...</option>
+                            {% for banco in bancos %}
+                            <option value="{{ banco.id }}">{{ banco.banco }} - {{ banco.cuenta }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Fecha Confirmación Pago</label>
+                        <input type="date" name="fecha_confirmacion_pago" class="form-input">
+                    </div>
+
+                    <div class="form-group">
+                        <div class="checkbox-wrapper" style="margin-top: 32px;">
+                            <input type="checkbox" name="pago_confirmado" class="checkbox" id="pagoConfirmadoCheck">
+                            <label for="pagoConfirmadoCheck" class="checkbox-label">Pago Confirmado</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Notas</label>
+                    <textarea name="notas" class="form-textarea" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="cerrarModal('editarDetalleModal')">Cancelar</button>
+                <button type="submit" class="btn btn-primary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Guardar Cambios
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- PASAR DATOS AL JAVASCRIPT -->
+<!-- ========================================== -->
+<script>
+    window.tiposTrabajo = {{ tipos_trabajo | tojson | safe }};
+    window.userRole = "{{ user_role }}";
+    window.bancosGlobal = [];
+</script>
+
+<script src="{{ url_for('static', filename='js/alquileres.js') }}"></script>
+{% endblock %}
