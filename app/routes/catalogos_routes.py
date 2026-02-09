@@ -3,11 +3,11 @@ Admin Routes - User management, access logs, system configuration
 """
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
-from functools import wraps
+from .auth_routes import admin_required
 from app import db
 from app.models import (
     Usuario, RegistroAcceso,HistoricoVehiculoMarcaModelo,HistoricoBanco,HistoricoParentesco, VehiculoMarcaModelo, EstadoAlquiler,
-    MetodoPago, TipoCuenta, Banco, Parentesco
+    MetodoPago, TipoCuenta, Banco, Parentesco, HistoricoMetodoPago, HistoricoEstadoAlquiler
 )
 from datetime import datetime
 import os
@@ -25,15 +25,6 @@ def allowed_file(filename):
     """Check if file extension is allowed"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def admin_required(f):
-    """Decorator to require admin role"""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated or current_user.rol != 'admin':
-            flash('Acceso denegado. Se requieren permisos de administrador.', 'danger')
-            return redirect(url_for('index'))
-        return f(*args, **kwargs)
-    return decorated_function
 
 # ==================== MARCAS Y MODELOS ====================
 
@@ -346,6 +337,8 @@ def crear_estado_alquiler():
         
         try:
             db.session.add(nuevo_estado)
+            db.session.flush()
+            registrar_historico_estado_alquiler(nuevo_estado, 'INSERT')
             db.session.commit()
             flash('Estado de alquiler creado exitosamente.', 'success')
             return redirect(url_for('catalogo.estados_alquiler'))
@@ -364,6 +357,7 @@ def ver_estado_alquiler(id):
     return render_template('catalogos/ver_estado_alquiler.html', estado=estado)
 
 @catalogo_bp.route('/estados_alquiler/<int:id>/editar', methods=['GET', 'POST'])
+@catalogo_bp.route('/estados-alquiler/<int:id>/editar', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def editar_estado_alquiler(id):
@@ -376,6 +370,7 @@ def editar_estado_alquiler(id):
         estado.usuario_actualizo_id = current_user.id
         
         try:
+            registrar_historico_estado_alquiler(estado, 'UPDATE')
             db.session.commit()
             flash('Estado de alquiler actualizado exitosamente.', 'success')
             return redirect(url_for('catalogo.estados_alquiler'))
@@ -386,6 +381,7 @@ def editar_estado_alquiler(id):
     return render_template('catalogos/editar_estado_alquiler.html', estado=estado)
 
 @catalogo_bp.route('/estados_alquiler/<int:id>/eliminar', methods=['POST'])
+@catalogo_bp.route('/estados-alquiler/<int:id>/eliminar', methods=['POST'])
 @login_required
 @admin_required
 def eliminar_estado_alquiler(id):
@@ -393,6 +389,7 @@ def eliminar_estado_alquiler(id):
     estado = EstadoAlquiler.query.get_or_404(id)
     
     try:
+        registrar_historico_estado_alquiler(estado, 'DELETE')
         db.session.delete(estado)
         db.session.commit()
         flash('Estado de alquiler eliminado exitosamente.', 'success')
@@ -415,89 +412,252 @@ def ver_estado_alquiler_json(id):
             'descripcion': estado.descripcion
         }
     })
+
+@catalogo_bp.route('/estados-alquiler/<int:id>/historial')
+@login_required
+@admin_required
+def historial_estado_alquiler(id):
+    """Get history for a specific estado_alquiler"""
+    try:
+        estado = EstadoAlquiler.query.get_or_404(id)
+        historico = HistoricoEstadoAlquiler.query.filter_by(id=id).order_by(
+            HistoricoEstadoAlquiler.fecha_hora_operacion.desc()
+        ).all()
+        
+        historial_data = []
+        for record in historico:
+            usuario = Usuario.query.get(record.usuario_operacion_id) if record.usuario_operacion_id else None
+            usuario_nombre = f"{usuario.nombre} {usuario.apellido}" if usuario else "Sistema"
+            usuario_iniciales = f"{usuario.nombre[0]}{usuario.apellido[0]}" if usuario else "SY"
+            
+            cambios = []
+            if record.tipo_operacion == 'UPDATE':
+                previous = HistoricoEstadoAlquiler.query.filter(
+                    HistoricoEstadoAlquiler.id == id,
+                    HistoricoEstadoAlquiler.fecha_hora_operacion < record.fecha_hora_operacion
+                ).order_by(HistoricoEstadoAlquiler.fecha_hora_operacion.desc()).first()
+                
+                if previous:
+                    fields = [('nombre', 'Nombre'), ('descripcion', 'Descripción')]
+                    for field, label in fields:
+                        old_val = getattr(previous, field)
+                        new_val = getattr(record, field)
+                        if old_val != new_val:
+                            cambios.append({'campo': label, 'valor_anterior': old_val or 'N/A', 'valor_nuevo': new_val or 'N/A'})
+                            
+            historial_data.append({
+                'fecha_hora': record.fecha_hora_operacion.strftime('%d/%m/%Y %H:%M:%S'),
+                'usuario_nombre': usuario_nombre,
+                'usuario_iniciales': usuario_iniciales,
+                'tipo_operacion': record.tipo_operacion,
+                'nombre': record.nombre,
+                'descripcion': record.descripcion,
+                'cambios': cambios
+            })
+            
+        return jsonify({'success': True, 'estado_nombre': estado.nombre, 'historial': historial_data})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+def registrar_historico_estado_alquiler(estado, operacion):
+    """Helper to record estado_alquiler history"""
+    historico = HistoricoEstadoAlquiler(
+        tipo_operacion=operacion,
+        usuario_operacion_id=current_user.id,
+        fecha_hora_operacion=datetime.now(),
+        id=estado.id,
+        nombre=estado.nombre,
+        descripcion=estado.descripcion,
+        usuario_registro_id=estado.usuario_registro_id,
+        fecha_hora_registro=estado.fecha_hora_registro,
+        usuario_actualizo_id=estado.usuario_actualizo_id,
+        fecha_hora_actualizo=estado.fecha_hora_actualizo
+    )
+    db.session.add(historico)
+
 # ==================== MÉTODOS DE PAGO ====================
 
 @catalogo_bp.route('/metodos_pago')
+@catalogo_bp.route('/metodos-pago')
 @login_required
 @admin_required
 def metodos_pago():
     """List payment methods"""
-    metodos = MetodoPago.query.all()
+    metodos = MetodoPago.query.order_by(MetodoPago.fecha_hora_registro.desc()).all()
     return render_template('catalogos/metodos_pago.html', metodos=metodos)
 
-@catalogo_bp.route('/metodos_pago/crear', methods=['GET', 'POST'])
+@catalogo_bp.route('/metodos_pago/crear', methods=['POST'])
+@catalogo_bp.route('/metodos-pago/crear', methods=['POST'])
 @login_required
 @admin_required
 def crear_metodo_pago():
-    """Create new payment method"""
-    if request.method == 'POST':
-        nombre = request.form.get('nombre')
-        descripcion = request.form.get('descripcion')
+    """Create new payment method via AJAX"""
+    try:
+        nombre = request.form.get('nombre', '').strip()
+        descripcion = request.form.get('descripcion', '').strip()
+        activo = request.form.get('activo') == 'on' or request.form.get('activo') == 'true'
         
+        if not nombre:
+            return jsonify({'success': False, 'message': 'El nombre es requerido'}), 400
+            
+        exists = MetodoPago.query.filter_by(nombre=nombre).first()
+        if exists:
+            return jsonify({'success': False, 'message': f'Ya existe un método con el nombre {nombre}'}), 400
+            
         nuevo_metodo = MetodoPago(
             nombre=nombre,
-            descripcion=descripcion,
+            descripcion=descripcion if descripcion else None,
+            activo=activo,
             usuario_registro_id=current_user.id,
-            usuario_actualizo_id=current_user.id
+            usuario_actualizo_id=current_user.id,
+            fecha_hora_registro=datetime.now(),
+            fecha_hora_actualizo=datetime.now()
         )
         
-        try:
-            db.session.add(nuevo_metodo)
-            db.session.commit()
-            flash('Método de pago creado exitosamente.', 'success')
-            return redirect(url_for('catalogo.metodos_pago'))
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Error al crear método de pago: {str(e)}', 'danger')
-    
-    return render_template('catalogos/crear_metodo_pago.html')
+        db.session.add(nuevo_metodo)
+        db.session.flush()
+        
+        registrar_historico_metodo_pago(nuevo_metodo, 'INSERT')
+        
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Método de pago creado exitosamente'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Error al crear: {str(e)}'}), 500
 
-@catalogo_bp.route('/metodos_pago/<int:id>')
+@catalogo_bp.route('/metodos_pago/<int:id>/json')
+@catalogo_bp.route('/metodos-pago/<int:id>/json')
 @login_required
 @admin_required
-def ver_metodo_pago(id):
-    """View payment method details"""
+def ver_metodo_pago_json(id):
+    """Get payment method data in JSON"""
     metodo = MetodoPago.query.get_or_404(id)
-    return render_template('catalogos/ver_metodo_pago.html', metodo=metodo)
+    return jsonify({
+        'success': True,
+        'data': {
+            'id': metodo.id,
+            'nombre': metodo.nombre,
+            'descripcion': metodo.descripcion,
+            'activo': metodo.activo
+        }
+    })
 
-@catalogo_bp.route('/metodos_pago/<int:id>/editar', methods=['GET', 'POST'])
+@catalogo_bp.route('/metodos_pago/<int:id>/editar', methods=['POST'])
+@catalogo_bp.route('/metodos-pago/<int:id>/editar', methods=['POST'])
 @login_required
 @admin_required
 def editar_metodo_pago(id):
-    """Edit payment method"""
-    metodo = MetodoPago.query.get_or_404(id)
-    
-    if request.method == 'POST':
-        metodo.nombre = request.form.get('nombre')
-        metodo.descripcion = request.form.get('descripcion')
-        metodo.usuario_actualizo_id = current_user.id
-        
-        try:
-            db.session.commit()
-            flash('Método de pago actualizado exitosamente.', 'success')
-            return redirect(url_for('catalogo.metodos_pago'))
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Error al actualizar método de pago: {str(e)}', 'danger')
-    
-    return render_template('catalogos/editar_metodo_pago.html', metodo=metodo)
-
-@catalogo_bp.route('/metodos_pago/<int:id>/eliminar', methods=['POST'])
-@login_required
-@admin_required
-def eliminar_metodo_pago(id):
-    """Delete payment method"""
+    """Edit payment method via AJAX"""
     metodo = MetodoPago.query.get_or_404(id)
     
     try:
-        db.session.delete(metodo)
+        nombre = request.form.get('nombre', '').strip()
+        descripcion = request.form.get('descripcion', '').strip()
+        
+        if not nombre:
+            return jsonify({'success': False, 'message': 'El nombre es requerido'}), 400
+            
+        exists = MetodoPago.query.filter(MetodoPago.id != id, MetodoPago.nombre == nombre).first()
+        if exists:
+            return jsonify({'success': False, 'message': f'Ya existe otro método con el nombre {nombre}'}), 400
+            
+        metodo.nombre = nombre
+        metodo.descripcion = descripcion if descripcion else None
+        metodo.activo = request.form.get('activo') == 'on' or request.form.get('activo') == 'true'
+        metodo.usuario_actualizo_id = current_user.id
+        metodo.fecha_hora_actualizo = datetime.now()
+        
+        registrar_historico_metodo_pago(metodo, 'UPDATE')
+        
         db.session.commit()
-        flash('Método de pago eliminado exitosamente.', 'success')
+        return jsonify({'success': True, 'message': 'Método de pago actualizado exitosamente'})
+        
     except Exception as e:
         db.session.rollback()
-        flash(f'Error al eliminar método de pago: {str(e)}', 'danger')
+        return jsonify({'success': False, 'message': f'Error al actualizar: {str(e)}'}), 500
+
+@catalogo_bp.route('/metodos_pago/<int:id>/eliminar', methods=['POST'])
+@catalogo_bp.route('/metodos-pago/<int:id>/eliminar', methods=['POST'])
+@login_required
+@admin_required
+def eliminar_metodo_pago(id):
+    """Delete payment method via AJAX"""
+    metodo = MetodoPago.query.get_or_404(id)
     
-    return redirect(url_for('catalogo.metodos_pago'))
+    try:
+        registrar_historico_metodo_pago(metodo, 'DELETE')
+        
+        db.session.delete(metodo)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Método de pago eliminado exitosamente'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Error al eliminar: {str(e)}'}), 500
+
+@catalogo_bp.route('/metodos_pago/<int:id>/historial')
+@catalogo_bp.route('/metodos-pago/<int:id>/historial')
+@login_required
+@admin_required
+def historial_metodo_pago(id):
+    """Get history for a specific payment method"""
+    try:
+        metodo = MetodoPago.query.get_or_404(id)
+        historico = HistoricoMetodoPago.query.filter_by(id=id).order_by(HistoricoMetodoPago.fecha_hora_operacion.desc()).all()
+        
+        historial_data = []
+        for record in historico:
+            usuario = Usuario.query.get(record.usuario_operacion_id) if record.usuario_operacion_id else None
+            usuario_nombre = f"{usuario.nombre} {usuario.apellido}" if usuario else "Sistema"
+            usuario_iniciales = f"{usuario.nombre[0]}{usuario.apellido[0]}" if usuario else "SY"
+            
+            cambios = []
+            if record.tipo_operacion == 'UPDATE':
+                previous = HistoricoMetodoPago.query.filter(
+                    HistoricoMetodoPago.id == id,
+                    HistoricoMetodoPago.fecha_hora_operacion < record.fecha_hora_operacion
+                ).order_by(HistoricoMetodoPago.fecha_hora_operacion.desc()).first()
+                
+                if previous:
+                    fields = [('nombre', 'Nombre'), ('descripcion', 'Descripción')]
+                    for field, label in fields:
+                        old_val = getattr(previous, field)
+                        new_val = getattr(record, field)
+                        if old_val != new_val:
+                            cambios.append({'campo': label, 'valor_anterior': old_val, 'valor_nuevo': new_val})
+                            
+            historial_data.append({
+                'fecha_hora': record.fecha_hora_operacion.strftime('%d/%m/%Y %H:%M:%S'),
+                'usuario_nombre': usuario_nombre,
+                'usuario_iniciales': usuario_iniciales,
+                'tipo_operacion': record.tipo_operacion,
+                'nombre': record.nombre,
+                'descripcion': record.descripcion,
+                'cambios': cambios
+            })
+            
+        return jsonify({'success': True, 'metodo_nombre': metodo.nombre, 'historial': historial_data})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+def registrar_historico_metodo_pago(metodo, operacion):
+    """Helper to record payment method history"""
+    historico = HistoricoMetodoPago(
+        tipo_operacion=operacion,
+        usuario_operacion_id=current_user.id,
+        id=metodo.id,
+        nombre=metodo.nombre,
+        descripcion=metodo.descripcion,
+        usuario_registro_id=metodo.usuario_registro_id,
+        fecha_hora_registro=metodo.fecha_hora_registro,
+        usuario_actualizo_id=metodo.usuario_actualizo_id,
+        fecha_hora_actualizo=metodo.fecha_hora_actualizo,
+        activo=metodo.activo
+    )
+    db.session.add(historico)
 
 # ==================== TIPOS DE CUENTA ====================
 
@@ -599,7 +759,7 @@ def ver_tipo_cuenta_json(id):
 # ==================== BANCOS ====================
 
 
-@catalogo_bp.route('/catalogos/bancos')
+@catalogo_bp.route('/bancos')
 @login_required
 @admin_required
 def bancos():
@@ -625,7 +785,7 @@ def bancos():
     tipos_cuenta = TipoCuenta.query.all()
     return render_template('catalogos/bancos.html', bancos=bancos_json, tipos_cuenta=tipos_cuenta)
 
-@catalogo_bp.route('/catalogos/bancos/crear', methods=['POST'])
+@catalogo_bp.route('/bancos/crear', methods=['POST'])
 @login_required
 @admin_required
 def crear_banco():
@@ -693,7 +853,7 @@ def crear_banco():
     
     return redirect(url_for('catalogo.bancos'))
 
-@catalogo_bp.route('/catalogos/bancos/<int:id>/editar', methods=['POST'])
+@catalogo_bp.route('/bancos/<int:id>/editar', methods=['POST'])
 @login_required
 @admin_required
 def editar_banco(id):
@@ -768,7 +928,7 @@ def editar_banco(id):
     
     return redirect(url_for('catalogo.bancos'))
 
-@catalogo_bp.route('/catalogos/bancos/<int:id>/eliminar', methods=['POST'])
+@catalogo_bp.route('/bancos/<int:id>/eliminar', methods=['POST'])
 @login_required
 @admin_required
 def eliminar_banco(id):
@@ -800,7 +960,7 @@ def eliminar_banco(id):
     
     return redirect(url_for('catalogo.bancos'))
 
-@catalogo_bp.route('/catalogos/bancos/<int:id>')
+@catalogo_bp.route('/bancos/<int:id>')
 @login_required
 @admin_required
 def ver_banco(id):
@@ -819,7 +979,7 @@ def ver_banco(id):
         'fecha_actualizacion': banco.fecha_hora_actualizo.strftime('%d/%m/%Y %H:%M') if banco.fecha_hora_actualizo else None
     })
 
-@catalogo_bp.route('/catalogos/bancos/<int:id>/historial')
+@catalogo_bp.route('/bancos/<int:id>/historial')
 @login_required
 @admin_required
 def historial_banco(id):
@@ -900,7 +1060,7 @@ def historial_banco(id):
             'message': f'Error al cargar historial: {str(e)}'
         }), 500
 
-@catalogo_bp.route('/catalogos/bancos/<int:id>/json')
+@catalogo_bp.route('/bancos/<int:id>/json')
 @login_required
 @admin_required
 def ver_banco_json(id):

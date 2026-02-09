@@ -3,48 +3,274 @@ Quiero que realices un análisis profundo e integral del sistema actual, abarcan
 * El JavaScript relacionado
 * El HTML, especialmente la estructura del acordeón por semanas
 El objetivo es detectar, corregir y mejorar errores funcionales y de diseño, asegurando coherencia entre backend, frontend y lógica de negocio.
-1. Correcciones en el acordeón de semanas
-1. Analiza y corrige el comportamiento del accordion de semanas para que:
-2. Al crear una semana, los datos de alquiler que se renderizan en la tabla :id="table-{{ semana.id }}"
-   * correspondan únicamente a esa semana.
-   * Al crear un nuevo alquiler, no aparezca automáticamente en otras semanas activas si no pertenece al rango de fechas de dichas semanas.
+
+1. falta el boton 'agregar nuevo alquiler' en la 'semana-header'
+   este modal OJO- IMPORTANTE: debe permitir agrega un alquiler a la semana selacciona, este modal es editable y debe contener:
+   un select donde se agrega: VEHICULO Y DEBE  MOSTRAR EL SELECT: PLACA-MARCA-PROPIETARIO, SELECT INQUILINO NOMBRE APELLIDO-CEDULA. AQUI UN EJEMPLO:<!-- Modal: Agregar Alquiler (VERSIÓN CORREGIDA) -->
+<div class="modal-overlay" id="agregarAlquilerModal">
+    <div class="modal modal-lg">
+        <div class="modal-header">
+            <h3 class="modal-title">Agregar Alquiler a la Semana</h3>
+            <button class="modal-close">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <form id="agregarAlquilerForm">
+            <input type="hidden" name="semana_id" id="agregarAlquilerSemanaId">
+            <div class="modal-body">
+                <!-- Alert Info -->
+                <div class="alert alert-info" style="margin-bottom: 20px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 16v-4"/>
+                        <path d="M12 8h.01"/>
+                    </svg>
+                    <div>
+                        <strong>Información:</strong> Selecciona un vehículo disponible y un inquilino sin vehículo asignado en esta semana.
+                    </div>
+                </div>
+
+                <!-- Vehículo Select -->
+                <div class="form-group">
+                    <label class="form-label required">Vehículo</label>
+                    <select name="vehiculo_id" id="vehiculoSelect" class="form-select" required>
+                        <option value="">Cargando vehículos...</option>
+                    </select>
+                    <span class="form-help">Solo vehículos disponibles sin alquiler en esta semana</span>
+                </div>
+
+                <!-- Inquilino Select -->
+                <div class="form-group">
+                    <label class="form-label required">Inquilino</label>
+                    <select name="inquilino_id" id="inquilinoSelect" class="form-select" required>
+                        <option value="">Cargando inquilinos...</option>
+                    </select>
+                    <span class="form-help">Solo inquilinos sin vehículo asignado en esta semana</span>
+                </div>
+
+                <!-- Días de Trabajo -->
+                <div class="form-group">
+                    <label class="form-label required">Días de Trabajo</label>
+                    <input type="number" 
+                           name="dias_trabajo" 
+                           class="form-input" 
+                           min="1" 
+                           max="7" 
+                           value="7" 
+                           required
+                           style="max-width: 150px;">
+                    <span class="form-help">Número de días que trabajará este alquiler en la semana (1-7)</span>
+                </div>
+
+                <!-- Preview (opcional) -->
+                <div id="alquilerPreview" style="display: none; padding: 16px; background: var(--bg-primary); border-radius: 8px; margin-top: 20px;">
+                    <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 10px;">Vista Previa:</h4>
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; font-size: 13px;">
+                        <div><strong>Vehículo:</strong> <span id="previewVehiculo">-</span></div>
+                        <div><strong>Precio Semanal:</strong> <span id="previewPrecio">-</span></div>
+                        <div><strong>Inquilino:</strong> <span id="previewInquilino">-</span></div>
+                        <div><strong>Propietario:</strong> <span id="previewPropietario">-</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button>
+                <button type="submit" class="btn btn-primary" id="agregarAlquilerSubmit">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Agregar Alquiler
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Editar Detalle (VERSIÓN COMPLETA) -->
+<div class="modal-overlay" id="editarDetalleModal">
+    <div class="modal modal-lg">
+        <div class="modal-header">
+            <h3 class="modal-title">Editar Detalle de Alquiler</h3>
+            <button class="modal-close">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <form id="editarDetalleForm">
+            <input type="hidden" name="detalle_id" id="editDetalleId">
+            <div class="modal-body">
+                <!-- SECCIÓN: Vehículo e Inquilino -->
+                <div class="form-section" style="background: var(--bg-primary); padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                    <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 12px; color: var(--text-primary);">
+                         Vehículo e Inquilino
+                    </h4>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label required">Vehículo</label>
+                            <select name="vehiculo_id" id="editVehiculoSelect" class="form-select" required>
+                                <option value="">Cargando vehículos...</option>
+                            </select>
+                            <span class="form-help">Cambiar el vehículo asignado</span>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label required">Inquilino</label>
+                            <select name="inquilino_id" id="editInquilinoSelect" class="form-select" required>
+                                <option value="">Cargando inquilinos...</option>
+                            </select>
+                            <span class="form-help">Cambiar el inquilino asignado</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN: Datos de Pago -->
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+                    <div class="form-group">
+                        <label class="form-label">Precio Semanal <span class="input-addon">$</span></label>
+                        <div class="input-group">
+                         
+                            <input type="number" name="precio_semanal" class="form-input" step="0.01" min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Días de Trabajo (DT)</label>
+                        <input type="number" name="dias_trabajo" class="form-input" min="1" max="7">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Inversión Mecánica <span class="input-addon">$</span></label>
+                        <div class="input-group">
+                            
+                            <input type="number" name="inversion_mecanica" class="form-input" step="0.01" min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Concepto Inversión</label>
+                        <input type="text" name="concepto_inversion" class="form-input" placeholder="Ej: Cambio de aceite">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Monto Descuento <span class="input-addon">$</span></label>
+                        <div class="input-group">
+                            
+                            <input type="number" name="monto_descuento" class="form-input" step="0.01" min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Concepto Descuento</label>
+                        <input type="text" name="concepto_descuento" class="form-input">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Deuda  <span class="input-addon">$</span></label>
+                        <div class="input-group">
+                           
+                            <input type="number" name="monto_deuda" class="form-input" step="0.01" min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Banco</label>
+                        <select name="banco_id" class="form-select">
+                            <option value="">Seleccionar banco...</option>
+                            {% for banco in bancos %}
+                            <option value="{{ banco.id }}">{{ banco.banco }} - {{ banco.cuenta }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Fecha Confirmación Pago</label>
+                        <input type="date" name="fecha_confirmacion_pago" class="form-input">
+                    </div>
+
+                    <div class="form-group">
+                        <div class="checkbox-wrapper" style="margin-top: 32px;">
+                            <input type="checkbox" name="pago_confirmado" class="checkbox" id="pagoConfirmadoCheck">
+                            <label for="pagoConfirmadoCheck" class="checkbox-label">Pago Confirmado</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Notas</label>
+                    <textarea name="notas" class="form-textarea" rows="3"></textarea>
+                </div>
+
+                <!-- Vista Previa de Cambios -->
+                <div id="editPreview" style="display: none; padding: 16px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; margin-top: 16px;">
+                    <h4 style="font-size: 13px; font-weight: 600; margin-bottom: 8px; color: #856404;">
+                        ⚠️ Cambios Detectados:
+                    </h4>
+                    <ul id="editPreviewList" style="font-size: 12px; color: #856404; margin: 0; padding-left: 20px;">
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button>
+                <button type="submit" class="btn btn-primary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Guardar Cambios
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+  
+2. Correcciones en el acordeón de semanas:
+   1-que al dar click a nueva semana. aparezca el modal con el rango de fecha siempre tomando como inicio el MIERCOLES DE ESA SEMNANA y final el JUEVES 
+   de la semana siguiente
+   1. Analiza y corrige el comportamiento del accordion de semanas para que:
+      * Al crear una semana, los datos de alquiler que se renderizan en la tabla :id="table-{{ semana.id }}"
+      * correspondan únicamente a esa semana.
+      * Al crear un nuevo alquiler, no aparezca automáticamente en otras semanas activas si no pertenece al rango de fechas de dichas semanas.
 3. Asegura que cada semana maneje su propio contexto de datos, evitando fugas de información entre semanas activas. 2. Validación de semanas activas (JavaScript)
-   1. Crea una función en JavaScript que:
+   1-Crea una función en JavaScript que:
       * Detecte si hay más de una semana activa.
       * Valide si dichas semanas no corresponden al rango de fecha actual.
       * En caso de inconsistencia, muestre un modal de advertencia indicando el problema de forma clara al usuario.
-3. Seguridad y control de roles (Admin)
-1. Asegura que las funciones:
-   * Eliminar semana
-   * Cerrar semana
-solo puedan ser ejecutadas por usuarios con rol admin.3. Seguridad y control de roles (Admin)
-   1. Asegura que las funciones:
+4. Seguridad y control de roles (Admin)
+   1-Asegura que las funciones:
       * Eliminar semana
-      * Cerrar semana
-solo puedan ser ejecutadas por usuarios con rol admin.
-   2. Verifica que:
-      * La validación exista tanto en backend (Flask) como en frontend (UI/JS).
-      * Las acciones funcionen correctamente y sin errores lógicos.
-4. Módulo de inversión por alquiler (reparaciones)
-1. Agrega una nueva funcionalidad que permita:
-   * Seleccionar un alquiler activo.
-   * Introducir una inversión asociada (por ejemplo, reparación mecánica).
-2. El alquiler seleccionado debe ser requerido (required) para poder registrar una inversión. 5. Modal de inversiones mecánicas
-1. Al seleccionar un alquiler activo, muestra un modal que permita registrar inversiones con:
-   * Tipo de trabajo mecánico, usando una lista personalizada con íconos:
-      * Reparación mecánica
-      * Cambio de pieza
-      * Mantenimiento preventivo
-      * Ajustes
-      * Otros necesarios
-   * Concepto
-   * Monto
-   * Tipo de inversión:
-      * Falla mecánica
-      * Accidente
-2. El modal debe:
-* Mostrar los datos en un formato de tabla editable.
-* Permitir agregar, editar y eliminar filas antes de confirmar.6. Integración con la tabla semanal
+      * Cerrar semana ,solo puedan ser ejecutadas por usuarios con rol admin.3. Seguridad y control de roles (Admin)
+
+   2-solo puedan ser ejecutadas por usuarios con rol admin, Verifica que:
+         * La validación exista tanto en backend (Flask) como en frontend (UI/JS).
+         * Las acciones funcionen correctamente y sin errores lógicos.
+5. Módulo de inversión por alquiler (reparaciones)
+
+   1- Agrega una nueva funcionalidad que permita:
+      * Seleccionar un alquiler activo.
+      * muestre un modal con un formulario con select (* Tipo de trabajo mecánico, usando una lista personalizada con íconos:
+         * Reparación mecánica
+         * Cambio de pieza
+         * Mantenimiento preventivo
+         * Ajustes
+         * Otros necesarios
+      * Concepto
+      * Monto
+      * Tipo de inversión:
+         * Falla mecánica
+         * Accidente) y un input que solo sea numero,
+       mas abajo de ester formulario en el modal una lista de TIPO DE INVERSION ,DESCRIPCION, COSTO, USUARIO, FECHA REGISTRO
+      
+      2-El modal debe:
+      * Mostrar los datos en un formato de tabla editable.
+      * Permitir agregar, editar y eliminar filas antes de confirmar.
+      
+      
+6. Integración con la tabla semanal
+
 1. En la tabla:id="table-{{ semana.id }}"
 la columna: <th style="min-width: 100px;">Inversión</th>
 1. debe mostrar:

@@ -307,15 +307,8 @@ def eliminar_vehiculo(id):
         db.session.rollback()
         return jsonify({'success': False, 'message': f'Error al eliminar vehículo: {str(e)}'}), 400
     
-@modulos_bp.route('/vehiculos/<int:id>/historial')
-@login_required
-def historial_vehiculo(id):
-    """Get vehicle history"""
-    return jsonify({
-        'success': True,
-        'nombre': 'Vehículo',
-        'historial': []
-    })
+# NOTE: Vehicle history route moved to vehiculos_routes.py
+# Do not add a /vehiculos/<int:id>/historial route here as it conflicts
 
 # ==================== API ENDPOINTS FOR SELECTS ====================
 

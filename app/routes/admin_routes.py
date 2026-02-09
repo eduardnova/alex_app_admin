@@ -3,7 +3,7 @@ Admin Routes - User management, access logs, system configuration
 """
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
-from functools import wraps
+from .auth_routes import admin_required
 from app import db, cache
 from app.models import (
     Usuario, RegistroAcceso, VehiculoMarcaModelo, EstadoAlquiler,
@@ -14,15 +14,6 @@ from datetime import datetime
 admin_bp = Blueprint('admin', __name__)
 
 
-def admin_required(f):
-    """Decorator to require admin role"""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated or current_user.rol != 'admin':
-            flash('Acceso denegado. Se requieren permisos de administrador.', 'danger')
-            return redirect(url_for('index'))
-        return f(*args, **kwargs)
-    return decorated_function
 
 
 @admin_bp.route('/')

@@ -8,7 +8,7 @@ from app import db
 from app.models import (
     Inquilino, ReferenciaInquilino, GaranteInquilino, Parentesco,
     HistoricoInquilino, HistoricoReferenciaInquilino, HistoricoGaranteInquilino,
-    Usuario
+    Usuario, decrypt_data
 )
 from datetime import datetime
 import os
@@ -17,6 +17,18 @@ from werkzeug.utils import secure_filename
 import logging  # Para logging
 
 inquilino_bp = Blueprint('inquilino', __name__, url_prefix='/inquilino')
+
+
+def safe_decrypt(value):
+    """Safely decrypt a value, returning the original value if decryption fails"""
+    if value is None or value == '':
+        return None
+    try:
+        return decrypt_data(value)
+    except Exception:
+        # If decryption fails, return the original value (might already be decrypted)
+        return value
+
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'pdf'}
 UPLOAD_FOLDER = 'app/static/uploads/inquilinos'
@@ -71,26 +83,32 @@ def delete_document(path):
 
 def registrar_historico_inquilino(inquilino, tipo_operacion):
     """Register inquilino history"""
-    historico = HistoricoInquilino(
-        tipo_operacion=tipo_operacion,
-        fecha_hora_operacion=datetime.now(),
-        usuario_operacion_id=current_user.id if current_user.is_authenticated else None,
-        id=inquilino.id,
-        nombre_apellido=inquilino.nombre_apellido,
-        direccion=inquilino.direccion,
-        telefono=inquilino.telefono,
-        email=inquilino.email,
-        documento_buena_conducta_path=inquilino.documento_buena_conducta_path,
-        cedula=inquilino.cedula,
-        cedula_path=inquilino.cedula_path,
-        licencia=inquilino.licencia,
-        licencia_path=inquilino.licencia_path,
-        usuario_registro_id=inquilino.usuario_registro_id,
-        fecha_hora_registro=inquilino.fecha_hora_registro,
-        usuario_actualizo_id=inquilino.usuario_actualizo_id,
-        fecha_hora_actualizo=inquilino.fecha_hora_actualizo
-    )
-    db.session.add(historico)
+    print(f"📜 Registrando historial: {tipo_operacion} para inquilino ID {inquilino.id}")
+    try:
+        historico = HistoricoInquilino(
+            tipo_operacion=tipo_operacion,
+            fecha_hora_operacion=datetime.now(),
+            usuario_operacion_id=current_user.id if current_user.is_authenticated else None,
+            id=inquilino.id,
+            nombre_apellido=inquilino.nombre_apellido,
+            direccion=inquilino.direccion,
+            telefono=inquilino.telefono,
+            email=inquilino.email,
+            documento_buena_conducta_path=inquilino.documento_buena_conducta_path,
+            cedula=inquilino.cedula,
+            cedula_path=inquilino.cedula_path,
+            licencia=inquilino.licencia,
+            licencia_path=inquilino.licencia_path,
+            usuario_registro_id=inquilino.usuario_registro_id,
+            fecha_hora_registro=inquilino.fecha_hora_registro,
+            usuario_actualizo_id=inquilino.usuario_actualizo_id,
+            fecha_hora_actualizo=inquilino.fecha_hora_actualizo
+        )
+        db.session.add(historico)
+        print(f"✅ Historial añadido a sesión: {tipo_operacion}")
+    except Exception as e:
+        print(f"❌ Error registrando historial: {str(e)}")
+        raise
 
 
 def registrar_historico_referencia(referencia, tipo_operacion):
@@ -201,10 +219,10 @@ def crear_inquilino():
         db.session.add(nuevo_inquilino)
         db.session.flush()
         
-        db.session.commit()
+        # Registrar en historial
+        registrar_historico_inquilino(nuevo_inquilino, 'INSERT')
         
-        # Registrar después de commit exitoso
-        db.session.commit()  # Commit histórico
+        db.session.commit()
         
         flash(f'Inquilino {nombre_apellido} creado exitosamente.', 'success')
         
@@ -288,6 +306,9 @@ def editar_inquilino(id):
         
         inquilino.usuario_actualizo_id = current_user.id
         inquilino.fecha_hora_actualizo = datetime.now()
+        
+        # Registrar en historial
+        registrar_historico_inquilino(inquilino, 'UPDATE')
         
         db.session.commit()
         flash(f'Inquilino {inquilino.nombre_apellido} actualizado exitosamente.', 'success')
@@ -379,15 +400,26 @@ def historial_inquilino(id):
     for record in reversed(historial):
         usuario = Usuario.query.get(record.usuario_operacion_id) if record.usuario_operacion_id else None
         
+        # Decrypt fields that may be encrypted
+        nombre = safe_decrypt(record.nombre_apellido)
+        cedula = safe_decrypt(record.cedula)
+        licencia = safe_decrypt(record.licencia)
+        telefono = safe_decrypt(record.telefono)
+        email = safe_decrypt(record.email)
+        direccion = safe_decrypt(record.direccion)
+        
         item = {
             'id_historico': record.id_historico,
             'tipo_operacion': record.tipo_operacion,
             'fecha_hora': record.fecha_hora_operacion.strftime('%d/%m/%Y %H:%M:%S') if record.fecha_hora_operacion else '',
             'usuario_nombre': f"{usuario.nombre} {usuario.apellido}" if usuario else 'Sistema',
             'usuario_iniciales': f"{usuario.nombre[0]}{usuario.apellido[0]}" if usuario else 'S',
-            'nombre_apellido': record.nombre_apellido,
-            'cedula': record.cedula,
-            'licencia': record.licencia,
+            'nombre_apellido': nombre,
+            'cedula': cedula,
+            'licencia': licencia,
+            'telefono': telefono,
+            'email': email,
+            'direccion': direccion,
             'cambios': []
         }
         
@@ -405,15 +437,25 @@ def historial_inquilino(id):
                 ('documento_buena_conducta_path', 'Doc. Buena Conducta')
             ]
             
+            print(f"📝 Comparando UPDATE - prev_record id_historico: {prev_record.id_historico}, current: {record.id_historico}")
+            
             for campo, label in campos:
-                old_val = getattr(prev_record, campo, None)
-                new_val = getattr(record, campo, None)
-                if old_val != new_val:
+                old_val = safe_decrypt(getattr(prev_record, campo, None))
+                new_val = safe_decrypt(getattr(record, campo, None))
+                
+                # Normalize None to empty string for comparison
+                old_str = str(old_val) if old_val else ''
+                new_str = str(new_val) if new_val else ''
+                
+                if old_str != new_str:
+                    print(f"   ✅ Cambio detectado en {campo}: '{old_str}' -> '{new_str}'")
                     item['cambios'].append({
                         'campo': label,
                         'valor_anterior': old_val or 'N/A',
                         'valor_nuevo': new_val or 'N/A'
                     })
+        elif record.tipo_operacion == 'UPDATE' and not prev_record:
+            print(f"⚠️ UPDATE sin prev_record - id_historico: {record.id_historico}")
         
         result.append(item)
         prev_record = record

@@ -8,22 +8,22 @@
     <!-- Table -->
     <div class="table-container">
         <div class="table-header">
-             <div>
+            <div>
                 <h1 class="card-title">Métodos de Pago</h1>
                 <p class="card-subtitle">Administra las formas de pago disponibles</p>
             </div>
             <div class="input-group" style="width: 300px;">
                 <span class="input-icon">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <circle cx="11" cy="11" r="8"/>
-                        <path d="M21 21l-4.35-4.35"/>
+                        <circle cx="11" cy="11" r="8" />
+                        <path d="M21 21l-4.35-4.35" />
                     </svg>
                 </span>
                 <input type="text" class="form-input" id="searchMetodos" placeholder="Buscar método...">
             </div>
             <button class="btn btn-primary" onclick="createNewMetodo()">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
                 Nuevo Método
             </button>
@@ -36,9 +36,9 @@
                         <th>ID</th>
                         <th>Método</th>
                         <th>Descripción</th>
-                        <th>Uso Mensual</th>
                         <th>Estado</th>
-                        <th>Fecha Registro</th>
+                        <th>Registro</th>
+                        <th>Actualización</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -48,19 +48,22 @@
                         <td><strong>#{{ metodo.id }}</strong></td>
                         <td>
                             <div style="display: flex; align-items: center; gap: 10px;">
-                                <div style="width: 40px; height: 40px; background: var(--bg-primary); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
+                                <div
+                                    style="width: 40px; height: 40px; background: var(--bg-primary); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
                                     {% if 'Efectivo' in metodo.nombre %}
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                     {% elif 'Tarjeta' in metodo.nombre or 'Crédito' in metodo.nombre %}
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                                        <line x1="1" y1="10" x2="23" y2="10"/>
+                                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                                        <line x1="1" y1="10" x2="23" y2="10" />
                                     </svg>
                                     {% else %}
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                                     </svg>
                                     {% endif %}
                                 </div>
@@ -69,28 +72,52 @@
                         </td>
                         <td>{{ metodo.descripcion or 'Sin descripción' }}</td>
                         <td>
-                            <div class="progress" style="width: 120px;">
-                                <div class="progress-bar" style="width: 75%"></div>
-                            </div>
-                            <span style="font-size: 12px; color: var(--text-tertiary); margin-top: 4px;">235 pagos</span>
+                            {% if metodo.activo %}
+                            <span class="badge badge-success">Activo</span>
+                            {% else %}
+                            <span class="badge badge-danger">Inactivo</span>
+                            {% endif %}
                         </td>
-                        <td><span class="badge badge-success">Activo</span></td>
-                        <td>{{ metodo.fecha_hora_registro.strftime('%d/%m/%Y') if metodo.fecha_hora_registro else 'N/A' }}</td>
+                        <td>
+                            <div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">
+                                {{ metodo.usuario_registro.nombre if metodo.usuario_registro else 'Sistema' }}
+                            </div>
+                            <div style="font-size: 11px; color: var(--text-tertiary);">
+                                {{ metodo.fecha_hora_registro.strftime('%d/%m/%Y %H:%M') if metodo.fecha_hora_registro
+                                else 'N/A' }}
+                            </div>
+                        </td>
+                        <td>
+                            <div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">
+                                {{ metodo.usuario_actualizo.nombre if metodo.usuario_actualizo else 'Sistema' }}
+                            </div>
+                            <div style="font-size: 11px; color: var(--text-tertiary);">
+                                {{ metodo.fecha_hora_actualizo.strftime('%d/%m/%Y %H:%M') if metodo.fecha_hora_actualizo
+                                else 'N/A' }}
+                            </div>
+                        </td>
                         <td>
                             <div style="display: flex; gap: 8px;">
-                                <button class="btn btn-sm btn-secondary" onclick="viewHistory({{ metodo.id }})" data-tooltip="Historial">
+                                <button class="btn btn-sm btn-secondary" data-id="{{ metodo.id }}"
+                                    onclick="viewHistoryTrigger(this)" data-tooltip="Historial">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                 </button>
-                                <button class="btn btn-sm btn-primary" onclick="editMetodo({{ metodo.id }})" data-tooltip="Editar">
+                                <button class="btn btn-sm btn-primary" data-id="{{ metodo.id }}"
+                                    onclick="editMetodoTrigger(this)" data-tooltip="Editar">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                     </svg>
                                 </button>
-                                <button type="button" class="btn btn-sm btn-danger" onclick='deleteMetodo({{ metodo.id }}, {{ metodo.nombre | tojson }})' data-tooltip="Eliminar">
+                                <button type="button" class="btn btn-sm btn-danger" data-id="{{ metodo.id }}"
+                                    data-nombre="{{ metodo.nombre }}" onclick="deleteMetodoTrigger(this)"
+                                    data-tooltip="Eliminar">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                     </svg>
                                 </button>
                             </div>
@@ -110,11 +137,11 @@
             <h3 class="modal-title" id="metodoTitle">Nuevo Método de Pago</h3>
             <button class="modal-close">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
         </div>
-        <form action="{{ url_for('catalogo.crear_metodo_pago') }}" method="POST" id="metodoForm">
+        <form id="metodoForm">
             <div class="modal-body">
                 <div class="form-group">
                     <label class="form-label required">Nombre del Método</label>
@@ -123,27 +150,58 @@
 
                 <div class="form-group">
                     <label class="form-label">Descripción</label>
-                    <textarea name="descripcion" class="form-textarea" rows="3" placeholder="Detalles del método de pago..."></textarea>
+                    <textarea name="descripcion" class="form-textarea" rows="3"
+                        placeholder="Detalles del método de pago..."></textarea>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Icono</label>
-                    <select class="form-select" name="icono">
-                        <option value="cash">💵 Efectivo</option>
-                        <option value="card">💳 Tarjeta</option>
-                        <option value="bank">🏦 Transferencia</option>
-                        <option value="mobile">📱 Pago Móvil</option>
-                    </select>
-                </div>
-
-                <div class="switch-wrapper">
-                    <div class="switch active"></div>
-                    <label class="switch-label">Método activo</label>
+                    <label class="form-label">Estado</label>
+                    <div
+                        style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--bg-secondary); border-radius: var(--radius-lg); transition: all 0.3s ease;">
+                        <label class="modern-switch"
+                            style="position: relative; display: inline-block; width: 52px; height: 28px; margin: 0;">
+                            <input type="checkbox" name="activo" checked style="opacity: 0; width: 0; height: 0;">
+                            <span class="modern-slider" style="
+                                position: absolute;
+                                cursor: pointer;
+                                top: 0;
+                                left: 0;
+                                right: 0;
+                                bottom: 0;
+                                background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%);
+                                transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                                border-radius: 34px;
+                                box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+                            ">
+                                <span style="
+                                    position: absolute;
+                                    content: '';
+                                    height: 22px;
+                                    width: 22px;
+                                    left: 3px;
+                                    bottom: 3px;
+                                    background: white;
+                                    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                                    border-radius: 50%;
+                                    box-shadow: 0 2px 6px rgba(0,0,0,0.2), 0 1px 3px rgba(0,0,0,0.1);
+                                "></span>
+                            </span>
+                        </label>
+                        <div style="flex: 1;">
+                            <div id="switchLabel"
+                                style="font-weight: 600; font-size: 14px; color: var(--success); transition: color 0.3s ease;">
+                                Método Activo
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-tertiary); margin-top: 2px;">
+                                Se muestra en el catálogo
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button>
-                <button type="submit" class="btn btn-primary">Guardar</button>
+                <button type="submit" class="btn btn-primary" id="btnSubmitMetodo">Guardar</button>
             </div>
         </form>
     </div>
@@ -156,16 +214,18 @@
             <h3 class="modal-title">Historial de Modificaciones - <span id="historyMetodoName">Cargando...</span></h3>
             <button class="modal-close">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
         </div>
         <div class="modal-body">
             <!-- Loading State -->
             <div id="historyLoading" style="text-align: center; padding: 40px; display: none;">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="animation: spin 1s linear infinite;">
-                    <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="0" opacity="0.25"/>
-                    <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="8"/>
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    style="animation: spin 1s linear infinite;">
+                    <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="0"
+                        opacity="0.25" />
+                    <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="8" />
                 </svg>
                 <p style="margin-top: 12px; color: var(--text-secondary);">Cargando historial...</p>
             </div>
@@ -200,18 +260,21 @@
 
             <!-- Empty State -->
             <div id="historyEmpty" style="text-align: center; padding: 40px; display: none;">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" style="margin: 0 auto 16px;">
-                    <circle cx="12" cy="12" r="10"/>
-                    <path d="M12 6v6l4 2"/>
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)"
+                    style="margin: 0 auto 16px;">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 6v6l4 2" />
                 </svg>
-                <p style="color: var(--text-secondary); font-size: 15px;">No hay historial disponible para este método.</p>
+                <p style="color: var(--text-secondary); font-size: 15px;">No hay historial disponible para este método.
+                </p>
             </div>
         </div>
         <div class="modal-footer">
             <button class="btn btn-secondary" data-modal-close>Cerrar</button>
             <button class="btn btn-primary" onclick="exportHistory()">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 Exportar
             </button>
@@ -220,389 +283,311 @@
 </div>
 
 <style>
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-</style>
-
-<script>
-// ==========================================
-// GLOBAL VARIABLES
-// ==========================================
-let allHistoryRecords = [];
-let currentHistoryId = null;
-
-// ==========================================
-// SEARCH FUNCTIONALITY
-// ==========================================
-document.getElementById('searchMetodos').addEventListener('input', function(e) {
-    const searchTerm = e.target.value.toLowerCase();
-    const rows = document.querySelectorAll('#metodosTable tbody tr');
-    rows.forEach(row => {
-        row.style.display = row.textContent.toLowerCase().includes(searchTerm) ? '' : 'none';
-    });
-});
-
-// ==========================================
-// CREATE NEW METODO
-// ==========================================
-function createNewMetodo() {
-    // Reset form
-    document.getElementById('metodoForm').reset();
-    
-    // Change title
-    document.getElementById('metodoTitle').textContent = 'Nuevo Método de Pago';
-    
-    // Set action URL for create
-    document.getElementById('metodoForm').action = '{{ url_for("catalogo.crear_metodo_pago") }}';
-    
-    // Open modal
-    window.AppUtils.openModal('createMetodoModal');
-    
-    console.log('✅ Create modal opened');
-}
-
-// ==========================================
-// EDIT METODO
-// ==========================================
-function editMetodo(id) {
-    console.log('📝 Editing metodo:', id);
-    
-    // Change title
-    document.getElementById('metodoTitle').textContent = 'Editar Método de Pago';
-    
-    // Change form action
-    document.getElementById('metodoForm').action = `/catalogo/metodos-pago/${id}/editar`;
-    
-    // Fetch metodo data
-    fetch(`/catalogo/metodos-pago/${id}/json`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Error al cargar datos');
-            }
-            return response.json();
-        })
-        .then(result => {
-            if (result.success) {
-                const data = result.data;
-                
-                // Fill form
-                document.querySelector('[name="nombre"]').value = data.nombre || '';
-                document.querySelector('[name="descripcion"]').value = data.descripcion || '';
-                
-                // Open modal
-                window.AppUtils.openModal('createMetodoModal');
-                
-                console.log('✅ Metodo data loaded:', data);
-            } else {
-                showAlert('Error', result.message || 'No se pudo cargar el método de pago', 'error');
-            }
-        })
-        .catch(error => {
-            console.error('❌ Error loading metodo:', error);
-            showAlert('Error', 'Error al cargar datos del método de pago', 'error');
-        });
-}
-
-// ==========================================
-// DELETE METODO
-// ==========================================
-function deleteMetodo(id, nombre) {
-    console.log('🗑️ Deleting metodo:', id, nombre);
-    
-    showConfirm(
-        '¿Eliminar Método de Pago?',
-        `El método "${nombre}" será eliminado permanentemente. Esta acción no se puede deshacer.`,
-        function() {
-            // Create and submit form
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = `/catalogo/metodos-pago/${id}/eliminar`;
-            document.body.appendChild(form);
-            form.submit();
-            
-            console.log('✅ Delete form submitted');
+    @keyframes spin {
+        from {
+            transform: rotate(0deg);
         }
-    );
-}
 
-// ==========================================
-// VIEW HISTORY
-// ==========================================
-function viewHistory(id) {
-    console.log('📜 Loading history for metodo:', id);
-    
-    currentHistoryId = id;
-    
-    // Show loading state
-    document.getElementById('historyLoading').style.display = 'block';
-    document.getElementById('historyContent').style.display = 'none';
-    document.getElementById('historyEmpty').style.display = 'none';
-    
-    // Open modal
-    window.AppUtils.openModal('historyModal');
-    
-    // Fetch history
-    fetch(`/catalogo/metodos-pago/${id}/historial`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Error al cargar historial');
-            }
-            return response.json();
-        })
-        .then(result => {
-            document.getElementById('historyLoading').style.display = 'none';
-            
-            if (result.success && result.historial && result.historial.length > 0) {
-                // Update title
-                document.getElementById('historyMetodoName').textContent = result.metodo_nombre;
-                
-                // Store records
-                allHistoryRecords = result.historial;
-                
-                // Render history
-                renderHistory(result.historial);
-                
-                // Show content
-                document.getElementById('historyContent').style.display = 'block';
-                
-                // Initialize filters
-                initHistoryFilters();
-                
-                console.log('✅ History loaded:', result.historial.length, 'records');
-            } else {
-                document.getElementById('historyEmpty').style.display = 'block';
-                console.log('ℹ️ No history available');
-            }
-        })
-        .catch(error => {
-            console.error('❌ Error loading history:', error);
-            document.getElementById('historyLoading').style.display = 'none';
-            document.getElementById('historyEmpty').style.display = 'block';
-            showAlert('Error', 'Error al cargar el historial', 'error');
-        });
-}
-
-// ==========================================
-// RENDER HISTORY
-// ==========================================
-function renderHistory(historial) {
-    const tbody = document.getElementById('historyTableBody');
-    tbody.innerHTML = '';
-    
-    if (!historial || historial.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: var(--text-secondary);">No hay registros</td></tr>';
-        return;
+        to {
+            transform: rotate(360deg);
+        }
     }
-    
-    historial.forEach(record => {
-        const row = document.createElement('tr');
-        
-        // Fecha/Hora
-        const fechaCell = document.createElement('td');
-        fechaCell.innerHTML = `
-            <div style="font-weight: 600; color: var(--text-primary);">${record.fecha_hora.split(' ')[0]}</div>
-            <div style="font-size: 12px; color: var(--text-tertiary);">${record.fecha_hora.split(' ')[1]}</div>
-        `;
-        row.appendChild(fechaCell);
-        
-        // Usuario
-        const usuarioCell = document.createElement('td');
-        usuarioCell.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 12px;">
-                    ${record.usuario_iniciales}
-                </div>
-                <span>${record.usuario_nombre}</span>
-            </div>
-        `;
-        row.appendChild(usuarioCell);
-        
-        // Acción
-        const accionCell = document.createElement('td');
-        let badgeClass = 'badge-info';
-        let accionText = record.tipo_operacion;
-        
-        if (record.tipo_operacion === 'INSERT') {
-            badgeClass = 'badge-success';
-            accionText = 'Creación';
-        } else if (record.tipo_operacion === 'UPDATE') {
-            badgeClass = 'badge-warning';
-            accionText = 'Edición';
-        } else if (record.tipo_operacion === 'DELETE') {
-            badgeClass = 'badge-danger';
-            accionText = 'Eliminación';
-        }
-        
-        accionCell.innerHTML = `<span class="badge ${badgeClass}">${accionText}</span>`;
-        row.appendChild(accionCell);
-        
-        // Detalles
-        const detallesCell = document.createElement('td');
-        detallesCell.innerHTML = formatHistoryDetails(record);
-        row.appendChild(detallesCell);
-        
-        tbody.appendChild(row);
-    });
-}
 
-// ==========================================
-// FORMAT HISTORY DETAILS
-// ==========================================
-function formatHistoryDetails(record) {
-    if (record.tipo_operacion === 'INSERT') {
-        return `
-            <div style="font-size: 13px;">
-                <strong>Registro Inicial:</strong> ${record.nombre}<br>
-                <span style="color: var(--text-secondary);">Descripción: ${record.descripcion || 'N/A'}</span>
-            </div>
-        `;
-    } else if (record.tipo_operacion === 'DELETE') {
-        return `
-            <div style="font-size: 13px;">
-                <strong>Registro Eliminado:</strong> ${record.nombre}<br>
-                <span style="color: var(--text-secondary);">Descripción: ${record.descripcion || 'N/A'}</span>
-            </div>
-        `;
-    } else if (record.tipo_operacion === 'UPDATE') {
-        let changes = [];
-        
-        if (record.cambios && record.cambios.length > 0) {
-            record.cambios.forEach(cambio => {
-                changes.push(`
-                    <div style="margin-bottom: 8px; padding: 8px; background: var(--bg-secondary); border-radius: 6px;">
-                        <strong>${cambio.campo}:</strong><br>
-                        <span style="color: var(--text-secondary); font-size: 12px;">
-                            <code style="background: rgba(245, 101, 101, 0.1); padding: 2px 6px; border-radius: 3px;">${cambio.valor_anterior || 'N/A'}</code>
-                            →
-                            <code style="background: rgba(76, 175, 80, 0.1); padding: 2px 6px; border-radius: 3px;">${cambio.valor_nuevo || 'N/A'}</code>
-                        </span>
-                    </div>
-                `);
+    /* Modern Switch Styles */
+    .modern-switch input:checked+.modern-slider {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+        box-shadow: 0 0 12px rgba(16, 185, 129, 0.4), inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .modern-switch input:checked+.modern-slider span {
+        transform: translateX(24px);
+    }
+
+    .modern-switch:hover .modern-slider {
+        box-shadow: 0 0 8px rgba(59, 130, 246, 0.3), inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .modern-switch input:focus+.modern-slider {
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2), inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // ==========================================
+    // SWITCH INTERACTION LOGIC
+    // ==========================================
+    document.addEventListener('DOMContentLoaded', function () {
+        const switchInput = document.querySelector('.modern-switch input[name="activo"]');
+        const switchLabel = document.getElementById('switchLabel');
+
+        if (switchInput && switchLabel) {
+            switchInput.addEventListener('change', function () {
+                if (this.checked) {
+                    switchLabel.textContent = 'Método Activo';
+                    switchLabel.style.color = 'var(--success)';
+                } else {
+                    switchLabel.textContent = 'Método Inactivo';
+                    switchLabel.style.color = 'var(--danger)';
+                }
             });
         }
-        
-        return changes.length > 0 ? changes.join('') : '<span style="color: var(--text-secondary);">Sin cambios específicos registrados</span>';
-    }
-    
-    return '-';
-}
+    });
 
-// ==========================================
-// INITIALIZE HISTORY FILTERS
-// ==========================================
-function initHistoryFilters() {
-    const searchInput = document.getElementById('historySearch');
-    const actionSelect = document.getElementById('historyFilterAction');
-    
-    if (searchInput) {
-        searchInput.removeEventListener('input', filterHistory);
-        searchInput.addEventListener('input', filterHistory);
-        searchInput.value = '';
-    }
-    
-    if (actionSelect) {
-        actionSelect.removeEventListener('change', filterHistory);
-        actionSelect.addEventListener('change', filterHistory);
-        actionSelect.value = '';
-    }
-}
+    // ==========================================
+    // GLOBAL VARIABLES
+    // ==========================================
+    let allHistoryRecords = [];
+    let currentHistoryId = null;
 
-// ==========================================
-// FILTER HISTORY
-// ==========================================
-function filterHistory() {
-    if (!allHistoryRecords || allHistoryRecords.length === 0) return;
-    
-    const searchInput = document.getElementById('historySearch');
-    const actionSelect = document.getElementById('historyFilterAction');
-    
-    if (!searchInput || !actionSelect) return;
-    
-    const searchTerm = searchInput.value.toLowerCase();
-    const actionFilter = actionSelect.value;
-    
-    let filtered = allHistoryRecords;
-    
-    // Filter by search term
-    if (searchTerm) {
-        filtered = filtered.filter(record => {
-            const searchableText = `${record.nombre} ${record.descripcion} ${record.usuario_nombre}`.toLowerCase();
-            return searchableText.includes(searchTerm);
+    // ==========================================
+    // SEARCH FUNCTIONALITY
+    // ==========================================
+    document.getElementById('searchMetodos').addEventListener('input', function (e) {
+        const searchTerm = e.target.value.toLowerCase();
+        const rows = document.querySelectorAll('#metodosTable tbody tr');
+        rows.forEach(row => {
+            row.style.display = row.textContent.toLowerCase().includes(searchTerm) ? '' : 'none';
         });
-    }
-    
-    // Filter by action type
-    if (actionFilter) {
-        filtered = filtered.filter(record => record.tipo_operacion === actionFilter);
-    }
-    
-    renderHistory(filtered);
-}
+    });
 
-// ==========================================
-// EXPORT HISTORY
-// ==========================================
-function exportHistory() {
-    if (!allHistoryRecords || allHistoryRecords.length === 0) {
-        showAlert('Sin datos', 'No hay datos para exportar', 'warning');
-        return;
+    // ==========================================
+    // CREATE NEW METODO
+    // ==========================================
+    function createNewMetodo() {
+        document.getElementById('metodoForm').reset();
+        document.getElementById('metodoTitle').textContent = 'Nuevo Método de Pago';
+        document.getElementById('metodoForm').action = '{{ url_for("catalogo.crear_metodo_pago") }}';
+        window.AppUtils.openModal('createMetodoModal');
     }
-    
-    try {
-        // CSV header
-        let csv = 'Fecha/Hora,Usuario,Acción,Método,Descripción,Cambios\n';
-        
-        // CSV rows
-        allHistoryRecords.forEach(record => {
-            let accionText = record.tipo_operacion;
-            if (record.tipo_operacion === 'INSERT') accionText = 'Creación';
-            else if (record.tipo_operacion === 'UPDATE') accionText = 'Edición';
-            else if (record.tipo_operacion === 'DELETE') accionText = 'Eliminación';
-            
-            const descripcion = (record.descripcion || '').replace(/"/g, '""');
-            
-            let cambios = '';
-            if (record.cambios && record.cambios.length > 0) {
-                cambios = record.cambios.map(c => `${c.campo}: ${c.valor_anterior} → ${c.valor_nuevo}`).join('; ');
+
+    // ==========================================
+    // EDIT METODO
+    // ==========================================
+    function editMetodo(id) {
+        document.getElementById('metodoTitle').textContent = 'Editar Método de Pago';
+        document.getElementById('metodoForm').action = `/metodos_pago/${id}/editar`;
+
+        fetch(`/metodos_pago/${id}/json`)
+            .then(response => {
+                if (!response.ok) throw new Error('Error al cargar datos');
+                return response.json();
+            })
+            .then(result => {
+                if (result.success) {
+                    const data = result.data;
+                    document.querySelector('[name="nombre"]').value = data.nombre || '';
+                    document.querySelector('[name="descripcion"]').value = data.descripcion || '';
+                    document.querySelector('[name="activo"]').checked = data.activo;
+
+                    const switchLabel = document.getElementById('switchLabel');
+                    if (switchLabel) {
+                        switchLabel.textContent = data.activo ? 'Método Activo' : 'Método Inactivo';
+                        switchLabel.style.color = data.activo ? 'var(--success)' : 'var(--danger)';
+                    }
+
+                    window.AppUtils.openModal('createMetodoModal');
+                } else {
+                    showAlert('Error', result.message || 'No se pudo cargar el método de pago', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error loading metodo:', error);
+                showAlert('Error', 'Error al cargar datos del método de pago', 'error');
+            });
+    }
+
+    // ==========================================
+    // TRIGGER HELPERS
+    // ==========================================
+    function editMetodoTrigger(btn) {
+        const id = btn.getAttribute('data-id');
+        editMetodo(id);
+    }
+
+    function viewHistoryTrigger(btn) {
+        const id = btn.getAttribute('data-id');
+        viewHistory(id);
+    }
+
+    function deleteMetodoTrigger(btn) {
+        const id = btn.getAttribute('data-id');
+        const nombre = btn.getAttribute('data-nombre');
+        deleteMetodo(id, nombre);
+    }
+
+    // ==========================================
+    // FORM SUBMISSION (AJAX)
+    // ==========================================
+    document.getElementById('metodoForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const form = e.target;
+        const formData = new FormData(form);
+        const actionUrl = form.action;
+        const submitBtn = document.getElementById('btnSubmitMetodo');
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Guardando...';
+
+        fetch(actionUrl, {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    showAlert('Éxito', result.message, 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showAlert('Error', result.message || 'Ocurrió un error', 'error');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'Guardar';
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error submitting form:', error);
+                showAlert('Error', 'Error de conexión con el servidor', 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Guardar';
+            });
+    });
+
+    // ==========================================
+    // DELETE METODO (AJAX)
+    // ==========================================
+    function deleteMetodo(id, nombre) {
+        showConfirm(
+            '¿Eliminar Método de Pago?',
+            `El método "${nombre}" será eliminado permanentemente. Esta acción no se puede deshacer.`,
+            function () {
+                fetch(`/metodos_pago/${id}/eliminar`, {
+                    method: 'POST'
+                })
+                    .then(response => response.json())
+                    .then(result => {
+                        if (result.success) {
+                            showAlert('Eliminado', result.message, 'success');
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            showAlert('Error', result.message || 'No se pudo eliminar', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('❌ Error deleting:', error);
+                        showAlert('Error', 'Error de conexión', 'error');
+                    });
             }
-            
-            csv += `"${record.fecha_hora}","${record.usuario_nombre}","${accionText}","${record.nombre}","${descripcion}","${cambios}"\n`;
-        });
-        
-        // Create download link
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-        const filename = `historial_metodo_pago_${currentHistoryId}_${timestamp}.csv`;
-        
-        link.setAttribute('href', url);
-        link.setAttribute('download', filename);
-        link.style.visibility = 'hidden';
-        
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        // Clean up
-        setTimeout(() => URL.revokeObjectURL(url), 100);
-        
-        showAlert('Éxito', 'Historial exportado correctamente', 'success');
-        console.log('✅ History exported successfully');
-    } catch (error) {
-        console.error('❌ Error exporting history:', error);
-        showAlert('Error', 'Error al exportar el historial', 'error');
+        );
     }
-}
 
-// ==========================================
-// INITIALIZE ON LOAD
-// ==========================================
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Métodos de Pago page initialized');
-});
+    // ==========================================
+    // VIEW HISTORY
+    // ==========================================
+    function viewHistory(id) {
+        currentHistoryId = id;
+        document.getElementById('historyLoading').style.display = 'block';
+        document.getElementById('historyContent').style.display = 'none';
+        document.getElementById('historyEmpty').style.display = 'none';
+
+        window.AppUtils.openModal('historyModal');
+
+        fetch(`/metodos_pago/${id}/historial`)
+            .then(response => response.json())
+            .then(result => {
+                document.getElementById('historyLoading').style.display = 'none';
+                if (result.success && result.historial && result.historial.length > 0) {
+                    document.getElementById('historyMetodoName').textContent = result.metodo_nombre;
+                    allHistoryRecords = result.historial;
+                    renderHistory(result.historial);
+                    document.getElementById('historyContent').style.display = 'block';
+                    initHistoryFilters();
+                } else {
+                    document.getElementById('historyEmpty').style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error loading history:', error);
+                document.getElementById('historyLoading').style.display = 'none';
+                document.getElementById('historyEmpty').style.display = 'block';
+                showAlert('Error', 'Error al cargar el historial', 'error');
+            });
+    }
+
+    function renderHistory(historial) {
+        const tbody = document.getElementById('historyTableBody');
+        tbody.innerHTML = '';
+
+        historial.forEach(record => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>
+                    <div style="font-weight: 600;">${record.fecha_hora.split(' ')[0]}</div>
+                    <div style="font-size: 11px; color: var(--text-tertiary);">${record.fecha_hora.split(' ')[1]}</div>
+                </td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 10px;">
+                            ${record.usuario_iniciales}
+                        </div>
+                        <span style="font-size: 13px;">${record.usuario_nombre}</span>
+                    </div>
+                </td>
+                <td><span class="badge ${record.tipo_operacion === 'INSERT' ? 'badge-success' : record.tipo_operacion === 'UPDATE' ? 'badge-warning' : 'badge-danger'}">${record.tipo_operacion}</span></td>
+                <td>${formatHistoryDetails(record)}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    function formatHistoryDetails(record) {
+        if (record.tipo_operacion === 'UPDATE' && record.cambios && record.cambios.length > 0) {
+            return record.cambios.map(c => `<div><strong>${c.campo}:</strong> ${c.valor_anterior} → ${c.valor_nuevo}</div>`).join('');
+        }
+        return record.descripcion || 'Sin descripción';
+    }
+
+    function initHistoryFilters() {
+        const searchInput = document.getElementById('historySearch');
+        const actionSelect = document.getElementById('historyFilterAction');
+        if (searchInput) {
+            searchInput.oninput = filterHistory;
+            searchInput.value = '';
+        }
+        if (actionSelect) {
+            actionSelect.onchange = filterHistory;
+            actionSelect.value = '';
+        }
+    }
+
+    function filterHistory() {
+        const searchTerm = document.getElementById('historySearch').value.toLowerCase();
+        const actionFilter = document.getElementById('historyFilterAction').value;
+
+        const filtered = allHistoryRecords.filter(record => {
+            const matchesSearch = record.nombre.toLowerCase().includes(searchTerm) || (record.descripcion && record.descripcion.toLowerCase().includes(searchTerm));
+            const matchesAction = !actionFilter || record.tipo_operacion === actionFilter;
+            return matchesSearch && matchesAction;
+        });
+        renderHistory(filtered);
+    }
+
+    function exportHistory() {
+        if (!allHistoryRecords.length) return;
+        let csv = 'Fecha,Usuario,Accion,Detalles\n';
+        allHistoryRecords.forEach(r => {
+            csv += `"${r.fecha_hora}","${r.usuario_nombre}","${r.tipo_operacion}","${r.nombre}"\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `historial_${currentHistoryId}.csv`;
+        a.click();
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        console.log('🚀 Métodos de Pago page initialized');
+    });
 </script>
 {% endblock %}

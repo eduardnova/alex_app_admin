@@ -111,6 +111,11 @@ def create_app(config_name=None):
     from app.routes.vehiculos_routes import vehiculo_bp
     from app.routes.alquileres_routes import alquileres_bp
     
+    from app.routes.contratos_routes import contrato_bp
+    from app.routes.tipos_depositos_routes import tipo_deposito_bp
+    from app.routes.depositos_routes import deposito_bp
+    from app.routes.pagos_routes import pagos_bp
+    
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(settings_bp, url_prefix='/settings')
@@ -122,6 +127,17 @@ def create_app(config_name=None):
     app.register_blueprint(inquilino_bp, url_prefix='/')
     app.register_blueprint(propietario_bp, url_prefix='/')
     app.register_blueprint(vehiculo_bp, url_prefix='/') 
+    
+    app.register_blueprint(contrato_bp, url_prefix='/')
+    app.register_blueprint(tipo_deposito_bp)
+    app.register_blueprint(deposito_bp, url_prefix='/')
+    app.register_blueprint(pagos_bp)
+    
+    from app.routes.deducciones_routes import deducciones_bp
+    # Exempt deducciones from rate limiting as per user request
+    limiter.exempt(deducciones_bp)
+    app.register_blueprint(deducciones_bp, url_prefix='/')
+
     
     # Root route
     @app.route('/')

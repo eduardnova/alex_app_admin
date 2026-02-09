@@ -6,8 +6,20 @@ from flask_login import login_user, logout_user, login_required, current_user
 from app import db, limiter
 from app.models import Usuario, RegistroAcceso,Parentesco
 from datetime import datetime
+from functools import wraps
 
 auth_bp = Blueprint('auth', __name__)
+
+
+def admin_required(f):
+    """Decorator to require admin role"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or current_user.rol != 'admin':
+            flash('Acceso denegado. Se requieren permisos de administrador.', 'danger')
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 
 @auth_bp.route('/login', methods=['GET', 'POST'])

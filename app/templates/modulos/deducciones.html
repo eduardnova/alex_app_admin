@@ -1,0 +1,916 @@
+{% extends 'base.html' %}
+
+{% block title %}Deducciones{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1 class="page-title">Gestión de Deducciones</h1>
+        <div class="page-actions">
+            <!-- New Deduction Button Removed as requested -->
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <!-- Row 1: Main Selects -->
+            <div class="filters-row mb-3">
+                <!-- Propietario Filter -->
+                <div class="form-group">
+                    <label class="form-label">Propietario</label>
+                    <div class="custom-select-wrapper" id="filterPropietarioWrapper">
+                        <div class="custom-select-trigger" onclick="toggleSelect('filterPropietario')">
+                            <span class="selected-value placeholder" id="filterPropietarioText">Todos</span>
+                            <svg class="arrow" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor">
+                                <path d="M6 9l6 6 6-6" />
+                            </svg>
+                        </div>
+                        <div class="custom-select-dropdown" id="filterPropietarioDropdown">
+                            <div class="custom-select-search">
+                                <input type="text" placeholder="Buscar..."
+                                    oninput="filterOptions('filterPropietario', this.value)">
+                            </div>
+                            <div class="custom-select-options">
+                                <div class="custom-select-option"
+                                    onclick="selectOption('filterPropietario', '', 'Todos')">Todos</div>
+                                {% for p in propietarios %}
+                                <div class="custom-select-option" data-value="{{ p.id }}"
+                                    onclick="selectOption('filterPropietario', '{{ p.id }}', '{{ p.nombre_apellido|replace("'", "\\'") }}')">
+                                    {{ p.nombre_apellido }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <input type="hidden" id="filterPropietarioValue">
+                    </div>
+                </div>
+
+                <!-- Vehículo Filter -->
+                <div class="form-group">
+                    <label class="form-label">Vehículo</label>
+                    <div class="custom-select-wrapper" id="filterVehiculoWrapper">
+                        <div class="custom-select-trigger" onclick="toggleSelect('filterVehiculo')">
+                            <span class="selected-value placeholder" id="filterVehiculoText">Todos</span>
+                            <svg class="arrow" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor">
+                                <path d="M6 9l6 6 6-6" />
+                            </svg>
+                        </div>
+                        <div class="custom-select-dropdown" id="filterVehiculoDropdown">
+                            <div class="custom-select-search">
+                                <input type="text" placeholder="Buscar..."
+                                    oninput="filterOptions('filterVehiculo', this.value)">
+                            </div>
+                            <div class="custom-select-options">
+                                <div class="custom-select-option" onclick="selectOption('filterVehiculo', '', 'Todos')">
+                                    Todos</div>
+                                {% for v in vehiculos %}
+                                <div class="custom-select-option" data-value="{{ v.id }}"
+                                    onclick="selectOption('filterVehiculo', '{{ v.id }}', '{{ v.placa }} - {{ (v.marca_modelo.marca if v.marca_modelo else "")|replace("'", "\\'") }}')">
+                                    {{ v.placa }} - {{ v.marca_modelo.marca if v.marca_modelo else "" }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <input type="hidden" id="filterVehiculoValue">
+                    </div>
+                </div>
+
+                <!-- Semana Filter -->
+                <div class="form-group">
+                    <label class="form-label">Semana</label>
+                    <div class="custom-select-wrapper" id="filterSemanaWrapper">
+                        <div class="custom-select-trigger" onclick="toggleSelect('filterSemana')">
+                            <span class="selected-value placeholder" id="filterSemanaText">Todas</span>
+                            <svg class="arrow" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor">
+                                <path d="M6 9l6 6 6-6" />
+                            </svg>
+                        </div>
+                        <div class="custom-select-dropdown" id="filterSemanaDropdown">
+                            <div class="custom-select-search">
+                                <input type="text" placeholder="Buscar..."
+                                    oninput="filterOptions('filterSemana', this.value)">
+                            </div>
+                            <div class="custom-select-options">
+                                <div class="custom-select-option" onclick="selectOption('filterSemana', '', 'Todas')">
+                                    Todas</div>
+                                {% for s in semanas %}
+                                <div class="custom-select-option" data-value="{{ s.id }}"
+                                    onclick="selectOption('filterSemana', '{{ s.id }}', 'Semana {{ s.numero_semana }} ({{ s.fecha_inicio }} - {{ s.fecha_fin }})')">
+                                    Semana {{ s.numero_semana }} ({{ s.fecha_inicio }} - {{ s.fecha_fin }})
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <input type="hidden" id="filterSemanaValue">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 2: Dates, Status and Actions -->
+            <div class="filters-row">
+                <!-- Date Range -->
+                <div class="form-group">
+                    <label class="form-label">Fecha Inicio</label>
+                    <input type="date" id="filterFechaInicio" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Fecha Fin</label>
+                    <input type="date" id="filterFechaFin" class="form-input">
+                </div>
+
+                <!-- Estado Filter -->
+                <div class="form-group">
+                    <label class="form-label">Estado</label>
+                    <select id="filterEstado" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="pendiente">Pendiente</option>
+                        <option value="aplicada">Aplicada</option>
+                        <option value="pagada">Pagada</option>
+                    </select>
+                </div>
+
+                <!-- Action Buttons Group -->
+                <div class="form-group actions-group">
+                    <button class="btn btn-secondary btn-icon" onclick="resetFilters()" title="Limpiar Filtros">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <img src="/static/img/clear-filter.svg" onerror="this.style.display='none'" />
+                            <!-- Fallback icon if img fails or just use simple svg path -->
+                            <path
+                                d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6" />
+                        </svg>
+                        Limpiar
+                    </button>
+                    <button class="btn btn-primary btn-icon" onclick="applyFilters()" title="Refrescar">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M23 4v6h-6M1 20v-6h6"></path>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                        </svg>
+                        Refrescar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Table -->
+    <div id="deduccionesContainer">
+        <!-- Content populated by JS -->
+        <div class="empty-state">Seleccione filtros para buscar deducciones</div>
+    </div>
+
+    <!-- Totals Footer (Optional, mostly handled inside container) -->
+</div>
+
+<!-- Modal Create/Edit -->
+<div class="modal-overlay" id="deduccionModal">
+    <div class="modal" style="max-width: 600px;">
+        <div class="modal-header">
+            <h3 class="modal-title" id="modalTitle">Nueva Deducción</h3>
+            <button class="modal-close" onclick="closeModal('deduccionModal')">×</button>
+        </div>
+        <form id="deduccionForm" method="POST" enctype="multipart/form-data">
+            <div class="modal-body">
+                <input type="hidden" name="deduccion_id" id="deduccionId">
+                <input type="hidden" name="borrar_evidencia" id="borrarEvidencia" value="false">
+
+                <div class="form-group">
+                    <label class="form-label required">Vehículo</label>
+                    <!-- Reuse custom select style but for form -->
+                    <div class="custom-select-wrapper" id="formVehiculoWrapper">
+                        <div class="custom-select-trigger" onclick="toggleSelect('formVehiculo')">
+                            <span class="selected-value placeholder" id="formVehiculoText">Seleccionar...</span>
+                            <svg class="arrow" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor">
+                                <path d="M6 9l6 6 6-6" />
+                            </svg>
+                        </div>
+                        <div class="custom-select-dropdown" id="formVehiculoDropdown">
+                            <div class="custom-select-search">
+                                <input type="text" placeholder="Buscar..."
+                                    oninput="filterOptions('formVehiculo', this.value)">
+                            </div>
+                            <div class="custom-select-options">
+                                {% for v in vehiculos %}
+                                <div class="custom-select-option" data-value="{{ v.id }}"
+                                    onclick="selectOption('formVehiculo', '{{ v.id }}', '{{ v.placa }} - {{ v.marca_modelo.marca if v.marca_modelo else "" }}')">
+                                    {{ v.placa }} - {{ v.marca_modelo.marca if v.marca_modelo else "" }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <input type="hidden" name="vehiculo_id" id="formVehiculoValue" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Semana (Opcional)</label>
+                    <select name="semana_id" id="formSemana" class="form-select">
+                        <option value="">Seleccionar...</option>
+                        {% for s in semanas %}
+                        <option value="{{ s.id }}">Semana {{ s.numero_semana }} ({{ s.fecha_inicio }} - {{ s.fecha_fin
+                            }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label required">Concepto</label>
+                    <input type="text" name="concepto" id="formConcepto" class="form-input" required>
+                </div>
+
+                <div class="row">
+                    <div class="col-6">
+                        <div class="form-group">
+                            <label class="form-label required">Monto</label>
+                            <input type="number" step="0.01" name="monto" id="formMonto" class="form-input" required>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-group">
+                            <label class="form-label required">Fecha</label>
+                            <input type="date" name="fecha" id="formFecha" class="form-input" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-6">
+                        <div class="form-group">
+                            <label class="form-label required">Tipo</label>
+                            <select name="tipo_deduccion" id="formTipo" class="form-select" required>
+                                <option value="Mantenimiento">Mantenimiento</option>
+                                <option value="Reparación">Reparación</option>
+                                <option value="Repuesto">Repuesto</option>
+                                <option value="Servicio">Servicio</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-group">
+                            <label class="form-label required">Estado</label>
+                            <select name="estado" id="formEstado" class="form-select" required>
+                                <option value="pendiente">Pendiente</option>
+                                <option value="aplicada">Aplicada</option>
+                                <option value="pagada">Pagada</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Evidencia</label>
+                    <!-- File Upload similar to Contratos -->
+                    <div id="evidenceUploadContainer">
+                        <input type="file" name="evidencia" id="evidenceInput" class="form-input" accept="image/*,.pdf">
+                    </div>
+                    <!-- Existing Evidence Preview -->
+                    <div id="existingEvidenceContainer"
+                        style="display: none; margin-top: 10px; align-items: center; gap: 10px;">
+                        <span id="existingEvidenceName" class="badge badge-info">Archivo adjunto</span>
+                        <button type="button" class="btn btn-sm btn-danger" onclick="removeEvidence()">Eliminar</button>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('deduccionModal')">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal View Evidence -->
+<div class="modal-overlay" id="evidenceModal" onclick="if(event.target === this) closeModal('evidenceModal')">
+    <div class="modal" style="max-width: 800px; max-height: 90vh;">
+        <div class="modal-header">
+            <h3 class="modal-title">Evidencia</h3>
+            <div style="display: flex; gap: 8px;">
+                <a id="evidenceDownloadLink" href="#" download class="btn btn-sm btn-primary">Descargar</a>
+                <button class="modal-close" onclick="closeModal('evidenceModal')">×</button>
+            </div>
+        </div>
+        <div class="modal-body"
+            style="padding: 0; background: var(--bg-secondary); min-height: 400px; display: flex; align-items: center; justify-content: center;">
+            <div id="evidenceContent" style="width: 100%; height: 100%; text-align: center;"></div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Filters Grid */
+    .filters-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        /* 3 columns per row */
+        gap: 1rem;
+        align-items: flex-end;
+    }
+
+    .actions-group {
+        display: flex;
+        gap: 10px;
+        align-items: flex-end;
+    }
+
+    .btn-icon {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        justify-content: center;
+        flex: 1;
+    }
+
+    @media (max-width: 900px) {
+        .filters-row {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Custom Select Styles (Reusing from contratos logic basically) */
+    .custom-select-wrapper {
+        position: relative;
+        user-select: none;
+    }
+
+    .custom-select-trigger {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 12px;
+        height: 38px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    .custom-select-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        z-index: 99999;
+        display: none;
+        max-height: 250px;
+        margin-top: 4px;
+    }
+
+    .custom-select-dropdown.open {
+        display: block;
+    }
+
+    .custom-select-search {
+        padding: 8px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .custom-select-search input {
+        width: 100%;
+        padding: 6px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+    }
+
+    .custom-select-options {
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .custom-select-option {
+        padding: 8px 12px;
+        cursor: pointer;
+    }
+
+    .custom-select-option:hover {
+        background: var(--bg-tertiary);
+    }
+
+    /* Official Document Style */
+    .document-wrapper {
+        background: #525659;
+        /* App background to look like PDF viewer */
+        padding: 40px;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+    }
+
+    .document-page {
+        background: white;
+        width: 297mm;
+        /* A4 Landscape width */
+        min-height: 210mm;
+        /* A4 Landscape height */
+        padding: 20mm;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+        margin-bottom: 30px;
+        font-family: 'Times New Roman', Times, serif;
+        /* Classic document font */
+        color: #000;
+        position: relative;
+    }
+
+    .doc-header {
+        text-align: center;
+        border-bottom: 2px solid #000;
+        padding-bottom: 10px;
+        margin-bottom: 30px;
+    }
+
+    .doc-title {
+        font-size: 24pt;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin: 0;
+    }
+
+    .doc-subtitle {
+        font-size: 12pt;
+        color: #555;
+        margin-top: 5px;
+        font-style: italic;
+    }
+
+    /* Owner Section Styling */
+    .owner-block {
+        margin-bottom: 40px;
+        page-break-inside: avoid;
+    }
+
+    .owner-header-bar {
+        background: #2c3e50;
+        color: white;
+        padding: 10px 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .owner-name-title {
+        font-family: 'Helvetica', 'Arial', sans-serif;
+        font-size: 16pt;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+
+    .owner-total-badge {
+        background: white;
+        color: #2c3e50;
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-weight: bold;
+        font-family: 'Courier New', monospace;
+    }
+
+    /* Vehicle Section Styling */
+    .vehicle-block {
+        margin-left: 15px;
+        padding-left: 15px;
+        border-left: 4px solid #ddd;
+        /* Dynamic color applied inline */
+        margin-bottom: 25px;
+    }
+
+    .vehicle-info-line {
+        font-family: 'Helvetica', 'Arial', sans-serif;
+        font-size: 12pt;
+        font-weight: bold;
+        color: #444;
+        margin-bottom: 10px;
+        padding-bottom: 5px;
+        border-bottom: 1px dotted #ccc;
+    }
+
+    /* Official Table Style */
+    .official-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 10pt;
+        font-family: 'Helvetica', 'Arial', sans-serif;
+    }
+
+    .official-table th {
+        border-bottom: 2px solid #000;
+        text-align: left;
+        padding: 8px 4px;
+        font-weight: bold;
+        text-transform: uppercase;
+        font-size: 9pt;
+    }
+
+    .official-table td {
+        border-bottom: 1px solid #ddd;
+        padding: 8px 4px;
+        vertical-align: top;
+    }
+
+    .official-table tr:last-child td {
+        border-bottom: 1px solid #000;
+    }
+
+    .meta-tag {
+        font-size: 0.75em;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+
+    .meta-trabajo {
+        background: #e2e3e5;
+        color: #383d41;
+    }
+
+    .meta-deduccion {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .amount-cell {
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        text-align: right;
+    }
+
+    .subtotal-line {
+        text-align: right;
+        padding-top: 10px;
+        font-family: 'Helvetica', 'Arial', sans-serif;
+        font-style: italic;
+        font-size: 11pt;
+    }
+</style>
+
+<script>
+    // Custom Select Logic
+    function toggleSelect(id) {
+        // Close others
+        document.querySelectorAll('.custom-select-dropdown').forEach(el => {
+            if (el.id !== id + 'Dropdown') el.classList.remove('open');
+        });
+        const dropdown = document.getElementById(id + 'Dropdown');
+        if (dropdown) {
+            dropdown.classList.toggle('open');
+        }
+    }
+
+    function selectOption(id, value, text) {
+        document.getElementById(id + 'Value').value = value;
+        const textEl = document.getElementById(id + 'Text');
+        if (textEl) {
+            textEl.textContent = text;
+            textEl.classList.remove('placeholder');
+        }
+        document.getElementById(id + 'Dropdown').classList.remove('open');
+    }
+
+    function filterOptions(id, query) {
+        query = query.toLowerCase();
+        const options = document.getElementById(id + 'Dropdown').querySelectorAll('.custom-select-option');
+        options.forEach(opt => {
+            const text = opt.textContent.toLowerCase();
+            if (text.includes(query) || opt.textContent === 'Todos' || opt.textContent === 'Seleccionar...') {
+                opt.style.display = 'block';
+            } else {
+                opt.style.display = 'none';
+            }
+        });
+    }
+
+    // Modal Logic
+    function openCreateModal() {
+        document.getElementById('deduccionForm').reset();
+        document.getElementById('deduccionId').value = '';
+        document.getElementById('modalTitle').textContent = 'Nueva Deducción';
+        document.getElementById('deduccionForm').action = '/deducciones/guardar'; // Default action
+
+        // Reset selects
+        selectOption('formVehiculo', '', 'Seleccionar...');
+        document.getElementById('formVehiculoText').classList.add('placeholder');
+
+        document.getElementById('formSemana').value = "";
+        document.getElementById('existingEvidenceContainer').style.display = 'none';
+        document.getElementById('evidenceInput').style.display = 'block';
+
+        document.getElementById('deduccionModal').classList.add('active');
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).classList.remove('active');
+    }
+
+    // API & Table Logic
+    async function applyFilters() {
+        const params = new URLSearchParams();
+
+        const getVal = (id) => {
+            const el = document.getElementById(id);
+            return el ? el.value : '';
+        }
+
+        const prop = getVal('filterPropietarioValue');
+        const veh = getVal('filterVehiculoValue');
+        const sem = getVal('filterSemanaValue');
+        const fInicio = getVal('filterFechaInicio');
+        const fFin = getVal('filterFechaFin');
+        const estado = getVal('filterEstado');
+
+        if (prop) params.append('propietario_id', prop);
+        if (veh) params.append('vehiculo_id', veh);
+        if (sem) params.append('semana_id', sem);
+        if (fInicio) params.append('fecha_inicio', fInicio);
+        if (fFin) params.append('fecha_fin', fFin);
+        if (estado) params.append('estado', estado);
+
+        try {
+            const res = await fetch(`/deducciones/api/list?${params.toString()}`);
+            if (!res.ok) throw new Error('Network response was not ok');
+
+            const data = await res.json();
+
+            if (data.success) {
+                renderTable(data.data);
+            } else {
+                console.error('API Error:', data.message);
+                document.getElementById('deduccionesContainer').innerHTML = `<div class="empty-state">Error: ${data.message}</div>`;
+            }
+        } catch (e) {
+            console.error('Fetch error:', e);
+            document.getElementById('deduccionesContainer').innerHTML = '<div class="empty-state">Error de conexión al cargar datos.</div>';
+        }
+    }
+
+    // Updated Render Function
+    function renderTable(data) {
+        const container = document.getElementById('deduccionesContainer');
+        container.innerHTML = '';
+
+        if (!data || data.length === 0) {
+            container.innerHTML = `
+                <div style="text-align:center; padding:50px; color:#666;">
+                    <h3>No se encontraron registros</h3>
+                    <p>Intente con otros filtros.</p>
+                </div>`;
+            return;
+        }
+
+        const dateStr = new Date().toLocaleDateString('es-DO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        const colors = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#e67e22'];
+
+        // 1. Flatten all items from all vehicle groups to unify them
+        const allItems = [];
+        data.forEach(group => {
+            const ownerName = group.vehiculo_info.propietario_nombre || 'Sin Propietario';
+            const vehiculoInfo = group.vehiculo_info;
+
+            group.deducciones.forEach(item => {
+                allItems.push({
+                    ...item,
+                    ownerName: ownerName,
+                    vehiculoInfo: vehiculoInfo
+                });
+            });
+        });
+
+        // 2. Group by Week -> Owner
+        const recordsByWeekAndOwner = {};
+
+        allItems.forEach(item => {
+            const weekKey = item.semana || 'Sin Semana';
+            const ownerKey = item.ownerName;
+
+            if (!recordsByWeekAndOwner[weekKey]) {
+                recordsByWeekAndOwner[weekKey] = {};
+            }
+            if (!recordsByWeekAndOwner[weekKey][ownerKey]) {
+                recordsByWeekAndOwner[weekKey][ownerKey] = {
+                    name: ownerKey,
+                    week: weekKey,
+                    items: [],
+                    total: 0
+                };
+            }
+            recordsByWeekAndOwner[weekKey][ownerKey].items.push(item);
+            recordsByWeekAndOwner[weekKey][ownerKey].total += item.monto;
+        });
+
+        // 3. Render Pages (Week -> Owner)
+        const sortedWeeks = Object.keys(recordsByWeekAndOwner).sort().reverse();
+
+        sortedWeeks.forEach(weekKey => {
+            const ownersInWeek = recordsByWeekAndOwner[weekKey];
+
+            Object.values(ownersInWeek).forEach(ownerData => {
+                const docWrapper = document.createElement('div');
+                docWrapper.className = 'document-wrapper';
+                docWrapper.style.paddingBottom = '0';
+                docWrapper.style.minHeight = 'auto';
+                docWrapper.style.marginBottom = '20px';
+
+                const docPage = document.createElement('div');
+                docPage.className = 'document-page';
+
+                // Page Header with Week info
+                docPage.innerHTML = `
+                    <div class="doc-header">
+                        <div class="doc-title">Reporte de Ingresos e Inversiones</div>
+                        <div class="doc-subtitle">${weekKey} - Generado el ${dateStr}</div>
+                    </div>
+                    
+                    <div class="owner-header-bar">
+                        <div class="owner-name-title">${ownerData.name}</div>
+                        <div class="owner-total-badge">Total Semana: $${ownerData.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+                    </div>
+                `;
+
+                // Render items sorted by vehicle
+                const itemsSorted = ownerData.items.sort((a, b) => a.vehiculoInfo.placa.localeCompare(b.vehiculoInfo.placa));
+
+                // Group by Vehicle for display inside the owner page
+                const vehiclesInOwner = {};
+                itemsSorted.forEach(d => {
+                    const vid = d.vehiculoInfo.placa;
+                    if (!vehiclesInOwner[vid]) {
+                        vehiclesInOwner[vid] = {
+                            info: d.vehiculoInfo,
+                            items: [],
+                            total: 0
+                        };
+                    }
+                    vehiclesInOwner[vid].items.push(d);
+                    vehiclesInOwner[vid].total += d.monto;
+                });
+
+                let vehiclesHtml = '';
+                let colorIdx = 0;
+
+                Object.values(vehiclesInOwner).forEach(vGroup => {
+                    const v = vGroup.info;
+                    const lineColor = colors[colorIdx % colors.length];
+                    colorIdx++;
+
+                    let rows = '';
+                    vGroup.items.forEach(d => {
+                        const isTrabajo = d.source === 'trabajo';
+                        const isNomina = d.source === 'nomina';
+
+                        let sourceTag = '';
+                        if (isTrabajo) {
+                            sourceTag = `<span class="meta-tag meta-trabajo">Inversión: ${d.tipo}</span>`;
+                        } else if (isNomina) {
+                            sourceTag = `<span class="meta-tag" style="background:#d4edda; color:#155724;">Ingreso: ${d.tipo}</span>`;
+                        } else {
+                            sourceTag = `<span class="meta-tag meta-deduccion">Deducción: ${d.tipo}</span>`;
+                        }
+
+                        // Actions (Edit/Delete/View)
+                        const evidenceBtn = d.evidencia_path ?
+                            `<button style="border:none; background:none; cursor:pointer;" onclick="viewEvidence('${d.evidencia_path}')" title="Ver Evidencia">📎</button>` : '';
+
+                        let actionBtns = '';
+                        if (!isTrabajo && !isNomina) {
+                            const dStr = JSON.stringify(d).replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+                            const vStr = JSON.stringify(v).replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+
+                            actionBtns = `
+                            <button style="border:none; background:none; cursor:pointer; color:#2980b9;" onclick='editDeduccion(${dStr}, ${vStr})'>✎</button>
+                            <form method="POST" action="/deducciones/${d.id}/eliminar" style="display:inline;" onsubmit="return confirm('¿Eliminar?')">
+                                <button type="submit" style="border:none; background:none; cursor:pointer; color:#c0392b;">✖</button>
+                            </form>
+                         `;
+                        }
+
+                        rows += `
+                        <tr>
+                            <td>${d.fecha}</td>
+                            <td>${d.semana.replace('Semana', 'Sem.')}</td>
+                            <td>
+                                <strong>${d.concepto}</strong><br>
+                                ${sourceTag}
+                            </td>
+                            <td>${d.tipo}</td>
+                            <td>${d.estado}</td>
+                            <td class="amount-cell">$${d.monto.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                            <td style="text-align:center;">
+                                ${evidenceBtn} ${actionBtns}
+                            </td>
+                        </tr>
+                    `;
+                    });
+
+                    vehiclesHtml += `
+                    <div class="vehicle-block" style="border-left-color: ${lineColor}">
+                        <div class="vehicle-info-line">
+                            Vehículo: ${v.placa} <span style="font-weight:normal; color:#666;">(${v.marca} ${v.modelo})</span>
+                        </div>
+                        <table class="official-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:12%">Fecha</th>
+                                    <th style="width:15%">Semana</th>
+                                    <th style="width:30%">Concepto</th>
+                                    <th style="width:15%">Clasificación</th>
+                                    <th style="width:10%">Estado</th>
+                                    <th style="width:10%; text-align:right;">Monto</th>
+                                    <th style="width:8%; text-align:center;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                        <div class="subtotal-line">
+                            Subtotal para ${v.placa}: <strong>$${vGroup.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong>
+                        </div>
+                    </div>
+                    `;
+                });
+
+                docPage.insertAdjacentHTML('beforeend', vehiclesHtml);
+                docWrapper.appendChild(docPage);
+                container.appendChild(docWrapper);
+            });
+        });
+    }
+
+    function editDeduccion(d, v) {
+        document.getElementById('modalTitle').textContent = 'Editar Deducción';
+        document.getElementById('deduccionForm').action = `/deducciones/${d.id}/editar`;
+        document.getElementById('deduccionId').value = d.id;
+
+        // Set values
+        selectOption('formVehiculo', v.id, `${v.placa} - ${v.marca} ${v.modelo}`);
+
+        // Set simple form values from data explicitly
+        document.getElementById('formConcepto').value = d.concepto;
+        document.getElementById('formMonto').value = d.monto;
+        document.getElementById('formFecha').value = d.fecha;
+        document.getElementById('formTipo').value = d.tipo;
+        document.getElementById('formEstado').value = d.estado;
+
+        // Try to set semana if we have it in d (api should return it)
+        if (d.semana_id) {
+            document.getElementById('formSemana').value = d.semana_id;
+        }
+
+        if (d.evidencia_path) {
+            document.getElementById('existingEvidenceContainer').style.display = 'flex';
+            document.getElementById('evidenceInput').style.display = 'none';
+            document.getElementById('borrarEvidencia').value = 'false';
+        } else {
+            document.getElementById('existingEvidenceContainer').style.display = 'none';
+            document.getElementById('evidenceInput').style.display = 'block';
+        }
+
+        document.getElementById('deduccionModal').classList.add('active');
+    }
+
+    function viewEvidence(path) {
+        const modal = document.getElementById('evidenceModal');
+        const content = document.getElementById('evidenceContent');
+        const dlLink = document.getElementById('evidenceDownloadLink');
+
+        content.innerHTML = '';
+        dlLink.href = path;
+
+        const ext = path.split('.').pop().toLowerCase();
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+            content.innerHTML = `<img src="${path}" style="max-width:100%; max-height:100%; object-fit:contain;">`;
+        } else if (ext === 'pdf') {
+            content.innerHTML = `<iframe src="${path}" style="width:100%; height:100%; border:none;"></iframe>`;
+        } else {
+            content.innerHTML = `<div style="padding:40px; color:white;">Archivo no previsualizable. <a href="${path}" style="color:#3498db">Descargar</a></div>`;
+        }
+
+        modal.classList.add('active');
+    }
+
+    function removeEvidence() {
+        if (confirm('¿Eliminar la evidencia actual?')) {
+            document.getElementById('borrarEvidencia').value = 'true';
+            document.getElementById('existingEvidenceContainer').style.display = 'none';
+            document.getElementById('evidenceInput').style.display = 'block';
+        }
+    }
+
+    // Load initial data
+    document.addEventListener('DOMContentLoaded', applyFilters);
+</script>
+{% endblock %}

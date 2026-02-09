@@ -4,7 +4,7 @@
  */
 
 // ============== INITIALIZATION ============== //
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Hide loader after page load
     setTimeout(() => {
         const loader = document.getElementById('loader');
@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function initSidebar() {
     const sidebar = document.getElementById('sidebar');
     const sidebarToggle = document.getElementById('sidebarToggle');
-    
+
     if (!sidebar || !sidebarToggle) return;
 
     // Load saved state
@@ -46,11 +46,11 @@ function initSidebar() {
     // Toggle sidebar
     sidebarToggle.addEventListener('click', () => {
         sidebar.classList.toggle('collapsed');
-        
+
         // Save state
         const isCollapsed = sidebar.classList.contains('collapsed');
         localStorage.setItem('sidebarState', isCollapsed ? 'collapsed' : 'expanded');
-        
+
         // Dispatch event for other components
         window.dispatchEvent(new CustomEvent('sidebarToggle', {
             detail: { collapsed: isCollapsed }
@@ -60,7 +60,7 @@ function initSidebar() {
     // Add active class to current page
     const currentPath = window.location.pathname;
     const navItems = sidebar.querySelectorAll('.nav-item');
-    
+
     navItems.forEach(item => {
         const href = item.getAttribute('href');
         if (href && currentPath.includes(href) && href !== '/') {
@@ -74,7 +74,7 @@ function initMobileMenu() {
     const mobileMenuBtn = document.getElementById('mobileMenuBtn');
     const sidebar = document.getElementById('sidebar');
     const mobileOverlay = document.getElementById('mobileOverlay');
-    
+
     if (!mobileMenuBtn || !sidebar || !mobileOverlay) return;
 
     // Open mobile menu
@@ -119,10 +119,10 @@ function initTheme() {
     themeToggle.addEventListener('click', () => {
         const currentTheme = document.body.getAttribute('data-theme');
         const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-        
+
         document.body.setAttribute('data-theme', newTheme);
         localStorage.setItem('theme', newTheme);
-        
+
         // Animate transition
         document.body.style.transition = 'background-color 0.3s ease, color 0.3s ease';
     });
@@ -132,7 +132,7 @@ function initTheme() {
 function initUserMenu() {
     const userMenu = document.getElementById('userMenu');
     const userMenuBtn = document.getElementById('userMenuBtn');
-    
+
     if (!userMenu || !userMenuBtn) return;
 
     // Toggle user menu
@@ -162,7 +162,7 @@ function initNotifications() {
     const notificationBtn = document.getElementById('notificationBtn');
     const notificationPanel = document.getElementById('notificationPanel');
     const markAllRead = document.getElementById('markAllRead');
-    
+
     if (!notificationBtn || !notificationPanel) return;
 
     // Toggle notification panel
@@ -179,7 +179,7 @@ function initNotifications() {
             unreadItems.forEach(item => {
                 item.classList.remove('unread');
             });
-            
+
             // Update badge
             const badge = notificationBtn.querySelector('.badge');
             if (badge) {
@@ -218,7 +218,7 @@ function initNotifications() {
 // ============== ALERTS ============== //
 function initAlerts() {
     const alerts = document.querySelectorAll('.alert');
-    
+
     alerts.forEach(alert => {
         const closeBtn = alert.querySelector('.alert-close');
         if (closeBtn) {
@@ -282,29 +282,30 @@ function initModals() {
     });
 }
 
-function openModal(modalId) {
-    const modal = document.getElementById(modalId);
+function openModal(modalOrId) {
+    const modal = typeof modalOrId === 'string' ? document.getElementById(modalOrId) : modalOrId;
     if (!modal) return;
-    
+
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
-    
+
     // Focus first input
     const firstInput = modal.querySelector('input, textarea, select');
     if (firstInput) {
         setTimeout(() => firstInput.focus(), 100);
     }
-    
+
     // Dispatch event
     modal.dispatchEvent(new CustomEvent('modalOpened'));
 }
 
-function closeModal(modal) {
+function closeModal(modalOrId) {
+    const modal = typeof modalOrId === 'string' ? document.getElementById(modalOrId) : modalOrId;
     if (!modal) return;
-    
+
     modal.classList.remove('active');
     document.body.style.overflow = '';
-    
+
     // Dispatch event
     modal.dispatchEvent(new CustomEvent('modalClosed'));
 }
@@ -353,30 +354,31 @@ function initOffcanvas() {
 function openOffcanvas(offcanvasId) {
     const offcanvas = document.getElementById(offcanvasId);
     if (!offcanvas) return;
-    
+
     const overlay = offcanvas.previousElementSibling;
-    
+
     offcanvas.classList.add('active');
     if (overlay && overlay.classList.contains('offcanvas-overlay')) {
         overlay.classList.add('active');
     }
     document.body.style.overflow = 'hidden';
-    
+
     // Dispatch event
     offcanvas.dispatchEvent(new CustomEvent('offcanvasOpened'));
 }
 
-function closeOffcanvas(offcanvas) {
+function closeOffcanvas(offcanvasOrId) {
+    const offcanvas = typeof offcanvasOrId === 'string' ? document.getElementById(offcanvasOrId) : offcanvasOrId;
     if (!offcanvas) return;
-    
+
     const overlay = offcanvas.previousElementSibling;
-    
+
     offcanvas.classList.remove('active');
     if (overlay && overlay.classList.contains('offcanvas-overlay')) {
         overlay.classList.remove('active');
     }
     document.body.style.overflow = '';
-    
+
     // Dispatch event
     offcanvas.dispatchEvent(new CustomEvent('offcanvasClosed'));
 }
@@ -455,10 +457,10 @@ function initAccordions() {
         header.addEventListener('click', () => {
             const accordionItem = header.closest('.accordion-item');
             const accordion = accordionItem.closest('.accordion');
-            
+
             // Check if it's a single-open accordion
             const singleOpen = accordion.hasAttribute('data-single-open');
-            
+
             if (singleOpen) {
                 // Close all other items
                 accordion.querySelectorAll('.accordion-item').forEach(item => {
@@ -467,7 +469,7 @@ function initAccordions() {
                     }
                 });
             }
-            
+
             // Toggle current item
             accordionItem.classList.toggle('active');
         });
@@ -479,7 +481,7 @@ function initSwitches() {
     document.querySelectorAll('.switch').forEach(switchEl => {
         switchEl.addEventListener('click', () => {
             switchEl.classList.toggle('active');
-            
+
             // Dispatch event
             const isActive = switchEl.classList.contains('active');
             switchEl.dispatchEvent(new CustomEvent('switchChange', {
@@ -525,7 +527,7 @@ function initForms() {
 function validateForm(form) {
     let isValid = true;
     const requiredInputs = form.querySelectorAll('[required]');
-    
+
     requiredInputs.forEach(input => {
         if (!input.value.trim()) {
             showError(input, 'Este campo es requerido');
@@ -538,19 +540,19 @@ function validateForm(form) {
             }
         }
     });
-    
+
     return isValid;
 }
 
 function showError(input, message) {
     input.classList.add('error');
-    
+
     // Remove existing error
     const existingError = input.parentElement.querySelector('.form-error');
     if (existingError) {
         existingError.remove();
     }
-    
+
     // Add error message
     const error = document.createElement('div');
     error.className = 'form-error';
@@ -579,7 +581,7 @@ function isValidEmail(email) {
 function initTooltips() {
     document.querySelectorAll('[data-tooltip]').forEach(element => {
         const tooltipText = element.getAttribute('data-tooltip');
-        
+
         // Create tooltip element
         const tooltip = document.createElement('div');
         tooltip.className = 'tooltip-text';
@@ -596,7 +598,7 @@ function closeOtherDropdowns(currentElement) {
             el.classList.remove('active');
         }
     });
-    
+
     document.querySelectorAll('.notification-panel.active').forEach(panel => {
         if (panel !== currentElement) {
             panel.classList.remove('active');
@@ -635,10 +637,10 @@ window.AppUtils = {
 // ============== AUTO-SAVE FORM DATA ============== //
 function initAutoSave() {
     const formsWithAutoSave = document.querySelectorAll('[data-autosave]');
-    
+
     formsWithAutoSave.forEach(form => {
         const formId = form.getAttribute('data-autosave');
-        
+
         // Load saved data
         const savedData = localStorage.getItem(`form_${formId}`);
         if (savedData) {
@@ -654,7 +656,7 @@ function initAutoSave() {
                 console.error('Error loading saved form data:', e);
             }
         }
-        
+
         // Save on input
         form.addEventListener('input', debounce(() => {
             const formData = new FormData(form);
@@ -688,7 +690,7 @@ document.addEventListener('keydown', (e) => {
         const toggleBtn = document.getElementById('sidebarToggle');
         if (toggleBtn) toggleBtn.click();
     }
-    
+
     // Ctrl/Cmd + K = Focus search
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();

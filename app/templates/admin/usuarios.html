@@ -9,181 +9,253 @@
 
 {% block content %}
 <style>
-/* Filters Bar */
-.filters-bar {
-    background: var(--bg-elevated);
-    border-radius: var(--radius-lg);
-    padding: 20px 24px;
-    margin-bottom: 24px;
-    box-shadow: var(--neu-shadow-medium);
-}
+    /* Filters Bar */
+    .filters-bar {
+        background: var(--bg-elevated);
+        border-radius: var(--radius-lg);
+        padding: 20px 24px;
+        margin-bottom: 24px;
+        box-shadow: var(--neu-shadow-medium);
+    }
 
-.filters-grid {
-    display: grid;
-    grid-template-columns: 3fr 2fr 2fr auto;
-    gap: 16px;
-    align-items: end;
-}
-
-.filter-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.filter-label {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-secondary);
-}
-
-/* Action Buttons */
-.action-buttons {
-    display: flex;
-    gap: 8px;
-}
-
-.action-btn-small {
-    width: 36px;
-    height: 36px;
-    border-radius: var(--radius-md);
-    background: var(--bg-secondary);
-    box-shadow: var(--neu-shadow-small);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-secondary);
-    transition: all 0.2s;
-    border: none;
-    cursor: pointer;
-}
-
-.action-btn-small:hover {
-    box-shadow: var(--neu-shadow-medium);
-    transform: translateY(-2px);
-}
-
-.action-btn-small.edit:hover {
-    color: var(--info);
-}
-
-.action-btn-small.reset:hover {
-    color: var(--warning);
-}
-
-.action-btn-small.delete:hover {
-    color: var(--danger);
-}
-
-/* User Avatar in Table */
-.user-avatar-small {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--primary), var(--primary-light));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-inverse);
-    font-weight: 700;
-    font-size: 13px;
-    box-shadow: var(--shadow-md);
-}
-
-.user-info-cell {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.user-name-info {
-    display: flex;
-    flex-direction: column;
-}
-
-.user-name {
-    font-weight: 600;
-    color: var(--text-primary);
-    font-size: 14px;
-}
-
-.user-username {
-    font-size: 12px;
-    color: var(--text-tertiary);
-}
-
-/* Pagination */
-.pagination {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-}
-
-.pagination-item {
-    min-width: 36px;
-    height: 36px;
-    padding: 0 12px;
-    border-radius: var(--radius-md);
-    background: var(--bg-secondary);
-    box-shadow: var(--neu-shadow-small);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-secondary);
-    font-size: 13px;
-    font-weight: 600;
-    transition: all 0.2s;
-    border: none;
-    cursor: pointer;
-    text-decoration: none;
-}
-
-.pagination-item:hover:not(:disabled):not(.active) {
-    box-shadow: var(--neu-shadow-medium);
-    transform: translateY(-2px);
-    color: var(--primary);
-}
-
-.pagination-item.active {
-    background: var(--primary);
-    color: var(--text-inverse);
-    box-shadow: var(--neu-shadow-medium);
-}
-
-.pagination-item:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-
-/* Responsive */
-@media (max-width: 1024px) {
     .filters-grid {
-        grid-template-columns: 1fr 1fr;
+        display: grid;
+        grid-template-columns: 3fr 2fr 2fr auto;
+        gap: 16px;
+        align-items: end;
     }
-}
 
-@media (max-width: 900px) {
-    .modal-body > div[style*="grid-template-columns: 1fr 1fr 1fr"] {
-        grid-template-columns: 1fr 1fr !important;
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
     }
-}
 
-@media (max-width: 768px) {    
-    .filters-grid {
-        grid-template-columns: 1fr;
+    .filter-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-secondary);
     }
-    
+
+    /* Action Buttons */
     .action-buttons {
-        width: 100%;
-        justify-content: center;
+        display: flex;
+        gap: 8px;
     }
-}
 
-@media (max-width: 600px) {
-    .modal-body > div[style*="grid-template-columns"] {
-        grid-template-columns: 1fr !important;
+    .action-btn-small {
+        width: 36px;
+        height: 36px;
+        border-radius: var(--radius-md);
+        background: var(--bg-secondary);
+        box-shadow: var(--neu-shadow-small);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-secondary);
+        transition: all 0.2s;
+        border: none;
+        cursor: pointer;
     }
-}
+
+    .action-btn-small:hover {
+        box-shadow: var(--neu-shadow-medium);
+        transform: translateY(-2px);
+    }
+
+    .action-btn-small.edit:hover {
+        color: var(--info);
+    }
+
+    .action-btn-small.reset:hover {
+        color: var(--warning);
+    }
+
+    .action-btn-small.delete:hover {
+        color: var(--danger);
+    }
+
+    /* User Avatar in Table */
+    .user-avatar-small {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-inverse);
+        font-weight: 700;
+        font-size: 13px;
+        box-shadow: var(--shadow-md);
+    }
+
+    .user-info-cell {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .user-name-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .user-name {
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 14px;
+    }
+
+    .user-username {
+        font-size: 12px;
+        color: var(--text-tertiary);
+    }
+
+    /* Pagination */
+    .pagination {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+    }
+
+    .pagination-item {
+        min-width: 36px;
+        height: 36px;
+        padding: 0 12px;
+        border-radius: var(--radius-md);
+        background: var(--bg-secondary);
+        box-shadow: var(--neu-shadow-small);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-secondary);
+        font-size: 13px;
+        font-weight: 600;
+        transition: all 0.2s;
+        border: none;
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+    .pagination-item:hover:not(:disabled):not(.active) {
+        box-shadow: var(--neu-shadow-medium);
+        transform: translateY(-2px);
+        color: var(--primary);
+    }
+
+    .pagination-item.active {
+        background: var(--primary);
+        color: var(--text-inverse);
+        box-shadow: var(--neu-shadow-medium);
+    }
+
+    .pagination-item:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+        .filters-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+
+    @media (max-width: 900px) {
+        .modal-body>div[style*="grid-template-columns: 1fr 1fr 1fr"] {
+            grid-template-columns: 1fr 1fr !important;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .filters-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .action-buttons {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .modal-body>div[style*="grid-template-columns"] {
+            grid-template-columns: 1fr !important;
+        }
+    }
+
+    /* Custom Select Styles */
+    .custom-select-wrapper {
+        position: relative;
+        user-select: none;
+    }
+
+    .custom-select-trigger {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 12px;
+        height: 38px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        font-size: 14px;
+        box-shadow: var(--neu-shadow-small);
+    }
+
+    .custom-select-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        z-index: 99999;
+        display: none;
+        max-height: 250px;
+        margin-top: 4px;
+    }
+
+    .custom-select-dropdown.open {
+        display: block;
+    }
+
+    .custom-select-search {
+        padding: 8px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .custom-select-search input {
+        width: 100%;
+        padding: 6px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+    }
+
+    .custom-select-options {
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .custom-select-option {
+        padding: 8px 12px;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    .custom-select-option:hover {
+        background: var(--bg-tertiary);
+    }
+
+    .selected-value.placeholder {
+        color: var(--text-tertiary);
+    }
 </style>
 
 <!-- Filters Bar -->
@@ -191,50 +263,91 @@
     <div class="filters-grid">
         <div class="filter-group">
             <label class="filter-label">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    style="margin-right: 6px;">
                     <circle cx="11" cy="11" r="8"></circle>
                     <path d="m21 21-4.35-4.35"></path>
                 </svg>
                 Buscar
             </label>
             <div class="input-group">
-                <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2">
                     <circle cx="11" cy="11" r="8"></circle>
                     <path d="m21 21-4.35-4.35"></path>
                 </svg>
-                <input type="text" class="form-input" id="searchInput" placeholder="Buscar por nombre, usuario o email...">
+                <input type="text" class="form-input" id="searchInput"
+                    placeholder="Buscar por nombre, usuario o email...">
             </div>
         </div>
-        
+
         <div class="filter-group">
             <label class="filter-label">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    style="margin-right: 6px;">
                     <circle cx="12" cy="12" r="3"></circle>
                     <path d="M12 1v6m0 6v6"></path>
                 </svg>
                 Rol
             </label>
-            <select class="form-select" id="roleFilter">
-                <option value="">Todos los roles</option>
-                <option value="admin">Administrador</option>
-                <option value="user">Usuario</option>
-            </select>
+            <div class="custom-select-wrapper" id="roleFilterWrapper">
+                <div class="custom-select-trigger" onclick="toggleSelect('roleFilter')">
+                    <span class="selected-value placeholder" id="roleFilterText">Todos los roles</span>
+                    <svg class="arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M6 9l6 6 6-6" />
+                    </svg>
+                </div>
+                <div class="custom-select-dropdown" id="roleFilterDropdown">
+                    <div class="custom-select-search">
+                        <input type="text" placeholder="Buscar..." oninput="filterOptions('roleFilter', this.value)">
+                    </div>
+                    <div class="custom-select-options">
+                        <div class="custom-select-option" onclick="selectOption('roleFilter', '', 'Todos los roles')">
+                            Todos los roles</div>
+                        <div class="custom-select-option" data-value="admin"
+                            onclick="selectOption('roleFilter', 'admin', 'Administrador')">Administrador</div>
+                        <div class="custom-select-option" data-value="user"
+                            onclick="selectOption('roleFilter', 'user', 'Usuario')">Usuario</div>
+                    </div>
+                </div>
+                <input type="hidden" id="roleFilterValue">
+            </div>
         </div>
-        
+
+
         <div class="filter-group">
             <label class="filter-label">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    style="margin-right: 6px;">
                     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
                 </svg>
                 Estado
             </label>
-            <select class="form-select" id="statusFilter">
-                <option value="">Todos los estados</option>
-                <option value="activo">Activo</option>
-                <option value="inactivo">Inactivo</option>
-            </select>
+            <div class="custom-select-wrapper" id="statusFilterWrapper">
+                <div class="custom-select-trigger" onclick="toggleSelect('statusFilter')">
+                    <span class="selected-value placeholder" id="statusFilterText">Todos los estados</span>
+                    <svg class="arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M6 9l6 6 6-6" />
+                    </svg>
+                </div>
+                <div class="custom-select-dropdown" id="statusFilterDropdown">
+                    <div class="custom-select-search">
+                        <input type="text" placeholder="Buscar..." oninput="filterOptions('statusFilter', this.value)">
+                    </div>
+                    <div class="custom-select-options">
+                        <div class="custom-select-option"
+                            onclick="selectOption('statusFilter', '', 'Todos los estados')">Todos los estados</div>
+                        <div class="custom-select-option" data-value="activo"
+                            onclick="selectOption('statusFilter', 'activo', 'Activo')">Activo</div>
+                        <div class="custom-select-option" data-value="inactivo"
+                            onclick="selectOption('statusFilter', 'inactivo', 'Inactivo')">Inactivo</div>
+                    </div>
+                </div>
+                <input type="hidden" id="statusFilterValue">
+            </div>
         </div>
-        
+
+
         <div class="filter-group">
             <button class="btn btn-secondary" id="clearFilters" style="margin-top: 24px;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -253,7 +366,8 @@
     <div class="table-header">
         <div>
             <h2 class="table-title">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    style="margin-right: 8px;">
                     <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                     <circle cx="8.5" cy="7" r="4"></circle>
                     <polyline points="17 11 19 13 23 9"></polyline>
@@ -282,14 +396,15 @@
             </button>
         </div>
     </div>
-    
+
     <div class="table-wrapper">
         <table class="table" id="usersTable">
             <thead>
                 <tr>
                     <th style="width: 60px;">
                         <div style="display: flex; align-items: center; gap: 6px;">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
                                 <line x1="8" y1="6" x2="21" y2="6"></line>
                                 <line x1="8" y1="12" x2="21" y2="12"></line>
                                 <line x1="8" y1="18" x2="21" y2="18"></line>
@@ -302,7 +417,8 @@
                     </th>
                     <th>
                         <div style="display: flex; align-items: center; gap: 6px;">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                                 <circle cx="12" cy="7" r="4"></circle>
                             </svg>
@@ -311,8 +427,10 @@
                     </th>
                     <th>
                         <div style="display: flex; align-items: center; gap: 6px;">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z">
+                                </path>
                                 <polyline points="22,6 12,13 2,6"></polyline>
                             </svg>
                             Email
@@ -320,7 +438,8 @@
                     </th>
                     <th>
                         <div style="display: flex; align-items: center; gap: 6px;">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
                                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                                 <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                             </svg>
@@ -329,16 +448,22 @@
                     </th>
                     <th>
                         <div style="display: flex; align-items: center; gap: 6px;">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
                                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
                             </svg>
                             Estado
                         </div>
                     </th>
                     <th>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-calendar2-week" viewBox="0 0 16 16">
-                            <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M2 2a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z"></path>
-                            <path d="M2.5 4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5H3a.5.5 0 0 1-.5-.5zM11 7.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-5 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5z"></path>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                            class="bi bi-calendar2-week" viewBox="0 0 16 16">
+                            <path
+                                d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M2 2a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z">
+                            </path>
+                            <path
+                                d="M2.5 4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5H3a.5.5 0 0 1-.5-.5zM11 7.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-5 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5z">
+                            </path>
                         </svg>
                         Fecha Creación
                     </th>
@@ -347,7 +472,8 @@
             </thead>
             <tbody id="tableBody">
                 {% for usuario in usuarios.items %}
-                <tr data-user-id="{{ usuario.id }}" data-role="{{ usuario.rol }}" data-status="{{ 'activo' if usuario.activo else 'inactivo' }}" 
+                <tr data-user-id="{{ usuario.id }}" data-role="{{ usuario.rol }}"
+                    data-status="{{ 'activo' if usuario.activo else 'inactivo' }}"
                     data-search="{{ usuario.nombre|lower }} {{ usuario.apellido|lower }} {{ usuario.username|lower }} {{ usuario.email|lower }}">
                     <td>
                         <span class="badge badge-primary">#{{ usuario.id }}</span>
@@ -367,7 +493,8 @@
                     <td>
                         {% if usuario.rol == 'admin' %}
                         <span class="badge badge-danger">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" style="margin-right: 4px;">
                                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                                 <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                             </svg>
@@ -375,7 +502,8 @@
                         </span>
                         {% else %}
                         <span class="badge badge-primary">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" style="margin-right: 4px;">
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                                 <circle cx="12" cy="7" r="4"></circle>
                             </svg>
@@ -386,14 +514,16 @@
                     <td>
                         {% if usuario.activo %}
                         <span class="badge badge-success">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" style="margin-right: 4px;">
                                 <polyline points="20 6 9 17 4 12"></polyline>
                             </svg>
                             Activo
                         </span>
                         {% else %}
                         <span class="badge badge-secondary">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" style="margin-right: 4px;">
                                 <circle cx="12" cy="12" r="10"></circle>
                                 <line x1="15" y1="9" x2="9" y2="15"></line>
                                 <line x1="9" y1="9" x2="15" y2="15"></line>
@@ -412,38 +542,47 @@
                     </td>
                     <td>
                         <div class="action-buttons" style="justify-content: center;">
-                            <button class="action-btn-small edit" 
-                                    onclick="editUser({{ usuario.id }}, '{{ usuario.nombre }}', '{{ usuario.apellido }}', '{{ usuario.username }}', '{{ usuario.email }}', '{{ usuario.telefono or '' }}', '{{ usuario.rol }}', {{ 'true' if usuario.activo else 'false' }})"
-                                    title="Editar usuario">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <button class="action-btn-small edit"
+                                onclick="editUser({{ usuario.id }}, '{{ usuario.nombre }}', '{{ usuario.apellido }}', '{{ usuario.username }}', '{{ usuario.email }}', '{{ usuario.telefono or '' }}', '{{ usuario.rol }}', {{ 'true' if usuario.activo else 'false' }})"
+                                title="Editar usuario">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
                                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                                 </svg>
                             </button>
-                            <button class="action-btn-small reset" 
-                                    onclick="resetPassword({{ usuario.id }}, '{{ usuario.username }}')"
-                                    title="Resetear contraseña">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <button class="action-btn-small reset"
+                                onclick="resetPassword({{ usuario.id }}, '{{ usuario.username }}')"
+                                title="Resetear contraseña">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
                                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                                     <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
                                 </svg>
                             </button>
                             {% if usuario.id != current_user.id %}
-                            <button class="action-btn-small delete" 
-                                    onclick="deleteUser({{ usuario.id }}, '{{ usuario.username }}')"
-                                    title="Eliminar usuario">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <button class="action-btn-small delete"
+                                onclick="deleteUser({{ usuario.id }}, '{{ usuario.username }}')"
+                                title="Eliminar usuario">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
                                     <polyline points="3 6 5 6 21 6"></polyline>
-                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    <path
+                                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                    </path>
                                     <line x1="10" y1="11" x2="10" y2="17"></line>
                                     <line x1="14" y1="11" x2="14" y2="17"></line>
                                 </svg>
                             </button>
                             {% else %}
-                            <button class="action-btn-small" disabled title="No puedes eliminar tu propio usuario" style="opacity: 0.3; cursor: not-allowed;">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <button class="action-btn-small" disabled title="No puedes eliminar tu propio usuario"
+                                style="opacity: 0.3; cursor: not-allowed;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
                                     <polyline points="3 6 5 6 21 6"></polyline>
-                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    <path
+                                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                    </path>
                                 </svg>
                             </button>
                             {% endif %}
@@ -454,7 +593,7 @@
             </tbody>
         </table>
     </div>
-    
+
     <!-- Empty State -->
     <div id="emptyState" class="empty-state" style="display: none;">
         <div class="empty-icon">
@@ -466,12 +605,13 @@
         <div class="empty-title">No se encontraron usuarios</div>
         <div class="empty-text">No hay usuarios que coincidan con los filtros aplicados</div>
     </div>
-    
+
     <div class="table-footer">
         <span style="font-size: 13px; color: var(--text-tertiary);">
-            Mostrando <strong id="showingCount">{{ usuarios.items|length }}</strong> de <strong id="totalCountFooter">{{ usuarios.total }}</strong> usuarios
+            Mostrando <strong id="showingCount">{{ usuarios.items|length }}</strong> de <strong id="totalCountFooter">{{
+                usuarios.total }}</strong> usuarios
         </span>
-        
+
         <div class="pagination" id="paginationContainer">
             <!-- Populated by JavaScript -->
         </div>
@@ -488,49 +628,59 @@
         <form id="userForm" method="POST" action="{{ url_for('admin.crear_usuario') }}">
             <div class="modal-body">
                 <input type="hidden" id="userId" name="user_id">
-                
+
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px;">
                     <div class="form-group">
                         <label class="form-label required">Nombre</label>
                         <input type="text" class="form-input" id="nombre" name="nombre" placeholder="Ej: Juan" required>
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label required">Apellido</label>
-                        <input type="text" class="form-input" id="apellido" name="apellido" placeholder="Ej: Pérez" required>
+                        <input type="text" class="form-input" id="apellido" name="apellido" placeholder="Ej: Pérez"
+                            required>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label required">Usuario</label>
                         <div class="input-group">
-                            <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2">
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                                 <circle cx="12" cy="7" r="4"></circle>
                             </svg>
-                            <input type="text" class="form-input" id="username" name="username" placeholder="usuario123" required>
+                            <input type="text" class="form-input" id="username" name="username" placeholder="usuario123"
+                                required>
                         </div>
                     </div>
-                </div>  
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px;"> 
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px;">
                     <div class="form-group">
                         <label class="form-label required">Email</label>
                         <div class="input-group">
-                            <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                            <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z">
+                                </path>
                                 <polyline points="22,6 12,13 2,6"></polyline>
                             </svg>
-                            <input type="email" class="form-input" id="email" name="email" placeholder="correo@ejemplo.com" required>
+                            <input type="email" class="form-input" id="email" name="email"
+                                placeholder="correo@ejemplo.com" required>
                         </div>
                     </div>
-               
-                    <div class="form-group"> 
+
+                    <div class="form-group">
                         <label class="form-label">Teléfono</label>
                         <div class="input-group">
-                            <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                            <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2">
+                                <path
+                                    d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
+                                </path>
                             </svg>
-                            <input type="tel" class="form-input" id="telefono" name="telefono" placeholder="(809) 555-1234">
+                            <input type="tel" class="form-input" id="telefono" name="telefono"
+                                placeholder="(809) 555-1234">
                         </div>
                     </div>
 
@@ -541,17 +691,19 @@
                             <option value="admin">Administrador</option>
                         </select>
                     </div>
-                 </div>
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;"> 
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
                     <div class="form-group">
                         <label class="form-label required" id="passwordLabel">Contraseña</label>
                         <div class="input-group">
-                            <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2">
                                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                                 <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                             </svg>
-                            <input type="password" class="form-input" id="password" name="password" placeholder="••••••••" required>
+                            <input type="password" class="form-input" id="password" name="password"
+                                placeholder="••••••••" required>
                         </div>
                         <p class="form-help">Mínimo 6 caracteres</p>
                     </div>
@@ -570,12 +722,15 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-modal-close>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-square" viewBox="0 0 16 16">
-                        <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"/>
-                        <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                        class="bi bi-x-square" viewBox="0 0 16 16">
+                        <path
+                            d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z" />
+                        <path
+                            d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708" />
                     </svg>
                     Cancelar
                 </button>
@@ -603,25 +758,30 @@
                 <p style="color: var(--text-secondary); margin-bottom: 20px;">
                     Ingresa una nueva contraseña para el usuario <strong id="resetUsername"></strong>
                 </p>
-                
+
                 <div class="form-group">
                     <label class="form-label required">Nueva Contraseña</label>
                     <div class="input-group">
-                        <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
                             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                             <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                         </svg>
-                        <input type="password" class="form-input" id="newPassword" name="new_password" placeholder="••••••••" required>
+                        <input type="password" class="form-input" id="newPassword" name="new_password"
+                            placeholder="••••••••" required>
                     </div>
                     <p class="form-help">Mínimo 6 caracteres</p>
                 </div>
             </div>
-            
+
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-modal-close>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-square" viewBox="0 0 16 16">
-                        <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"/>
-                        <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                        class="bi bi-x-square" viewBox="0 0 16 16">
+                        <path
+                            d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z" />
+                        <path
+                            d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708" />
                     </svg>
                     Cancelar
                 </button>
@@ -648,9 +808,13 @@
             <div class="modal-body">
                 <input type="hidden" id="deleteUserId" name="user_id">
                 <div style="text-align: center; margin-bottom: 20px;">
-                    <div style="width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 50%; background: rgba(245, 101, 101, 0.1); display: flex; align-items: center; justify-content: center;">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2">
-                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <div
+                        style="width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 50%; background: rgba(245, 101, 101, 0.1); display: flex; align-items: center; justify-content: center;">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--danger)"
+                            stroke-width="2">
+                            <path
+                                d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
+                            </path>
                             <line x1="12" y1="9" x2="12" y2="13"></line>
                             <line x1="12" y1="17" x2="12.01" y2="17"></line>
                         </svg>
@@ -659,16 +823,20 @@
                         ¿Estás seguro de eliminar este usuario?
                     </p>
                     <p style="font-size: 14px; color: var(--text-secondary);">
-                        El usuario <strong id="deleteUsername"></strong> será eliminado permanentemente. Esta acción no se puede deshacer.
+                        El usuario <strong id="deleteUsername"></strong> será eliminado permanentemente. Esta acción no
+                        se puede deshacer.
                     </p>
                 </div>
             </div>
-            
+
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-modal-close>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-square" viewBox="0 0 16 16">
-                        <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"/>
-                        <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                        class="bi bi-x-square" viewBox="0 0 16 16">
+                        <path
+                            d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z" />
+                        <path
+                            d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708" />
                     </svg>
                     Cancelar
                 </button>
@@ -685,337 +853,456 @@
 </div>
 
 <script>
-// ============== GLOBAL STATE ============== //
-let currentPage = 1;
-const itemsPerPage = 10;
-let allRows = [];
-let filteredRows = [];
+    // ============== GLOBAL STATE ============== //
+    let currentPage = 1;
+    const itemsPerPage = 10;
+    let allRows = [];
+    let filteredRows = [];
 
-// ============== INITIALIZATION ============== //
-document.addEventListener('DOMContentLoaded', () => {
-    allRows = Array.from(document.getElementById('tableBody').querySelectorAll('tr'));
-    filteredRows = [...allRows];
-    initializeEventListeners();
-    renderPagination();
-});
-
-function initializeEventListeners() {
-    // Filters
-    document.getElementById('searchInput').addEventListener('input', debounce(applyFilters, 300));
-    document.getElementById('roleFilter').addEventListener('change', applyFilters);
-    document.getElementById('statusFilter').addEventListener('change', applyFilters);
-    document.getElementById('clearFilters').addEventListener('click', clearFilters);
-    
-    // Switch toggle
-    document.getElementById('activoSwitch').addEventListener('click', toggleSwitch);
-    
-    // Auto-generate username
-    document.getElementById('nombre').addEventListener('input', generateUsername);
-    document.getElementById('apellido').addEventListener('input', generateUsername);
-    
-    // Format phone number
-    document.getElementById('telefono').addEventListener('input', formatPhoneNumber);
-}
-
-// ============== FILTERING ============== //
-function applyFilters() {
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-    const roleValue = document.getElementById('roleFilter').value;
-    const statusValue = document.getElementById('statusFilter').value;
-    
-    filteredRows = allRows.filter(row => {
-        const searchData = row.dataset.search;
-        const role = row.dataset.role;
-        const status = row.dataset.status;
-        
-        const matchesSearch = !searchTerm || searchData.includes(searchTerm);
-        const matchesRole = !roleValue || role === roleValue;
-        const matchesStatus = !statusValue || status === statusValue;
-        
-        return matchesSearch && matchesRole && matchesStatus;
+    // ============== INITIALIZATION ============== //
+    document.addEventListener('DOMContentLoaded', () => {
+        allRows = Array.from(document.getElementById('tableBody').querySelectorAll('tr'));
+        filteredRows = [...allRows];
+        initializeEventListeners();
+        renderPagination();
     });
-    
-    currentPage = 1;
-    renderTable();
-    renderPagination();
-}
 
-function clearFilters() {
-    document.getElementById('searchInput').value = '';
-    document.getElementById('roleFilter').value = '';
-    document.getElementById('statusFilter').value = '';
-    applyFilters();
-}
+    function initializeEventListeners() {
+        // Filters
+        document.getElementById('searchInput').addEventListener('input', debounce(applyFilters, 300));
+        // Remove old listeners
+        // document.getElementById('roleFilter').addEventListener('change', applyFilters);
+        // document.getElementById('statusFilter').addEventListener('change', applyFilters);
+        document.getElementById('clearFilters').addEventListener('click', clearFilters);
 
-// ============== TABLE RENDERING ============== //
-function renderTable() {
-    const tbody = document.getElementById('tableBody');
-    const emptyState = document.getElementById('emptyState');
-    const tableWrapper = document.querySelector('.table-wrapper');
-    
-    // Hide all rows
-    allRows.forEach(row => row.style.display = 'none');
-    
-    const start = (currentPage - 1) * itemsPerPage;
-    const end = start + itemsPerPage;
-    const pageRows = filteredRows.slice(start, end);
-    
-    if (pageRows.length === 0) {
-        emptyState.style.display = 'block';
-        tableWrapper.style.display = 'none';
-    } else {
-        emptyState.style.display = 'none';
-        tableWrapper.style.display = 'block';
-        pageRows.forEach(row => row.style.display = '');
+        // Close custom selects when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.custom-select-wrapper')) {
+                document.querySelectorAll('.custom-select-dropdown').forEach(el => el.classList.remove('open'));
+            }
+        });
+
+        // Switch toggle
+        document.getElementById('activoSwitch').addEventListener('click', toggleSwitch);
+
+        // Auto-generate username
+        document.getElementById('nombre').addEventListener('input', generateUsername);
+        document.getElementById('apellido').addEventListener('input', generateUsername);
+
+        // Format phone number
+        document.getElementById('telefono').addEventListener('input', formatPhoneNumber);
     }
-    
-    updateCounters();
-}
 
-function updateCounters() {
-    const totalCount = allRows.length;
-    const filteredCount = filteredRows.length;
-    const showingStart = filteredCount === 0 ? 0 : ((currentPage - 1) * itemsPerPage) + 1;
-    const showingEnd = Math.min(currentPage * itemsPerPage, filteredCount);
-    
-    document.getElementById('totalCount').textContent = totalCount;
-    document.getElementById('totalCountFooter').textContent = filteredCount;
-    document.getElementById('showingCount').textContent = filteredCount === 0 ? 0 : showingEnd;
-}
+    // ============== CUSTOM SELECT LOGIC ============== //
+    function toggleSelect(id) {
+        const dropdown = document.getElementById(id + 'Dropdown');
+        const isOpen = dropdown.classList.contains('open');
 
-// ============== PAGINATION ============== //
-function renderPagination() {
-    const container = document.getElementById('paginationContainer');
-    const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
-    
-    if (totalPages <= 1) {
-        container.innerHTML = '';
-        return;
+        // Close all other selects
+        document.querySelectorAll('.custom-select-dropdown').forEach(el => el.classList.remove('open'));
+
+        if (!isOpen) {
+            dropdown.classList.add('open');
+            const searchInput = dropdown.querySelector('input');
+            if (searchInput) {
+                searchInput.value = '';
+                filterOptions(id, '');
+                setTimeout(() => searchInput.focus(), 100);
+            }
+        }
     }
-    
-    let html = '';
-    
-    // Previous button
-    html += `
+
+    function selectOption(id, value, text) {
+        const wrapper = document.getElementById(id + 'Wrapper');
+        const input = document.getElementById(id + 'Value');
+        const textSpan = document.getElementById(id + 'Text');
+        const dropdown = document.getElementById(id + 'Dropdown');
+
+        input.value = value;
+        textSpan.textContent = text;
+
+        if (value === '') {
+            textSpan.classList.add('placeholder');
+        } else {
+            textSpan.classList.remove('placeholder');
+        }
+
+        dropdown.classList.remove('open');
+        applyFilters();
+    }
+
+    function filterOptions(id, query) {
+        query = query.toLowerCase();
+        const options = document.getElementById(id + 'Dropdown').querySelectorAll('.custom-select-option');
+        options.forEach(opt => {
+            const text = opt.textContent.toLowerCase();
+            if (text.includes(query)) {
+                opt.style.display = 'block';
+            } else {
+                opt.style.display = 'none';
+            }
+        });
+    }
+
+
+    // ============== FILTERING ============== //
+    function applyFilters() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const roleValue = document.getElementById('roleFilterValue').value;
+        const statusValue = document.getElementById('statusFilterValue').value;
+
+        filteredRows = allRows.filter(row => {
+            const searchData = (row.dataset.search || '').toLowerCase();
+            const role = row.dataset.role;
+            const status = row.dataset.status;
+
+            const matchesSearch = !searchTerm || searchData.includes(searchTerm);
+            const matchesRole = !roleValue || role === roleValue;
+            const matchesStatus = !statusValue || status === statusValue;
+
+            return matchesSearch && matchesRole && matchesStatus;
+        });
+
+        currentPage = 1;
+        renderTable();
+        renderPagination();
+    }
+
+
+    function clearFilters() {
+        document.getElementById('searchInput').value = '';
+
+        // Reset Role Select
+        document.getElementById('roleFilterValue').value = '';
+        document.getElementById('roleFilterText').textContent = 'Todos los roles';
+        document.getElementById('roleFilterText').classList.add('placeholder');
+
+        // Reset Status Select
+        document.getElementById('statusFilterValue').value = '';
+        document.getElementById('statusFilterText').textContent = 'Todos los estados';
+        document.getElementById('statusFilterText').classList.add('placeholder');
+
+        applyFilters();
+    }
+
+
+    // ============== TABLE RENDERING ============== //
+    function renderTable() {
+        const tbody = document.getElementById('tableBody');
+        const emptyState = document.getElementById('emptyState');
+        const tableWrapper = document.querySelector('.table-wrapper');
+
+        // Hide all rows
+        allRows.forEach(row => row.style.display = 'none');
+
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        const pageRows = filteredRows.slice(start, end);
+
+        if (pageRows.length === 0) {
+            emptyState.style.display = 'block';
+            tableWrapper.style.display = 'none';
+        } else {
+            emptyState.style.display = 'none';
+            tableWrapper.style.display = 'block';
+            pageRows.forEach(row => row.style.display = '');
+        }
+
+        updateCounters();
+    }
+
+    function updateCounters() {
+        const totalCount = allRows.length;
+        const filteredCount = filteredRows.length;
+        const showingStart = filteredCount === 0 ? 0 : ((currentPage - 1) * itemsPerPage) + 1;
+        const showingEnd = Math.min(currentPage * itemsPerPage, filteredCount);
+
+        document.getElementById('totalCount').textContent = totalCount;
+        document.getElementById('totalCountFooter').textContent = filteredCount;
+        document.getElementById('showingCount').textContent = filteredCount === 0 ? 0 : showingEnd;
+    }
+
+    // ============== PAGINATION ============== //
+    function renderPagination() {
+        const container = document.getElementById('paginationContainer');
+        const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
+
+        if (totalPages <= 1) {
+            container.innerHTML = '';
+            return;
+        }
+
+        let html = '';
+
+        // Previous button
+        html += `
         <button class="pagination-item" ${currentPage === 1 ? 'disabled' : ''} onclick="changePage(${currentPage - 1})">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="15 18 9 12 15 6"></polyline>
             </svg>
         </button>
     `;
-    
-    // Page numbers
-    const range = getPageRange(currentPage, totalPages);
-    range.forEach(page => {
-        if (page === '...') {
-            html += `<span class="pagination-item" style="cursor: default;">...</span>`;
-        } else {
-            html += `
+
+        // Page numbers
+        const range = getPageRange(currentPage, totalPages);
+        range.forEach(page => {
+            if (page === '...') {
+                html += `<span class="pagination-item" style="cursor: default;">...</span>`;
+            } else {
+                html += `
                 <button class="pagination-item ${page === currentPage ? 'active' : ''}" onclick="changePage(${page})">
                     ${page}
                 </button>
             `;
-        }
-    });
-    
-    // Next button
-    html += `
+            }
+        });
+
+        // Next button
+        html += `
         <button class="pagination-item" ${currentPage === totalPages ? 'disabled' : ''} onclick="changePage(${currentPage + 1})">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="9 18 15 12 9 6"></polyline>
             </svg>
         </button>
     `;
-    
-    container.innerHTML = html;
-}
 
-function getPageRange(current, total) {
-    const range = [];
-    const delta = 2;
-    const left = current - delta;
-    const right = current + delta + 1;
-    let last = 0;
-    
-    for (let i = 1; i <= total; i++) {
-        if (i === 1 || i === total || (i >= left && i < right)) {
-            if (last && i - last !== 1) {
-                range.push('...');
+        container.innerHTML = html;
+    }
+
+    function getPageRange(current, total) {
+        const range = [];
+        const delta = 2;
+        const left = current - delta;
+        const right = current + delta + 1;
+        let last = 0;
+
+        for (let i = 1; i <= total; i++) {
+            if (i === 1 || i === total || (i >= left && i < right)) {
+                if (last && i - last !== 1) {
+                    range.push('...');
+                }
+                range.push(i);
+                last = i;
             }
-            range.push(i);
-            last = i;
         }
-    }
-    
-    return range;
-}
 
-function changePage(page) {
-    currentPage = page;
-    renderTable();
-    renderPagination();
-    document.querySelector('.table-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-// ============== MODAL FUNCTIONS ============== //
-window.editUser = function(id, nombre, apellido, username, email, telefono, rol, activo) {
-    document.getElementById('userId').value = id;
-    document.getElementById('nombre').value = nombre;
-    document.getElementById('apellido').value = apellido;
-    document.getElementById('username').value = username;
-    document.getElementById('email').value = email;
-    document.getElementById('telefono').value = telefono;
-    document.getElementById('rol').value = rol;
-    
-    // Set switch state
-    const activoSwitch = document.getElementById('activoSwitch');
-    if (activo) {
-        activoSwitch.classList.add('active');
-        document.getElementById('activo').value = 'on';
-    } else {
-        activoSwitch.classList.remove('active');
-        document.getElementById('activo').value = 'off';
+        return range;
     }
-    
-    // Update modal
-    document.getElementById('modalTitle').textContent = 'Editar Usuario';
-    document.getElementById('submitBtn').innerHTML = `
+
+    function changePage(page) {
+        currentPage = page;
+        renderTable();
+        renderPagination();
+        document.querySelector('.table-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // ============== MODAL FUNCTIONS ============== //
+    window.editUser = function (id, nombre, apellido, username, email, telefono, rol, activo) {
+        document.getElementById('userId').value = id;
+        document.getElementById('nombre').value = nombre;
+        document.getElementById('apellido').value = apellido;
+        document.getElementById('username').value = username;
+        document.getElementById('email').value = email;
+        document.getElementById('telefono').value = telefono;
+        document.getElementById('rol').value = rol;
+
+        // Set switch state
+        const activoSwitch = document.getElementById('activoSwitch');
+        if (activo) {
+            activoSwitch.classList.add('active');
+            document.getElementById('activo').value = 'on';
+        } else {
+            activoSwitch.classList.remove('active');
+            document.getElementById('activo').value = 'off';
+        }
+
+        // Update modal
+        document.getElementById('modalTitle').textContent = 'Editar Usuario';
+        document.getElementById('submitBtn').innerHTML = `
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="20 6 9 17 4 12"></polyline>
         </svg>
         Actualizar Usuario
     `;
-    
-    // Make password optional for edit
-    document.getElementById('passwordLabel').textContent = 'Nueva Contraseña (opcional)';
-    document.getElementById('password').removeAttribute('required');
-    
-    // Update form action
-    document.getElementById('userForm').action = "{{ url_for('admin.editar_usuario', user_id=0) }}".replace('0', id);
-    
-    // Open modal
-    AppUtils.openModal('createUserModal');
-};
 
-window.resetPassword = function(userId, username) {
-    document.getElementById('resetUserId').value = userId;
-    document.getElementById('resetUsername').textContent = username;
-    document.getElementById('resetPasswordForm').action = "{{ url_for('admin.editar_usuario', user_id=0) }}".replace('0', userId);
-    AppUtils.openModal('resetPasswordModal');
-};
+        // Make password optional for edit
+        document.getElementById('passwordLabel').textContent = 'Nueva Contraseña (opcional)';
+        document.getElementById('password').removeAttribute('required');
 
-window.deleteUser = function(userId, username) {
-    document.getElementById('deleteUserId').value = userId;
-    document.getElementById('deleteUsername').textContent = username;
-    document.getElementById('deleteForm').action = "{{ url_for('admin.eliminar_usuario', user_id=0) }}".replace('0', userId);
-    AppUtils.openModal('deleteModal');
-};
+        // Update form action
+        document.getElementById('userForm').action = "{{ url_for('admin.editar_usuario', user_id=0) }}".replace('0', id);
 
-function toggleSwitch() {
-    const activoSwitch = document.getElementById('activoSwitch');
-    const activoInput = document.getElementById('activo');
-    activoSwitch.classList.toggle('active');
-    activoInput.value = activoSwitch.classList.contains('active') ? 'on' : 'off';
-}
+        // Open modal
+        AppUtils.openModal('createUserModal');
+    };
 
-// ============== AUTO-GENERATE USERNAME ============== //
-function generateUsername() {
-    const nombre = document.getElementById('nombre').value.trim();
-    const apellido = document.getElementById('apellido').value.trim();
-    const usernameInput = document.getElementById('username');
-    
-    // Solo generar si ambos campos tienen valor y el username está vacío o fue auto-generado
-    if (nombre && apellido && (!usernameInput.value || usernameInput.dataset.autoGenerated === 'true')) {
-        // Limpiar y normalizar texto (remover acentos y caracteres especiales)
-        const cleanNombre = nombre.toLowerCase()
-            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-            .replace(/[^a-z0-9]/g, '');
-        
-        const cleanApellido = apellido.toLowerCase()
-            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-            .replace(/[^a-z0-9]/g, '');
-        
-        // Generar número aleatorio de 2 dígitos (01-99)
-        const randomNum = String(Math.floor(Math.random() * 99) + 1).padStart(2, '0');
-        
-        // Combinar: primera letra del nombre + apellido + número
-        const generatedUsername = `${cleanNombre.charAt(0)}${cleanApellido}${randomNum}`;
-        
-        usernameInput.value = generatedUsername;
-        usernameInput.dataset.autoGenerated = 'true';
+    window.resetPassword = function (userId, username) {
+        document.getElementById('resetUserId').value = userId;
+        document.getElementById('resetUsername').textContent = username;
+        document.getElementById('resetPasswordForm').action = "{{ url_for('admin.editar_usuario', user_id=0) }}".replace('0', userId);
+        AppUtils.openModal('resetPasswordModal');
+    };
+
+    window.deleteUser = function (userId, username) {
+        document.getElementById('deleteUserId').value = userId;
+        document.getElementById('deleteUsername').textContent = username;
+        document.getElementById('deleteForm').action = "{{ url_for('admin.eliminar_usuario', user_id=0) }}".replace('0', userId);
+        AppUtils.openModal('deleteModal');
+    };
+
+    function toggleSwitch() {
+        const activoSwitch = document.getElementById('activoSwitch');
+        const activoInput = document.getElementById('activo');
+        activoSwitch.classList.toggle('active');
+        activoInput.value = activoSwitch.classList.contains('active') ? 'on' : 'off';
     }
-}
 
-// Remover flag cuando el usuario edita manualmente
-document.getElementById('username').addEventListener('input', function() {
-    if (this.value !== '') {
-        this.dataset.autoGenerated = 'false';
-    }
-});
+    // ============== AUTO-GENERATE USERNAME ============== //
+    function generateUsername() {
+        const nombre = document.getElementById('nombre').value.trim();
+        const apellido = document.getElementById('apellido').value.trim();
+        const usernameInput = document.getElementById('username');
 
-// ============== PHONE NUMBER FORMATTING ============== //
-function formatPhoneNumber(e) {
-    let input = e.target.value.replace(/\D/g, ''); // Remover todo excepto dígitos
-    
-    // Limitar a 10 dígitos
-    if (input.length > 10) {
-        input = input.substr(0, 10);
-    }
-    
-    // Aplicar formato (###)-###-####
-    let formatted = '';
-    if (input.length > 0) {
-        formatted = '(' + input.substr(0, 3);
-        if (input.length >= 3) {
-            formatted += ')-' + input.substr(3, 3);
-        }
-        if (input.length >= 6) {
-            formatted += '-' + input.substr(6, 4);
+        // Solo generar si ambos campos tienen valor y el username está vacío o fue auto-generado
+        if (nombre && apellido && (!usernameInput.value || usernameInput.dataset.autoGenerated === 'true')) {
+            // Limpiar y normalizar texto (remover acentos y caracteres especiales)
+            const cleanNombre = nombre.toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9]/g, '');
+
+            const cleanApellido = apellido.toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9]/g, '');
+
+            // Generar número aleatorio de 2 dígitos (01-99)
+            const randomNum = String(Math.floor(Math.random() * 99) + 1).padStart(2, '0');
+
+            // Combinar: primera letra del nombre + apellido + número
+            const generatedUsername = `${cleanNombre.charAt(0)}${cleanApellido}${randomNum}`;
+
+            usernameInput.value = generatedUsername;
+            usernameInput.dataset.autoGenerated = 'true';
         }
     }
-    
-    e.target.value = formatted;
-}
 
-// Reset form when opening modal for create
-document.querySelectorAll('[data-modal="createUserModal"]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        if (!e.target.closest('tr')) {
-            const form = document.getElementById('userForm');
-            form.reset();
-            document.getElementById('userId').value = '';
-            document.getElementById('modalTitle').textContent = 'Crear Nuevo Usuario';
-            document.getElementById('submitBtn').innerHTML = `
+    // Remover flag cuando el usuario edita manualmente
+    document.getElementById('username').addEventListener('input', function () {
+        if (this.value !== '') {
+            this.dataset.autoGenerated = 'false';
+        }
+    });
+
+    // ============== PHONE NUMBER FORMATTING ============== //
+    function formatPhoneNumber(e) {
+        let input = e.target.value.replace(/\D/g, ''); // Remover todo excepto dígitos
+
+        // Limitar a 10 dígitos
+        if (input.length > 10) {
+            input = input.substr(0, 10);
+        }
+
+        // Aplicar formato (###)-###-####
+        let formatted = '';
+        if (input.length > 0) {
+            formatted = '(' + input.substr(0, 3);
+            if (input.length >= 3) {
+                formatted += ')-' + input.substr(3, 3);
+            }
+            if (input.length >= 6) {
+                formatted += '-' + input.substr(6, 4);
+            }
+        }
+
+        e.target.value = formatted;
+    }
+
+    // Reset form when opening modal for create
+    document.querySelectorAll('[data-modal="createUserModal"]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            if (!e.target.closest('tr')) {
+                const form = document.getElementById('userForm');
+                form.reset();
+                document.getElementById('userId').value = '';
+                document.getElementById('modalTitle').textContent = 'Crear Nuevo Usuario';
+                document.getElementById('submitBtn').innerHTML = `
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
                 Crear Usuario
             `;
-            document.getElementById('passwordLabel').textContent = 'Contraseña';
-            document.getElementById('password').setAttribute('required', '');
-            form.action = "{{ url_for('admin.crear_usuario') }}";
-            
-            const activoSwitch = document.getElementById('activoSwitch');
-            activoSwitch.classList.add('active');
-            document.getElementById('activo').value = 'on';
-            
-            // Limpiar flag de auto-generación
-            document.getElementById('username').dataset.autoGenerated = 'true';
-        }
-    });
-});
+                document.getElementById('passwordLabel').textContent = 'Contraseña';
+                document.getElementById('password').setAttribute('required', '');
+                form.action = "{{ url_for('admin.crear_usuario') }}";
 
-// ============== UTILITY FUNCTIONS ============== //
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
+                const activoSwitch = document.getElementById('activoSwitch');
+                activoSwitch.classList.add('active');
+                document.getElementById('activo').value = 'on';
+
+                // Limpiar flag de auto-generación
+                document.getElementById('username').dataset.autoGenerated = 'true';
+            }
+        });
+    });
+
+
+    // ============== PHONE NUMBER FORMATTING ============== //
+    function formatPhoneNumber(e) {
+        let input = e.target.value.replace(/\D/g, ''); // Remover todo excepto dígitos
+
+        // Limitar a 10 dígitos
+        if (input.length > 10) {
+            input = input.substr(0, 10);
+        }
+
+        // Aplicar formato (###)-###-####
+        let formatted = '';
+        if (input.length > 0) {
+            formatted = '(' + input.substr(0, 3);
+            if (input.length >= 3) {
+                formatted += ')-' + input.substr(3, 3);
+            }
+            if (input.length >= 6) {
+                formatted += '-' + input.substr(6, 4);
+            }
+        }
+
+        e.target.value = formatted;
+    }
+
+
+    function formatCedular(e) {
+        let input = e.target.value.replace(/\D/g, ''); // Elimina TODO excepto números
+
+        if (input.length > 11) {
+            input = input.substr(0, 11);
+        }
+
+        let formatted = '';
+        if (input.length > 0) {
+            formatted = input.substr(0, 3);
+            if (input.length >= 4) {
+                formatted += '-' + input.substr(3, 7);
+            }
+            if (input.length >= 10) {
+                formatted += '-' + input.substr(10, 1);
+            }
+        }
+
+        e.target.value = formatted;
+    }
+
+
+    // ============== UTILITY FUNCTIONS ============== //
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
             clearTimeout(timeout);
-            func(...args);
+            timeout = setTimeout(later, wait);
         };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
+    }
 </script>
 {% endblock %}

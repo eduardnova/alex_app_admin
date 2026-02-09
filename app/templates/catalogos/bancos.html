@@ -1,65 +1,12 @@
 {% extends "base.html" %}
 
 {% block title %}Catálogo de Bancos{% endblock %}
-
+{% block breadcrumb %}
+<span class="breadcrumb-item">Catalogo</span>
+<span class="breadcrumb-item">Lista Bancos</span>
+{% endblock %}
 {% block content %}
 <div class="content-area">
-
-    <!-- Bank Cards Grid -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; margin-bottom: 30px;">
-        {% for banco in bancos %}
-        <div class="card" style="background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: white; position: relative; overflow: hidden;">
-            <div style="position: absolute; top: -30px; right: -30px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
-            <div style="position: absolute; bottom: -40px; left: -40px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
-            
-            <div style="position: relative; z-index: 1;">
-                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 30px;">
-                    <div>
-                        {% if banco.logo_path %}
-                        <img src="{{ url_for('static', filename=banco.logo_path) }}" alt="{{ banco.banco }}" style="height: 40px; filter: brightness(0) invert(1);">
-                        {% else %}
-                        <div style="width: 60px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-                            </svg>
-                        </div>
-                        {% endif %}
-                    </div>
-                    <span style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
-                        {{ banco.tipo_cuenta }}
-                    </span>
-                </div>
-
-                <div style="margin-bottom: 20px;">
-                    <div style="font-size: 12px; opacity: 0.8; margin-bottom: 4px;">Número de Cuenta</div>
-                    <div style="font-size: 20px; font-weight: 700; letter-spacing: 2px; font-family: 'Courier New', monospace;">
-                        {{ banco.cuenta[:4] if banco.cuenta|length > 4 else banco.cuenta }} •••• •••• {{ banco.cuenta[-4:] if banco.cuenta|length > 8 else '' }}
-                    </div>
-                </div>
-
-                <div style="display: flex; justify-content: space-between; align-items: end;">
-                    <div>
-                        <div style="font-size: 11px; opacity: 0.7; margin-bottom: 2px;">Titular</div>
-                        <div style="font-size: 14px; font-weight: 600;">{{ banco.administrador }}</div>
-                        <div style="font-size: 11px; opacity: 0.7; margin-top: 2px;">{{ banco.cedula }}</div>
-                    </div>
-                    <div style="display: flex; gap: 8px;">
-                        <button class="btn btn-sm" style="background: rgba(255,255,255,0.2); color: white; border: none;" onclick="viewBancoHistory({{ banco.id }})" data-tooltip="Historial">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                        </button>
-                        <button class="btn btn-sm" style="background: rgba(255,255,255,0.2); color: white; border: none;" onclick="editBanco({{ banco.id }})" data-tooltip="Editar">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
 
     <!-- Detailed Table -->
     <div class="table-container">
@@ -71,8 +18,8 @@
             <div class="input-group" style="width: 400px;">
                 <span class="input-icon">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <circle cx="11" cy="11" r="8"/>
-                        <path d="M21 21l-4.35-4.35"/>
+                        <circle cx="11" cy="11" r="8" />
+                        <path d="M21 21l-4.35-4.35" />
                     </svg>
                 </span>
                 <input type="text" class="form-input" id="searchBancos" placeholder="Buscar cuenta...">
@@ -80,13 +27,14 @@
             <div style="display: flex; gap: 12px;">
                 <button class="btn btn-secondary" data-modal="filterBancosModal">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                     </svg>
                     Filtros
                 </button>
                 <button class="btn btn-primary" onclick="createNewBanco()">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                     </svg>
                     Nueva Cuenta
                 </button>
@@ -111,17 +59,20 @@
                     <tr>
                         <td>
                             <span class="badge badge-primary">
-                             #{{ banco.id }}
+                                #{{ banco.id }}
                             </span>
                         </td>
                         <td>
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 {% if banco.logo_path %}
-                                <img src="{{ url_for('static', filename=banco.logo_path) }}" alt="{{ banco.banco }}" style="width: 35px; height: 35px; object-fit: contain;">
+                                <img src="{{ url_for('static', filename=banco.logo_path) }}" alt="{{ banco.banco }}"
+                                    style="width: 35px; height: 35px; object-fit: contain;">
                                 {% else %}
-                                <div style="width: 35px; height: 35px; background: var(--bg-primary); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                <div
+                                    style="width: 35px; height: 35px; background: var(--bg-primary); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                                     </svg>
                                 </div>
                                 {% endif %}
@@ -129,7 +80,8 @@
                             </div>
                         </td>
                         <td>
-                            <code style="background: var(--bg-primary); padding: 4px 8px; border-radius: 4px; font-size: 13px;">
+                            <code
+                                style="background: var(--bg-primary); padding: 4px 8px; border-radius: 4px; font-size: 13px;">
                                 {{ banco.cuenta }}
                             </code>
                         </td>
@@ -145,19 +97,26 @@
                         </td>
                         <td>
                             <div style="display: flex; gap: 8px;">
-                                <button class="btn btn-sm btn-secondary" onclick="viewBancoHistory({{ banco.id }})" data-tooltip="Historial">
+                                <button class="btn btn-sm btn-secondary" onclick="viewBancoHistory({{ banco.id }})"
+                                    data-tooltip="Historial">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                 </button>
-                                <button class="btn btn-sm btn-primary" onclick="editBanco({{ banco.id }})" data-tooltip="Editar">
+                                <button class="btn btn-sm btn-primary" onclick="editBanco({{ banco.id }})"
+                                    data-tooltip="Editar">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                     </svg>
                                 </button>
-                                <button type="button" class="btn btn-sm btn-danger" onclick='deleteBanco({{ banco.id }}, "{{ banco.banco }} - {{ banco.cuenta }}")' data-tooltip="Eliminar">
+                                <button type="button" class="btn btn-sm btn-danger"
+                                    onclick='deleteBanco({{ banco.id }}, "{{ banco.banco }} - {{ banco.cuenta }}")'
+                                    data-tooltip="Eliminar">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                     </svg>
                                 </button>
                             </div>
@@ -178,7 +137,7 @@
             <h3 class="modal-title" id="bancoTitle">Nueva Cuenta Bancaria</h3>
             <button class="modal-close">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
         </div>
@@ -212,33 +171,51 @@
 
                     <div class="form-group">
                         <label class="form-label required">Nombre del Administrador</label>
-                        <input type="text" name="administrador" class="form-input" placeholder="Nombre completo" required>
+                        <input type="text" name="administrador" class="form-input" placeholder="Nombre completo"
+                            required>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">Logo del Banco</label>
                         <div class="file-upload">
-                            <input type="file" name="logo" id="bancoLogoInput" class="file-input" accept="image/*">
+                            <input type="file" name="logo" id="bancoLogoInput" class="file-input" accept="image/*"
+                                onchange="handleLogoPreview(this)">
                             <label for="bancoLogoInput" class="file-label">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                                 </svg>
-                                <span class="file-text">Subir logo</span>
+                                <span class="file-text" id="bancoLogoText">Subir logo</span>
                             </label>
                         </div>
+                        <div id="bancoLogoPreview" class="document-preview" style="margin-top: 10px; display: none;">
+                            <div style="position: relative; display: inline-block;">
+                                <img id="bancoLogoPreviewImg" src="" alt="Preview"
+                                    style="max-width: 120px; max-height: 120px; border-radius: 8px; box-shadow: var(--neu-shadow-small); display: block;">
+                                <button type="button" onclick="clearLogoPreview()"
+                                    style="position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; border-radius: 50%; background: var(--danger); color: white; border: 2px solid white; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="3">
+                                        <path d="M18 6L6 18M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <input type="hidden" name="logo_existing" id="bancoLogoExisting" value="">
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">Descripción</label>
-                    <textarea name="descripcion" class="form-textarea" rows="3" placeholder="Información adicional..."></textarea>
+                    <textarea name="descripcion" class="form-textarea" rows="3"
+                        placeholder="Información adicional..."></textarea>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button>
                 <button type="submit" class="btn btn-primary">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                     </svg>
                     Guardar Cuenta
                 </button>
@@ -254,16 +231,18 @@
             <h3 class="modal-title">Historial de Modificaciones - <span id="historyBancoName">Cargando...</span></h3>
             <button class="modal-close">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
         </div>
         <div class="modal-body">
             <!-- Loading State -->
             <div id="historyLoading" style="text-align: center; padding: 40px; display: none;">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="animation: spin 1s linear infinite;">
-                    <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="0" opacity="0.25"/>
-                    <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="8"/>
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    style="animation: spin 1s linear infinite;">
+                    <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="0"
+                        opacity="0.25" />
+                    <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="8" />
                 </svg>
                 <p style="margin-top: 12px; color: var(--text-secondary);">Cargando historial...</p>
             </div>
@@ -289,9 +268,10 @@
 
             <!-- Empty State -->
             <div id="historyEmpty" style="text-align: center; padding: 40px; display: none;">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" style="margin: 0 auto 16px;">
-                    <circle cx="12" cy="12" r="10"/>
-                    <path d="M12 6v6l4 2"/>
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)"
+                    style="margin: 0 auto 16px;">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 6v6l4 2" />
                 </svg>
                 <p style="color: var(--text-secondary); font-size: 15px;">No hay historial disponible.</p>
             </div>
@@ -300,7 +280,8 @@
             <button class="btn btn-secondary" data-modal-close>Cerrar</button>
             <button type="button" class="btn btn-primary" onclick="exportHistory()">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 Exportar
             </button>
@@ -315,7 +296,7 @@
             <h3 class="modal-title">Filtros Avanzados</h3>
             <button class="modal-close">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
         </div>
@@ -341,197 +322,261 @@
 </div>
 
 <style>
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
+    @keyframes spin {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
+    }
 </style>
 
 <script>
-// ==========================================
-// GLOBAL VARIABLES
-// ==========================================
-let allHistoryRecords = [];
-let currentHistoryId = null;
+    // ==========================================
+    // GLOBAL VARIABLES
+    // ==========================================
+    let allHistoryRecords = [];
+    let currentHistoryId = null;
 
-// ==========================================
-// SEARCH FUNCTIONALITY
-// ==========================================
-document.getElementById('searchBancos').addEventListener('input', function(e) {
-    const searchTerm = e.target.value.toLowerCase();
-    const rows = document.querySelectorAll('#bancosTable tbody tr');
-    rows.forEach(row => {
-        row.style.display = row.textContent.toLowerCase().includes(searchTerm) ? '' : 'none';
+    // ==========================================
+    // SEARCH FUNCTIONALITY
+    // ==========================================
+    document.getElementById('searchBancos').addEventListener('input', function (e) {
+        const searchTerm = e.target.value.toLowerCase();
+        const rows = document.querySelectorAll('#bancosTable tbody tr');
+        rows.forEach(row => {
+            row.style.display = row.textContent.toLowerCase().includes(searchTerm) ? '' : 'none';
+        });
     });
-});
 
-// ==========================================
-// CREATE NEW BANCO
-// ==========================================
-function createNewBanco() {
-    // Reset form
-    document.getElementById('bancoForm').reset();
-    
-    // Change title
-    document.getElementById('bancoTitle').textContent = 'Nueva Cuenta Bancaria';
-    
-    // Set action URL for create
-    document.getElementById('bancoForm').action = '{{ url_for("catalogo.crear_banco") }}';
-    
-    // Open modal
-    window.AppUtils.openModal('createBancoModal');
-    
-    console.log('✅ Create modal opened');
-}
+    // ==========================================
+    // LOGO PREVIEW FUNCTIONALITY
+    // ==========================================
+    function handleLogoPreview(input) {
+        const file = input.files[0];
+        const preview = document.getElementById('bancoLogoPreview');
+        const img = document.getElementById('bancoLogoPreviewImg');
+        const text = document.getElementById('bancoLogoText');
 
-// ==========================================
-// EDIT BANCO
-// ==========================================
-function editBanco(id) {
-    console.log('📝 Editing banco:', id);
-    
-    // Change title
-    document.getElementById('bancoTitle').textContent = 'Editar Cuenta Bancaria';
-    
-    // Change form action
-    document.getElementById('bancoForm').action = `/catalogos/bancos/${id}/editar`;
-    
-    // Fetch banco data
-    fetch(`/catalogos/bancos/${id}/json`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Error al cargar datos');
-            }
-            return response.json();
-        })
-        .then(result => {
-            if (result.success) {
-                const data = result.data;
-                
-                // Fill form
-                document.querySelector('[name="banco"]').value = data.banco || '';
-                document.querySelector('[name="cuenta"]').value = data.cuenta || '';
-                document.querySelector('[name="tipo_cuenta_id"]').value = data.tipo_cuenta_id || '';
-                document.querySelector('[name="cedula"]').value = data.cedula || '';
-                document.querySelector('[name="administrador"]').value = data.administrador || '';
-                document.querySelector('[name="descripcion"]').value = data.descripcion || '';
-                
-                // Open modal
-                window.AppUtils.openModal('createBancoModal');
-                
-                console.log('✅ Banco data loaded:', data);
-            } else {
-                showAlert('Error', result.message || 'No se pudo cargar la cuenta bancaria', 'error');
-            }
-        })
-        .catch(error => {
-            console.error('❌ Error loading banco:', error);
-            showAlert('Error', 'Error al cargar datos de la cuenta bancaria', 'error');
-        });
-}
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                img.src = e.target.result;
+                preview.style.display = 'block';
+                text.textContent = file.name;
+            };
+            reader.readAsDataURL(file);
 
-// ==========================================
-// DELETE BANCO
-// ==========================================
-function deleteBanco(id, nombre) {
-    console.log('🗑️ Deleting banco:', id, nombre);
-    
-    showConfirm(
-        '¿Eliminar Cuenta Bancaria?',
-        `La cuenta "${nombre}" será eliminada permanentemente. Esta acción no se puede deshacer.`,
-        function() {
-            // Create and submit form
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = `/catalogos/bancos/${id}/eliminar`;
-            document.body.appendChild(form);
-            form.submit();
-            
-            console.log('✅ Delete form submitted');
+            // Clear existing logo reference since we have a new file
+            document.getElementById('bancoLogoExisting').value = '';
         }
-    );
-}
-
-// ==========================================
-// VIEW HISTORY
-// ==========================================
-function viewBancoHistory(id) {
-    console.log('📜 Loading history for banco:', id);
-    
-    currentHistoryId = id;
-    
-    // Show loading state
-    document.getElementById('historyLoading').style.display = 'block';
-    document.getElementById('historyContent').style.display = 'none';
-    document.getElementById('historyEmpty').style.display = 'none';
-    
-    // Open modal
-    window.AppUtils.openModal('historyBancoModal');
-    
-    // Fetch history
-    fetch(`/catalogos/bancos/${id}/historial`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Error al cargar historial');
-            }
-            return response.json();
-        })
-        .then(result => {
-            document.getElementById('historyLoading').style.display = 'none';
-            
-            if (result.success && result.historial && result.historial.length > 0) {
-                // Update title
-                document.getElementById('historyBancoName').textContent = result.banco_nombre;
-                
-                // Store records
-                allHistoryRecords = result.historial;
-                
-                // Render history
-                renderHistory(result.historial);
-                
-                // Show content
-                document.getElementById('historyContent').style.display = 'block';
-                
-                console.log('✅ History loaded:', result.historial.length, 'records');
-            } else {
-                document.getElementById('historyEmpty').style.display = 'block';
-                console.log('ℹ️ No history available');
-            }
-        })
-        .catch(error => {
-            console.error('❌ Error loading history:', error);
-            document.getElementById('historyLoading').style.display = 'none';
-            document.getElementById('historyEmpty').style.display = 'block';
-            showAlert('Error', 'Error al cargar el historial', 'error');
-        });
-}
-
-// ==========================================
-// RENDER HISTORY
-// ==========================================
-function renderHistory(historial) {
-    const tbody = document.getElementById('historyTableBody');
-    tbody.innerHTML = '';
-    
-    if (!historial || historial.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: var(--text-secondary);">No hay registros</td></tr>';
-        return;
     }
-    
-    historial.forEach(record => {
-        const row = document.createElement('tr');
-        
-        // Fecha/Hora
-        const fechaCell = document.createElement('td');
-        fechaCell.innerHTML = `
+
+    function clearLogoPreview() {
+        const input = document.getElementById('bancoLogoInput');
+        const preview = document.getElementById('bancoLogoPreview');
+        const img = document.getElementById('bancoLogoPreviewImg');
+        const text = document.getElementById('bancoLogoText');
+        const existingInput = document.getElementById('bancoLogoExisting');
+
+        input.value = '';
+        img.src = '';
+        preview.style.display = 'none';
+        text.textContent = 'Subir logo';
+        existingInput.value = '';
+    }
+
+    function showExistingLogo(logoPath) {
+        if (logoPath) {
+            const preview = document.getElementById('bancoLogoPreview');
+            const img = document.getElementById('bancoLogoPreviewImg');
+            const text = document.getElementById('bancoLogoText');
+            const existingInput = document.getElementById('bancoLogoExisting');
+
+            img.src = '/static/' + logoPath;
+            preview.style.display = 'block';
+            text.textContent = 'Cambiar logo';
+            existingInput.value = logoPath;
+        } else {
+            clearLogoPreview();
+        }
+    }
+
+    // ==========================================
+    // CREATE NEW BANCO
+    // ==========================================
+    function createNewBanco() {
+        // Reset form
+        document.getElementById('bancoForm').reset();
+
+        // Change title
+        document.getElementById('bancoTitle').textContent = 'Nueva Cuenta Bancaria';
+
+        // Set action URL for create
+        document.getElementById('bancoForm').action = '{{ url_for("catalogo.crear_banco") }}';
+
+        // Clear logo preview
+        clearLogoPreview();
+
+        // Open modal
+        window.AppUtils.openModal('createBancoModal');
+
+        console.log('✅ Create modal opened');
+    }
+
+    // ==========================================
+    // EDIT BANCO
+    // ==========================================
+    function editBanco(id) {
+        console.log('📝 Editing banco:', id);
+
+        // Change title
+        document.getElementById('bancoTitle').textContent = 'Editar Cuenta Bancaria';
+
+        // Change form action
+        document.getElementById('bancoForm').action = `/bancos/${id}/editar`;
+
+        // Fetch banco data
+        fetch(`/bancos/${id}/json`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error al cargar datos');
+                }
+                return response.json();
+            })
+            .then(result => {
+                if (result.success) {
+                    const data = result.data;
+
+                    // Fill form
+                    document.querySelector('[name="banco"]').value = data.banco || '';
+                    document.querySelector('[name="cuenta"]').value = data.cuenta || '';
+                    document.querySelector('[name="tipo_cuenta_id"]').value = data.tipo_cuenta_id || '';
+                    document.querySelector('[name="cedula"]').value = data.cedula || '';
+                    document.querySelector('[name="administrador"]').value = data.administrador || '';
+                    document.querySelector('[name="descripcion"]').value = data.descripcion || '';
+
+                    // Show existing logo if available
+                    showExistingLogo(data.logo_path);
+
+                    // Open modal
+                    window.AppUtils.openModal('createBancoModal');
+
+                    console.log('✅ Banco data loaded:', data);
+                } else {
+                    showAlert('Error', result.message || 'No se pudo cargar la cuenta bancaria', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error loading banco:', error);
+                showAlert('Error', 'Error al cargar datos de la cuenta bancaria', 'error');
+            });
+    }
+
+    // ==========================================
+    // DELETE BANCO
+    // ==========================================
+    function deleteBanco(id, nombre) {
+        console.log('🗑️ Deleting banco:', id, nombre);
+
+        showConfirm(
+            '¿Eliminar Cuenta Bancaria?',
+            `La cuenta "${nombre}" será eliminada permanentemente. Esta acción no se puede deshacer.`,
+            function () {
+                // Create and submit form
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/bancos/${id}/eliminar`;
+                document.body.appendChild(form);
+                form.submit();
+
+                console.log('✅ Delete form submitted');
+            }
+        );
+    }
+
+    // ==========================================
+    // VIEW HISTORY
+    // ==========================================
+    function viewBancoHistory(id) {
+        console.log('📜 Loading history for banco:', id);
+
+        currentHistoryId = id;
+
+        // Show loading state
+        document.getElementById('historyLoading').style.display = 'block';
+        document.getElementById('historyContent').style.display = 'none';
+        document.getElementById('historyEmpty').style.display = 'none';
+
+        // Open modal
+        window.AppUtils.openModal('historyBancoModal');
+
+        // Fetch history
+        fetch(`/bancos/${id}/historial`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error al cargar historial');
+                }
+                return response.json();
+            })
+            .then(result => {
+                document.getElementById('historyLoading').style.display = 'none';
+
+                if (result.success && result.historial && result.historial.length > 0) {
+                    // Update title
+                    document.getElementById('historyBancoName').textContent = result.banco_nombre;
+
+                    // Store records
+                    allHistoryRecords = result.historial;
+
+                    // Render history
+                    renderHistory(result.historial);
+
+                    // Show content
+                    document.getElementById('historyContent').style.display = 'block';
+
+                    console.log('✅ History loaded:', result.historial.length, 'records');
+                } else {
+                    document.getElementById('historyEmpty').style.display = 'block';
+                    console.log('ℹ️ No history available');
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error loading history:', error);
+                document.getElementById('historyLoading').style.display = 'none';
+                document.getElementById('historyEmpty').style.display = 'block';
+                showAlert('Error', 'Error al cargar el historial', 'error');
+            });
+    }
+
+    // ==========================================
+    // RENDER HISTORY
+    // ==========================================
+    function renderHistory(historial) {
+        const tbody = document.getElementById('historyTableBody');
+        tbody.innerHTML = '';
+
+        if (!historial || historial.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: var(--text-secondary);">No hay registros</td></tr>';
+            return;
+        }
+
+        historial.forEach(record => {
+            const row = document.createElement('tr');
+
+            // Fecha/Hora
+            const fechaCell = document.createElement('td');
+            fechaCell.innerHTML = `
             <div style="font-weight: 600; color: var(--text-primary);">${record.fecha_hora.split(' ')[0]}</div>
             <div style="font-size: 12px; color: var(--text-tertiary);">${record.fecha_hora.split(' ')[1]}</div>
         `;
-        row.appendChild(fechaCell);
-        
-        // Usuario
-        const usuarioCell = document.createElement('td');
-        usuarioCell.innerHTML = `
+            row.appendChild(fechaCell);
+
+            // Usuario
+            const usuarioCell = document.createElement('td');
+            usuarioCell.innerHTML = `
             <div style="display: flex; align-items: center; gap: 8px;">
                 <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 12px;">
                     ${record.usuario_iniciales}
@@ -539,60 +584,60 @@ function renderHistory(historial) {
                 <span>${record.usuario_nombre}</span>
             </div>
         `;
-        row.appendChild(usuarioCell);
-        
-        // Acción
-        const accionCell = document.createElement('td');
-        let badgeClass = 'badge-info';
-        let accionText = record.tipo_operacion;
-        
-        if (record.tipo_operacion === 'INSERT') {
-            badgeClass = 'badge-success';
-            accionText = 'Creación';
-        } else if (record.tipo_operacion === 'UPDATE') {
-            badgeClass = 'badge-warning';
-            accionText = 'Edición';
-        } else if (record.tipo_operacion === 'DELETE') {
-            badgeClass = 'badge-danger';
-            accionText = 'Eliminación';
-        }
-        
-        accionCell.innerHTML = `<span class="badge ${badgeClass}">${accionText}</span>`;
-        row.appendChild(accionCell);
-        
-        // Detalles
-        const detallesCell = document.createElement('td');
-        detallesCell.innerHTML = formatHistoryDetails(record);
-        row.appendChild(detallesCell);
-        
-        tbody.appendChild(row);
-    });
-}
+            row.appendChild(usuarioCell);
 
-// ==========================================
-// FORMAT HISTORY DETAILS
-// ==========================================
-function formatHistoryDetails(record) {
-    if (record.tipo_operacion === 'INSERT') {
-        return `
+            // Acción
+            const accionCell = document.createElement('td');
+            let badgeClass = 'badge-info';
+            let accionText = record.tipo_operacion;
+
+            if (record.tipo_operacion === 'INSERT') {
+                badgeClass = 'badge-success';
+                accionText = 'Creación';
+            } else if (record.tipo_operacion === 'UPDATE') {
+                badgeClass = 'badge-warning';
+                accionText = 'Edición';
+            } else if (record.tipo_operacion === 'DELETE') {
+                badgeClass = 'badge-danger';
+                accionText = 'Eliminación';
+            }
+
+            accionCell.innerHTML = `<span class="badge ${badgeClass}">${accionText}</span>`;
+            row.appendChild(accionCell);
+
+            // Detalles
+            const detallesCell = document.createElement('td');
+            detallesCell.innerHTML = formatHistoryDetails(record);
+            row.appendChild(detallesCell);
+
+            tbody.appendChild(row);
+        });
+    }
+
+    // ==========================================
+    // FORMAT HISTORY DETAILS
+    // ==========================================
+    function formatHistoryDetails(record) {
+        if (record.tipo_operacion === 'INSERT') {
+            return `
             <div style="font-size: 13px;">
                 <strong>Registro Inicial:</strong> ${record.banco} - ${record.cuenta}<br>
                 <span style="color: var(--text-secondary);">Administrador: ${record.administrador}</span>
             </div>
         `;
-    } else if (record.tipo_operacion === 'DELETE') {
-        return `
+        } else if (record.tipo_operacion === 'DELETE') {
+            return `
             <div style="font-size: 13px;">
                 <strong>Registro Eliminado:</strong> ${record.banco} - ${record.cuenta}<br>
                 <span style="color: var(--text-secondary);">Administrador: ${record.administrador}</span>
             </div>
         `;
-    } else if (record.tipo_operacion === 'UPDATE') {
-        let changes = [];
-        
-        if (record.cambios && record.cambios.length > 0) {
-            record.cambios.forEach(cambio => {
-                changes.push(`
+        } else if (record.tipo_operacion === 'UPDATE') {
+            let changes = [];
+
+            if (record.cambios && record.cambios.length > 0) {
+                record.cambios.forEach(cambio => {
+                    changes.push(`
                     <div style="margin-bottom: 8px; padding: 8px; background: var(--bg-secondary); border-radius: 6px;">
                         <strong>${cambio.campo}:</strong><br>
                         <span style="color: var(--text-secondary); font-size: 12px;">
@@ -602,75 +647,75 @@ function formatHistoryDetails(record) {
                         </span>
                     </div>
                 `);
-            });
-        }
-        
-        return changes.length > 0 ? changes.join('') : '<span style="color: var(--text-secondary);">Sin cambios específicos registrados</span>';
-    }
-    
-    return '-';
-}
-
-// ==========================================
-// EXPORT HISTORY
-// ==========================================
-function exportHistory() {
-    if (!allHistoryRecords || allHistoryRecords.length === 0) {
-        showAlert('Sin datos', 'No hay datos para exportar', 'warning');
-        return;
-    }
-    
-    try {
-        // CSV header
-        let csv = 'Fecha/Hora,Usuario,Acción,Banco,Cuenta,Administrador,Cambios\n';
-        
-        // CSV rows
-        allHistoryRecords.forEach(record => {
-            let accionText = record.tipo_operacion;
-            if (record.tipo_operacion === 'INSERT') accionText = 'Creación';
-            else if (record.tipo_operacion === 'UPDATE') accionText = 'Edición';
-            else if (record.tipo_operacion === 'DELETE') accionText = 'Eliminación';
-            
-            let cambios = '';
-            if (record.cambios && record.cambios.length > 0) {
-                cambios = record.cambios.map(c => `${c.campo}: ${c.valor_anterior} → ${c.valor_nuevo}`).join('; ');
+                });
             }
-            
-            csv += `"${record.fecha_hora}","${record.usuario_nombre}","${accionText}","${record.banco}","${record.cuenta}","${record.administrador}","${cambios}"\n`;
-        });
-        
-        // Create download link
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-        const filename = `historial_banco_${currentHistoryId}_${timestamp}.csv`;
-        
-        link.setAttribute('href', url);
-        link.setAttribute('download', filename);
-        link.style.visibility = 'hidden';
-        
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        // Clean up
-        setTimeout(() => URL.revokeObjectURL(url), 100);
-        
-        showAlert('Éxito', 'Historial exportado correctamente', 'success');
-        console.log('✅ History exported successfully');
-    } catch (error) {
-        console.error('❌ Error exporting history:', error);
-        showAlert('Error', 'Error al exportar el historial', 'error');
-    }
-}
 
-// ==========================================
-// INITIALIZE ON LOAD
-// ==========================================
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Bancos page initialized');
-});
+            return changes.length > 0 ? changes.join('') : '<span style="color: var(--text-secondary);">Sin cambios específicos registrados</span>';
+        }
+
+        return '-';
+    }
+
+    // ==========================================
+    // EXPORT HISTORY
+    // ==========================================
+    function exportHistory() {
+        if (!allHistoryRecords || allHistoryRecords.length === 0) {
+            showAlert('Sin datos', 'No hay datos para exportar', 'warning');
+            return;
+        }
+
+        try {
+            // CSV header
+            let csv = 'Fecha/Hora,Usuario,Acción,Banco,Cuenta,Administrador,Cambios\n';
+
+            // CSV rows
+            allHistoryRecords.forEach(record => {
+                let accionText = record.tipo_operacion;
+                if (record.tipo_operacion === 'INSERT') accionText = 'Creación';
+                else if (record.tipo_operacion === 'UPDATE') accionText = 'Edición';
+                else if (record.tipo_operacion === 'DELETE') accionText = 'Eliminación';
+
+                let cambios = '';
+                if (record.cambios && record.cambios.length > 0) {
+                    cambios = record.cambios.map(c => `${c.campo}: ${c.valor_anterior} → ${c.valor_nuevo}`).join('; ');
+                }
+
+                csv += `"${record.fecha_hora}","${record.usuario_nombre}","${accionText}","${record.banco}","${record.cuenta}","${record.administrador}","${cambios}"\n`;
+            });
+
+            // Create download link
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            const filename = `historial_banco_${currentHistoryId}_${timestamp}.csv`;
+
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // Clean up
+            setTimeout(() => URL.revokeObjectURL(url), 100);
+
+            showAlert('Éxito', 'Historial exportado correctamente', 'success');
+            console.log('✅ History exported successfully');
+        } catch (error) {
+            console.error('❌ Error exporting history:', error);
+            showAlert('Error', 'Error al exportar el historial', 'error');
+        }
+    }
+
+    // ==========================================
+    // INITIALIZE ON LOAD
+    // ==========================================
+    document.addEventListener('DOMContentLoaded', function () {
+        console.log('🚀 Bancos page initialized');
+    });
 </script>
 {% endblock %}

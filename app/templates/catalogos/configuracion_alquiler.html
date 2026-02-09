@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Configuración de Alquileres{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center" style="margin-top: 20px;">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-body">
+
+
+                    <form method="POST" action="{{ url_for('alquiler.guardar_configuracion') }}">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-0">
+                                    <label for="dias_incautacion" class="form-label font-weight-bold">Días para
+                                        Incautación</label>
+                                    <input type="number" class="form-input" id="dias_incautacion"
+                                        name="dias_incautacion" value="{{ config.dias_incautacion }}" min="0" required
+                                        placeholder="Ej: 3">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group mb-0">
+                                    <label for="porcentaje_mora" class="form-label font-weight-bold">Porcentaje de
+                                        Mora</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-input" id="porcentaje_mora"
+                                            name="porcentaje_mora" value="{{ config.porcentaje_mora }}" min="0"
+                                            step="0.1" required style="border-radius: 12px 0 0 12px;">
+                                        <div class="input-group-append">
+                                            <span class="input-group-text"
+                                                style="background: var(--bg-secondary); border: none; border-radius: 0 12px 12px 0; box-shadow: var(--neu-shadow-inset); color: var(--text-secondary);">%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mt-3">
+                                <div class="form-group mb-0">
+                                    <label for="costo_lavado" class="form-label font-weight-bold">Costo Lavado
+                                        Automático</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"
+                                                style="background: var(--bg-secondary); border: none; border-radius: 12px 0 0 12px; box-shadow: var(--neu-shadow-inset); color: var(--text-secondary);">$</span>
+                                        </div>
+                                        <input type="number" class="form-input" id="costo_lavado" name="costo_lavado"
+                                            value="{{ config.costo_lavado }}" min="0" step="0.01" required
+                                            style="border-radius: 0 12px 12px 0;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="d-flex justify-content-end">
+                            <a href="{{ url_for('alquiler.index') }}" class="btn btn-secondary mr-2">Cancelar</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save mr-1"></i> Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

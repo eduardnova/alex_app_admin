@@ -16,74 +16,74 @@
         gap: 16px;
         margin-bottom: 20px;
     }
-    
+
     .stat-card {
         padding: 16px;
     }
-    
+
     .stat-card::before {
         width: 3px;
     }
-    
+
     .stat-header {
         margin-bottom: 10px;
     }
-    
+
     .stat-icon {
         width: 38px;
         height: 38px;
         font-size: 20px;
     }
-    
+
     .stat-value {
         font-size: 24px;
         margin-bottom: 4px;
     }
-    
+
     .stat-label {
         font-size: 12px;
     }
-    
+
     .stat-change {
         font-size: 11px;
         margin-top: 6px;
     }
-    
+
     .stat-change svg {
         width: 12px;
         height: 12px;
     }
-    
+
     @media (max-width: 768px) {
         .stats-grid {
             grid-template-columns: repeat(2, 1fr);
             gap: 12px;
         }
-        
+
         .stat-card {
             padding: 14px;
         }
-        
+
         .stat-icon {
             width: 34px;
             height: 34px;
         }
-        
+
         .stat-value {
             font-size: 20px;
         }
-        
+
         .stat-label {
             font-size: 11px;
         }
     }
-    
+
     @media (max-width: 480px) {
         .stats-grid {
             grid-template-columns: 1fr;
         }
     }
-    
+
     .filter-badge {
         display: inline-flex;
         align-items: center;
@@ -96,7 +96,7 @@
         font-weight: 600;
         margin: 4px;
     }
-    
+
     .filter-badge button {
         background: none;
         border: none;
@@ -106,54 +106,54 @@
         display: flex;
         align-items: center;
     }
-    
+
     .user-history-item {
         padding: 16px;
         border-bottom: 1px solid var(--divider-color);
         transition: all 0.2s;
     }
-    
+
     .user-history-item:hover {
         background: var(--bg-primary);
     }
-    
+
     .user-history-item:last-child {
         border-bottom: none;
     }
-    
+
     .action-badge {
         padding: 4px 10px;
         border-radius: var(--radius-sm);
         font-size: 12px;
         font-weight: 600;
     }
-    
+
     .action-login {
         background: rgba(72, 187, 120, 0.1);
         color: var(--success);
     }
-    
+
     .action-logout {
         background: rgba(237, 137, 54, 0.1);
         color: var(--warning);
     }
-    
+
     .action-error {
         background: rgba(245, 101, 101, 0.1);
         color: var(--danger);
     }
-    
+
     .action-other {
         background: rgba(66, 153, 225, 0.1);
         color: var(--info);
     }
-    
+
     .chart-container {
         position: relative;
         height: 300px;
         margin-top: 20px;
     }
-    
+
     /* Paginación mejorada */
     .table-footer {
         display: flex;
@@ -165,27 +165,110 @@
         flex-wrap: wrap;
         gap: 16px;
     }
-    
+
     .pagination-item:disabled {
         opacity: 0.5;
         cursor: not-allowed;
     }
-    
+
     @media (max-width: 768px) {
         .table-footer {
             flex-direction: column;
             gap: 16px;
         }
-        
-        .table-footer > div:first-child {
+
+        .table-footer>div:first-child {
             flex-direction: column;
             width: 100%;
         }
-        
+
         .pagination {
             justify-content: center;
             width: 100%;
         }
+    }
+
+    /* Custom Select Styles */
+    .custom-select-wrapper {
+        position: relative;
+        user-select: none;
+        width: 100%;
+    }
+
+    .custom-select-trigger {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 12px;
+        height: 38px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        font-size: 14px;
+        box-shadow: var(--neu-shadow-small);
+    }
+
+    .custom-select-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+        z-index: 99999;
+        display: none;
+        max-height: 250px;
+        margin-top: 4px;
+    }
+
+    .custom-select-dropdown.open {
+        display: block;
+    }
+
+    .custom-select-search {
+        padding: 8px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .custom-select-search input {
+        width: 100%;
+        padding: 6px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+        font-size: 13px;
+    }
+
+    .custom-select-options {
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .custom-select-option {
+        padding: 8px 12px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background 0.2s;
+    }
+
+    .custom-select-option:hover {
+        background: var(--bg-tertiary);
+    }
+
+    .selected-value.placeholder {
+        color: var(--text-tertiary);
+    }
+
+    .arrow {
+        transition: transform 0.2s;
+    }
+
+    .custom-select-dropdown.open+.arrow {
+        transform: rotate(180deg);
     }
 </style>
 {% endblock %}
@@ -197,9 +280,10 @@
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
             <div class="stat-icon primary">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
-            </div>        
+            </div>
             <div class="stat-value" id="totalAccesosHoy">0</div>
             <div class="stat-label">Total Accesos Hoy</div>
             <span id="cambioHoy" style="font-size: 11px; color: var(--success); font-weight: 600;">+0%</span>
@@ -210,7 +294,8 @@
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
             <div class="stat-icon success">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
             </div>
             <div class="stat-value" id="accesosExitosos">0</div>
@@ -223,7 +308,8 @@
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
             <div class="stat-icon danger">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
             </div>
             <div class="stat-value" id="accesosFallidos">0</div>
@@ -237,7 +323,8 @@
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
             <div class="stat-icon warning">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
             </div>
             <div class="stat-value" id="usuariosActivos">0</div>
@@ -257,19 +344,22 @@
         <div class="table-actions">
             <button class="btn btn-secondary btn-sm" onclick="limpiarFiltros()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
                 Limpiar
             </button>
             <button class="btn btn-primary btn-sm" data-modal="analyticsModal">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
                 Análisis Semanal
             </button>
             <button class="btn btn-success btn-sm" onclick="exportarDatos()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 Exportar
             </button>
@@ -285,13 +375,35 @@
             </div>
             <div class="form-group" style="margin: 0;">
                 <label class="form-label">Acción</label>
-                <select id="filtroAccion" class="form-select">
-                    <option value="">Todas las acciones</option>
-                    <option value="login">Login</option>
-                    <option value="logout">Logout</option>
-                    <option value="login_failed">Login Fallido</option>
-                </select>
+                <div class="custom-select-wrapper" id="filtroAccionWrapper">
+                    <div class="custom-select-trigger" onclick="toggleSelect('filtroAccion')">
+                        <span class="selected-value placeholder" id="filtroAccionText">Todas las acciones</span>
+                        <svg class="arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M6 9l6 6 6-6" />
+                        </svg>
+                    </div>
+                    <div class="custom-select-dropdown" id="filtroAccionDropdown">
+                        <div class="custom-select-search">
+                            <input type="text" placeholder="Buscar..."
+                                oninput="filterOptions('filtroAccion', this.value)">
+                        </div>
+                        <div class="custom-select-options">
+                            <div class="custom-select-option"
+                                onclick="selectOption('filtroAccion', '', 'Todas las acciones')">Todas las acciones
+                            </div>
+                            <div class="custom-select-option" data-value="login"
+                                onclick="selectOption('filtroAccion', 'login', 'Login')">Login</div>
+                            <div class="custom-select-option" data-value="logout"
+                                onclick="selectOption('filtroAccion', 'logout', 'Logout')">Logout</div>
+                            <div class="custom-select-option" data-value="login_failed"
+                                onclick="selectOption('filtroAccion', 'login_failed', 'Login Fallido')">Login Fallido
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" id="filtroAccionValue">
+                </div>
             </div>
+
             <div class="form-group" style="margin: 0;">
                 <label class="form-label">Fecha Desde</label>
                 <input type="date" id="filtroFechaDesde" class="form-input">
@@ -310,7 +422,8 @@
                 <tr>
                     <th>
                         <div style="display: flex; align-items: center; gap: 6px;">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
                                 <line x1="8" y1="6" x2="21" y2="6"></line>
                                 <line x1="8" y1="12" x2="21" y2="12"></line>
                                 <line x1="8" y1="18" x2="21" y2="18"></line>
@@ -323,7 +436,8 @@
                     </th>
                     <th>
                         <div style="display: flex; align-items: center; gap: 6px;">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                                 <circle cx="12" cy="7" r="4"></circle>
                             </svg>
@@ -331,44 +445,57 @@
                         </div>
                     </th>
                     <th>
-                        <div style="display: flex; align-items: center; gap: 6px;">        
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-three-dots-vertical" viewBox="0 0 16 16">
-                            <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0"/>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                class="bi bi-three-dots-vertical" viewBox="0 0 16 16">
+                                <path
+                                    d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0" />
                             </svg>
                             Acción
                         </div>
                     </th>
                     <th>
                         <div style="display: flex; align-items: center; gap: 6px;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-calendar2-week" viewBox="0 0 16 16">
-                                <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M2 2a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z"/>
-                                <path d="M2.5 4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5H3a.5.5 0 0 1-.5-.5zM11 7.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-5 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5z"/>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                class="bi bi-calendar2-week" viewBox="0 0 16 16">
+                                <path
+                                    d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M2 2a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z" />
+                                <path
+                                    d="M2.5 4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5H3a.5.5 0 0 1-.5-.5zM11 7.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-5 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5z" />
                             </svg>
                             Fecha y Hora
-                         </div>
+                        </div>
                     </th>
                     <th>
                         <div style="display: flex; align-items: center; gap: 6px;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-geo-fill" viewBox="0 0 16 16">
-                            <path fill-rule="evenodd" d="M4 4a4 4 0 1 1 4.5 3.969V13.5a.5.5 0 0 1-1 0V7.97A4 4 0 0 1 4 3.999zm2.493 8.574a.5.5 0 0 1-.411.575c-.712.118-1.28.295-1.655.493a1.3 1.3 0 0 0-.37.265.3.3 0 0 0-.057.09V14l.002.008.016.033a.6.6 0 0 0 .145.15c.165.13.435.27.813.395.751.25 1.82.414 3.024.414s2.273-.163 3.024-.414c.378-.126.648-.265.813-.395a.6.6 0 0 0 .146-.15l.015-.033L12 14v-.004a.3.3 0 0 0-.057-.09 1.3 1.3 0 0 0-.37-.264c-.376-.198-.943-.375-1.655-.493a.5.5 0 1 1 .164-.986c.77.127 1.452.328 1.957.594C12.5 13 13 13.4 13 14c0 .426-.26.752-.544.977-.29.228-.68.413-1.116.558-.878.293-2.059.465-3.34.465s-2.462-.172-3.34-.465c-.436-.145-.826-.33-1.116-.558C3.26 14.752 3 14.426 3 14c0-.599.5-1 .961-1.243.505-.266 1.187-.467 1.957-.594a.5.5 0 0 1 .575.411"/>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                class="bi bi-geo-fill" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd"
+                                    d="M4 4a4 4 0 1 1 4.5 3.969V13.5a.5.5 0 0 1-1 0V7.97A4 4 0 0 1 4 3.999zm2.493 8.574a.5.5 0 0 1-.411.575c-.712.118-1.28.295-1.655.493a1.3 1.3 0 0 0-.37.265.3.3 0 0 0-.057.09V14l.002.008.016.033a.6.6 0 0 0 .145.15c.165.13.435.27.813.395.751.25 1.82.414 3.024.414s2.273-.163 3.024-.414c.378-.126.648-.265.813-.395a.6.6 0 0 0 .146-.15l.015-.033L12 14v-.004a.3.3 0 0 0-.057-.09 1.3 1.3 0 0 0-.37-.264c-.376-.198-.943-.375-1.655-.493a.5.5 0 1 1 .164-.986c.77.127 1.452.328 1.957.594C12.5 13 13 13.4 13 14c0 .426-.26.752-.544.977-.29.228-.68.413-1.116.558-.878.293-2.059.465-3.34.465s-2.462-.172-3.34-.465c-.436-.145-.826-.33-1.116-.558C3.26 14.752 3 14.426 3 14c0-.599.5-1 .961-1.243.505-.266 1.187-.467 1.957-.594a.5.5 0 0 1 .575.411" />
                             </svg>
                             IP Address
                         </div>
                     </th>
                     <th>
                         <div style="display: flex; align-items: center; gap: 6px;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-list-task" viewBox="0 0 16 16">
-                                <path fill-rule="evenodd" d="M2 2.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5V3a.5.5 0 0 0-.5-.5zM3 3H2v1h1z"/>
-                                <path d="M5 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5M5.5 7a.5.5 0 0 0 0 1h9a.5.5 0 0 0 0-1zm0 4a.5.5 0 0 0 0 1h9a.5.5 0 0 0 0-1z"/>
-                                <path fill-rule="evenodd" d="M1.5 7a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5H2a.5.5 0 0 1-.5-.5zM2 7h1v1H2zm0 3.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zm1 .5H2v1h1z"/>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                class="bi bi-list-task" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd"
+                                    d="M2 2.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5V3a.5.5 0 0 0-.5-.5zM3 3H2v1h1z" />
+                                <path
+                                    d="M5 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5M5.5 7a.5.5 0 0 0 0 1h9a.5.5 0 0 0 0-1zm0 4a.5.5 0 0 0 0 1h9a.5.5 0 0 0 0-1z" />
+                                <path fill-rule="evenodd"
+                                    d="M1.5 7a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5H2a.5.5 0 0 1-.5-.5zM2 7h1v1H2zm0 3.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zm1 .5H2v1h1z" />
                             </svg>
                             Detalles
                         </div>
                     </th>
                     <th>
                         <div style="display: flex; align-items: center; gap: 6px;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-grid" viewBox="0 0 16 16">
-                            <path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5zM2.5 2a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5zm6.5.5A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5zM1 10.5A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5zm6.5.5A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5z"/>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                class="bi bi-grid" viewBox="0 0 16 16">
+                                <path
+                                    d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5zM2.5 2a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5zm6.5.5A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5zM1 10.5A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5zm6.5.5A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5z" />
                             </svg>
                             Acciones
                         </div>
@@ -377,14 +504,15 @@
             </thead>
             <tbody id="tablaRegistros">
                 {% for registro in registros.items %}
-                <tr data-usuario-id="{{ registro.usuario_id }}" 
-                    data-accion="{{ registro.accion }}" 
+                <tr data-usuario-id="{{ registro.usuario_id }}" data-accion="{{ registro.accion }}"
                     data-fecha="{{ registro.fecha_hora.strftime('%Y-%m-%d') }}">
                     <td><strong class="badge badge-primary">#{{ registro.id }}</strong></td>
                     <td>
                         <div style="display: flex; align-items: center; gap: 10px;">
-                            <div style="width: 32px; height: 32px; background: linear-gradient(135deg, var(--primary), var(--primary-light)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 12px;">
-                                {{ registro.usuario.nombre[0] if registro.usuario.nombre else 'U' }}{{ registro.usuario.apellido[0] if registro.usuario.apellido else 'U' }}
+                            <div
+                                style="width: 32px; height: 32px; background: linear-gradient(135deg, var(--primary), var(--primary-light)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 12px;">
+                                {{ registro.usuario.nombre[0] if registro.usuario.nombre else 'U' }}{{
+                                registro.usuario.apellido[0] if registro.usuario.apellido else 'U' }}
                             </div>
                             <div>
                                 <div style="font-weight: 600; color: var(--text-primary);">
@@ -397,7 +525,8 @@
                         </div>
                     </td>
                     <td>
-                        <span class="action-badge {% if 'login' in registro.accion and 'failed' not in registro.accion %}action-login{% elif 'logout' in registro.accion %}action-logout{% elif 'failed' in registro.accion or 'error' in registro.accion %}action-error{% else %}action-other{% endif %}">
+                        <span
+                            class="action-badge {% if 'login' in registro.accion and 'failed' not in registro.accion %}action-login{% elif 'logout' in registro.accion %}action-logout{% elif 'failed' in registro.accion or 'error' in registro.accion %}action-error{% else %}action-other{% endif %}">
                             {{ registro.accion }}
                         </span>
                     </td>
@@ -410,21 +539,27 @@
                         </div>
                     </td>
                     <td>
-                        <code style="background: var(--bg-primary); padding: 4px 8px; border-radius: var(--radius-sm); font-size: 12px;">
+                        <code
+                            style="background: var(--bg-primary); padding: 4px 8px; border-radius: var(--radius-sm); font-size: 12px;">
                             {{ registro.ip_address or 'N/A' }}
                         </code>
                     </td>
                     <td>
-                        <div style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary); font-size: 13px;">
+                        <div
+                            style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary); font-size: 13px;">
                             {{ registro.detalles or 'Sin detalles' }}
                         </div>
                     </td>
                     <td>
-                        <button class="btn btn-secondary btn-sm" onclick="verHistorialUsuario({{ registro.usuario_id }}, '{{ registro.usuario.nombre }} {{ registro.usuario.apellido }}')">
-                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clock-history" viewBox="0 0 16 16">
-                                <path d="M8.515 1.019A7 7 0 0 0 8 1V0a8 8 0 0 1 .589.022zm2.004.45a7 7 0 0 0-.985-.299l.219-.976q.576.129 1.126.342zm1.37.71a7 7 0 0 0-.439-.27l.493-.87a8 8 0 0 1 .979.654l-.615.789a7 7 0 0 0-.418-.302zm1.834 1.79a7 7 0 0 0-.653-.796l.724-.69q.406.429.747.91zm.744 1.352a7 7 0 0 0-.214-.468l.893-.45a8 8 0 0 1 .45 1.088l-.95.313a7 7 0 0 0-.179-.483m.53 2.507a7 7 0 0 0-.1-1.025l.985-.17q.1.58.116 1.17zm-.131 1.538q.05-.254.081-.51l.993.123a8 8 0 0 1-.23 1.155l-.964-.267q.069-.247.12-.501m-.952 2.379q.276-.436.486-.908l.914.405q-.24.54-.555 1.038zm-.964 1.205q.183-.183.35-.378l.758.653a8 8 0 0 1-.401.432z"/>
-                                <path d="M8 1a7 7 0 1 0 4.95 11.95l.707.707A8.001 8.001 0 1 1 8 0z"/>
-                                <path d="M7.5 3a.5.5 0 0 1 .5.5v5.21l3.248 1.856a.5.5 0 0 1-.496.868l-3.5-2A.5.5 0 0 1 7 9V3.5a.5.5 0 0 1 .5-.5"/>
+                        <button class="btn btn-secondary btn-sm"
+                            onclick="verHistorialUsuario({{ registro.usuario_id }}, '{{ registro.usuario.nombre }} {{ registro.usuario.apellido }}')">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                class="bi bi-clock-history" viewBox="0 0 16 16">
+                                <path
+                                    d="M8.515 1.019A7 7 0 0 0 8 1V0a8 8 0 0 1 .589.022zm2.004.45a7 7 0 0 0-.985-.299l.219-.976q.576.129 1.126.342zm1.37.71a7 7 0 0 0-.439-.27l.493-.87a8 8 0 0 1 .979.654l-.615.789a7 7 0 0 0-.418-.302zm1.834 1.79a7 7 0 0 0-.653-.796l.724-.69q.406.429.747.91zm.744 1.352a7 7 0 0 0-.214-.468l.893-.45a8 8 0 0 1 .45 1.088l-.95.313a7 7 0 0 0-.179-.483m.53 2.507a7 7 0 0 0-.1-1.025l.985-.17q.1.58.116 1.17zm-.131 1.538q.05-.254.081-.51l.993.123a8 8 0 0 1-.23 1.155l-.964-.267q.069-.247.12-.501m-.952 2.379q.276-.436.486-.908l.914.405q-.24.54-.555 1.038zm-.964 1.205q.183-.183.35-.378l.758.653a8 8 0 0 1-.401.432z" />
+                                <path d="M8 1a7 7 0 1 0 4.95 11.95l.707.707A8.001 8.001 0 1 1 8 0z" />
+                                <path
+                                    d="M7.5 3a.5.5 0 0 1 .5.5v5.21l3.248 1.856a.5.5 0 0 1-.496.868l-3.5-2A.5.5 0 0 1 7 9V3.5a.5.5 0 0 1 .5-.5" />
                             </svg>
                             Ver Historial
                         </button>
@@ -436,7 +571,8 @@
                         <div class="empty-state">
                             <div class="empty-icon">
                                 <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
                             </div>
                             <h3 class="empty-title">No hay registros</h3>
@@ -453,13 +589,14 @@
     <div class="table-footer">
         <div style="display: flex; align-items: center; gap: 12px;">
             <span style="font-size: 14px; color: var(--text-secondary);">
-                Mostrando <strong id="paginaInicio">0</strong> - <strong id="paginaFin">0</strong> de <strong id="totalRegistros">0</strong> registros
+                Mostrando <strong id="paginaInicio">0</strong> - <strong id="paginaFin">0</strong> de <strong
+                    id="totalRegistros">0</strong> registros
             </span>
             <div style="display: flex; align-items: center; gap: 8px;">
                 <label style="font-size: 14px; color: var(--text-secondary);">Por página:</label>
                 <select id="itemsPorPagina" class="form-select" style="width: auto; padding: 6px 32px 6px 12px;">
                     <option value="5" selected>5</option>
-                    <option value="10" >10</option>
+                    <option value="10">10</option>
                     <option value="20">20</option>
                     <option value="50">50</option>
                     <option value="100">100</option>
@@ -477,16 +614,19 @@
 <div class="offcanvas" id="historialOffcanvas">
     <div class="offcanvas-header">
         <h3 class="offcanvas-title" id="historialTitulo">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clock-history" viewBox="0 0 16 16">
-                <path d="M8.515 1.019A7 7 0 0 0 8 1V0a8 8 0 0 1 .589.022zm2.004.45a7 7 0 0 0-.985-.299l.219-.976q.576.129 1.126.342zm1.37.71a7 7 0 0 0-.439-.27l.493-.87a8 8 0 0 1 .979.654l-.615.789a7 7 0 0 0-.418-.302zm1.834 1.79a7 7 0 0 0-.653-.796l.724-.69q.406.429.747.91zm.744 1.352a7 7 0 0 0-.214-.468l.893-.45a8 8 0 0 1 .45 1.088l-.95.313a7 7 0 0 0-.179-.483m.53 2.507a7 7 0 0 0-.1-1.025l.985-.17q.1.58.116 1.17zm-.131 1.538q.05-.254.081-.51l.993.123a8 8 0 0 1-.23 1.155l-.964-.267q.069-.247.12-.501m-.952 2.379q.276-.436.486-.908l.914.405q-.24.54-.555 1.038zm-.964 1.205q.183-.183.35-.378l.758.653a8 8 0 0 1-.401.432z"/>
-                <path d="M8 1a7 7 0 1 0 4.95 11.95l.707.707A8.001 8.001 0 1 1 8 0z"/>
-                <path d="M7.5 3a.5.5 0 0 1 .5.5v5.21l3.248 1.856a.5.5 0 0 1-.496.868l-3.5-2A.5.5 0 0 1 7 9V3.5a.5.5 0 0 1 .5-.5"/>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                class="bi bi-clock-history" viewBox="0 0 16 16">
+                <path
+                    d="M8.515 1.019A7 7 0 0 0 8 1V0a8 8 0 0 1 .589.022zm2.004.45a7 7 0 0 0-.985-.299l.219-.976q.576.129 1.126.342zm1.37.71a7 7 0 0 0-.439-.27l.493-.87a8 8 0 0 1 .979.654l-.615.789a7 7 0 0 0-.418-.302zm1.834 1.79a7 7 0 0 0-.653-.796l.724-.69q.406.429.747.91zm.744 1.352a7 7 0 0 0-.214-.468l.893-.45a8 8 0 0 1 .45 1.088l-.95.313a7 7 0 0 0-.179-.483m.53 2.507a7 7 0 0 0-.1-1.025l.985-.17q.1.58.116 1.17zm-.131 1.538q.05-.254.081-.51l.993.123a8 8 0 0 1-.23 1.155l-.964-.267q.069-.247.12-.501m-.952 2.379q.276-.436.486-.908l.914.405q-.24.54-.555 1.038zm-.964 1.205q.183-.183.35-.378l.758.653a8 8 0 0 1-.401.432z" />
+                <path d="M8 1a7 7 0 1 0 4.95 11.95l.707.707A8.001 8.001 0 1 1 8 0z" />
+                <path
+                    d="M7.5 3a.5.5 0 0 1 .5.5v5.21l3.248 1.856a.5.5 0 0 1-.496.868l-3.5-2A.5.5 0 0 1 7 9V3.5a.5.5 0 0 1 .5-.5" />
             </svg>
             Historial de Usuario
         </h3>
         <button class="offcanvas-close" onclick="cerrarHistorial()">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
         </button>
     </div>
@@ -505,7 +645,7 @@
             <h3 class="modal-title">Análisis de Accesos - Semana Actual</h3>
             <button class="modal-close" data-modal-close>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
         </div>
@@ -518,21 +658,25 @@
                     Distribución de accesos al sistema durante la semana actual (Lun - Dom)
                 </p>
             </div>
-            
+
             <div class="chart-container">
                 <canvas id="weeklyChart"></canvas>
             </div>
 
-            <div style="margin-top: 30px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px;">
-                <div style="background: var(--bg-primary); padding: 16px; border-radius: var(--radius-md); text-align: center;">
+            <div
+                style="margin-top: 30px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px;">
+                <div
+                    style="background: var(--bg-primary); padding: 16px; border-radius: var(--radius-md); text-align: center;">
                     <div style="font-size: 24px; font-weight: 700; color: var(--primary);" id="totalSemana">0</div>
                     <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">Total Semana</div>
                 </div>
-                <div style="background: var(--bg-primary); padding: 16px; border-radius: var(--radius-md); text-align: center;">
+                <div
+                    style="background: var(--bg-primary); padding: 16px; border-radius: var(--radius-md); text-align: center;">
                     <div style="font-size: 24px; font-weight: 700; color: var(--success);" id="promedioSemana">0</div>
                     <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">Promedio Diario</div>
                 </div>
-                <div style="background: var(--bg-primary); padding: 16px; border-radius: var(--radius-md); text-align: center;">
+                <div
+                    style="background: var(--bg-primary); padding: 16px; border-radius: var(--radius-md); text-align: center;">
                     <div style="font-size: 24px; font-weight: 700; color: var(--warning);" id="diaMasActivo">-</div>
                     <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">Día Más Activo</div>
                 </div>
@@ -540,15 +684,19 @@
         </div>
         <div class="modal-footer">
             <button class="btn btn-secondary" data-modal-close>
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-square" viewBox="0 0 16 16">
-                    <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"/>
-                    <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                    class="bi bi-x-square" viewBox="0 0 16 16">
+                    <path
+                        d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z" />
+                    <path
+                        d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708" />
                 </svg>
                 Cerrar
             </button>
             <button class="btn btn-primary" onclick="exportarGrafico()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
                 Exportar Gráfico
             </button>
@@ -560,94 +708,153 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-// ============== VARIABLES GLOBALES ============== //
-let weeklyChart = null;
-let todosLosRegistros = [];
-let paginaActual = 1;
-let itemsPorPagina = 5;
-let registrosFiltrados = [];
+    // ============== VARIABLES GLOBALES ============== //
+    let weeklyChart = null;
+    let todosLosRegistros = [];
+    let paginaActual = 1;
+    let itemsPorPagina = 5;
+    let registrosFiltrados = [];
 
-// ============== INICIALIZACIÓN ============== //
-document.addEventListener('DOMContentLoaded', function() {
-    cargarDatosIniciales();
-    inicializarFiltros();
-    inicializarPaginacion();
-    actualizarEstadisticas();
-});
-
-// ============== CARGAR DATOS INICIALES ============== //
-function cargarDatosIniciales() {
-    // Capturar todos los registros de la tabla
-    const filas = document.querySelectorAll('#tablaRegistros tr[data-usuario-id]');
-    todosLosRegistros = Array.from(filas).map(fila => ({
-        id: fila.querySelector('td:first-child strong').textContent.replace('#', ''),
-        usuarioId: fila.dataset.usuarioId,
-        usuario: fila.querySelector('td:nth-child(2) .text-primary') ? fila.querySelector('td:nth-child(2) .text-primary').textContent : '',
-        accion: fila.dataset.accion,
-        fecha: fila.dataset.fecha,
-        elemento: fila
-    }));
-}
-
-// ============== FILTROS ============== //
-function inicializarFiltros() {
-    const filtroUsuario = document.getElementById('filtroUsuario');
-    const filtroAccion = document.getElementById('filtroAccion');
-    const filtroFechaDesde = document.getElementById('filtroFechaDesde');
-    const filtroFechaHasta = document.getElementById('filtroFechaHasta');
-
-    [filtroUsuario, filtroAccion, filtroFechaDesde, filtroFechaHasta].forEach(filtro => {
-        if (filtro) {
-            filtro.addEventListener('change', aplicarFiltros);
-            filtro.addEventListener('input', aplicarFiltros);
-        }
+    // ============== INICIALIZACIÓN ============== //
+    document.addEventListener('DOMContentLoaded', function () {
+        cargarDatosIniciales();
+        inicializarFiltros();
+        inicializarPaginacion();
+        actualizarEstadisticas();
     });
-}
 
-function aplicarFiltros() {
-    const usuario = document.getElementById('filtroUsuario').value.toLowerCase();
-    const accion = document.getElementById('filtroAccion').value;
-    const fechaDesde = document.getElementById('filtroFechaDesde').value;
-    const fechaHasta = document.getElementById('filtroFechaHasta').value;
+    // ============== CARGAR DATOS INICIALES ============== //
+    function cargarDatosIniciales() {
+        // Capturar todos los registros de la tabla
+        const filas = document.querySelectorAll('#tablaRegistros tr[data-usuario-id]');
+        todosLosRegistros = Array.from(filas).map(fila => ({
+            id: fila.querySelector('td:first-child strong').textContent.replace('#', ''),
+            usuarioId: fila.dataset.usuarioId,
+            usuario: fila.querySelector('td:nth-child(2) .text-primary') ? fila.querySelector('td:nth-child(2) .text-primary').textContent : '',
+            accion: fila.dataset.accion,
+            fecha: fila.dataset.fecha,
+            elemento: fila
+        }));
+    }
 
-    const filas = document.querySelectorAll('#tablaRegistros tr[data-usuario-id]');
-    registrosFiltrados = [];
+    // ============== FILTROS ============== //
+    function inicializarFiltros() {
+        const filtroUsuario = document.getElementById('filtroUsuario');
+        const filtroFechaDesde = document.getElementById('filtroFechaDesde');
+        const filtroFechaHasta = document.getElementById('filtroFechaHasta');
 
-    filas.forEach(fila => {
-        const textoUsuario = fila.querySelector('td:nth-child(2)').textContent.toLowerCase();
-        const accionFila = fila.dataset.accion;
-        const fechaFila = fila.dataset.fecha;
+        [filtroUsuario, filtroFechaDesde, filtroFechaHasta].forEach(filtro => {
+            if (filtro) {
+                filtro.addEventListener('change', aplicarFiltros);
+                filtro.addEventListener('input', aplicarFiltros);
+            }
+        });
 
-        let mostrar = true;
+        // Close custom selects when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.custom-select-wrapper')) {
+                document.querySelectorAll('.custom-select-dropdown').forEach(el => el.classList.remove('open'));
+            }
+        });
+    }
 
-        if (usuario && !textoUsuario.includes(usuario)) mostrar = false;
-        if (accion && accionFila !== accion) mostrar = false;
-        if (fechaDesde && fechaFila < fechaDesde) mostrar = false;
-        if (fechaHasta && fechaFila > fechaHasta) mostrar = false;
+    // ============== CUSTOM SELECT LOGIC ============== //
+    function toggleSelect(id) {
+        const dropdown = document.getElementById(id + 'Dropdown');
+        const isOpen = dropdown.classList.contains('open');
+
+        // Close all other selects
+        document.querySelectorAll('.custom-select-dropdown').forEach(el => el.classList.remove('open'));
+
+        if (!isOpen) {
+            dropdown.classList.add('open');
+            const searchInput = dropdown.querySelector('input');
+            if (searchInput) {
+                searchInput.value = '';
+                filterOptions(id, '');
+                setTimeout(() => searchInput.focus(), 100);
+            }
+        }
+    }
+
+    function selectOption(id, value, text) {
+        const wrapper = document.getElementById(id + 'Wrapper');
+        const input = document.getElementById(id + 'Value');
+        const textSpan = document.getElementById(id + 'Text');
+        const dropdown = document.getElementById(id + 'Dropdown');
+
+        input.value = value;
+        textSpan.textContent = text;
+
+        if (value === '') {
+            textSpan.classList.add('placeholder');
+        } else {
+            textSpan.classList.remove('placeholder');
+        }
+
+        dropdown.classList.remove('open');
+        aplicarFiltros();
+    }
+
+    function filterOptions(id, query) {
+        query = query.toLowerCase();
+        const options = document.getElementById(id + 'Dropdown').querySelectorAll('.custom-select-option');
+        options.forEach(opt => {
+            const text = opt.textContent.toLowerCase();
+            if (text.includes(query)) {
+                opt.style.display = 'block';
+            } else {
+                opt.style.display = 'none';
+            }
+        });
+    }
+
+
+    function aplicarFiltros() {
+        const usuario = document.getElementById('filtroUsuario').value.toLowerCase();
+        const accion = document.getElementById('filtroAccionValue').value;
+        const fechaDesde = document.getElementById('filtroFechaDesde').value;
+        const fechaHasta = document.getElementById('filtroFechaHasta').value;
+
+
+        const filas = document.querySelectorAll('#tablaRegistros tr[data-usuario-id]');
+        registrosFiltrados = [];
+
+        filas.forEach(fila => {
+            const textoUsuario = fila.querySelector('td:nth-child(2)').textContent.toLowerCase();
+            const accionFila = fila.dataset.accion;
+            const fechaFila = fila.dataset.fecha;
+
+            let mostrar = true;
+
+            if (usuario && !textoUsuario.includes(usuario)) mostrar = false;
+            if (accion && accionFila !== accion) mostrar = false;
+            if (fechaDesde && fechaFila < fechaDesde) mostrar = false;
+            if (fechaHasta && fechaFila > fechaHasta) mostrar = false;
+
+            if (mostrar) {
+                registrosFiltrados.push(fila);
+            }
+        });
+
+        // Resetear a la primera página
+        paginaActual = 1;
+
+        // Aplicar paginación a los resultados filtrados
+        aplicarPaginacion();
+
+        // Actualizar badges de filtros activos
+        actualizarBadgesFiltros();
+    }
+
+    function mostrarMensajeVacio(mostrar) {
+        let mensajeVacio = document.querySelector('.mensaje-vacio-filtro');
 
         if (mostrar) {
-            registrosFiltrados.push(fila);
-        }
-    });
-
-    // Resetear a la primera página
-    paginaActual = 1;
-    
-    // Aplicar paginación a los resultados filtrados
-    aplicarPaginacion();
-    
-    // Actualizar badges de filtros activos
-    actualizarBadgesFiltros();
-}
-
-function mostrarMensajeVacio(mostrar) {
-    let mensajeVacio = document.querySelector('.mensaje-vacio-filtro');
-    
-    if (mostrar) {
-        if (!mensajeVacio) {
-            mensajeVacio = document.createElement('tr');
-            mensajeVacio.className = 'mensaje-vacio-filtro';
-            mensajeVacio.innerHTML = `
+            if (!mensajeVacio) {
+                mensajeVacio = document.createElement('tr');
+                mensajeVacio.className = 'mensaje-vacio-filtro';
+                mensajeVacio.innerHTML = `
                 <td colspan="7">
                     <div class="empty-state">
                         <div class="empty-icon">
@@ -660,35 +867,36 @@ function mostrarMensajeVacio(mostrar) {
                     </div>
                 </td>
             `;
-            document.getElementById('tablaRegistros').appendChild(mensajeVacio);
+                document.getElementById('tablaRegistros').appendChild(mensajeVacio);
+            }
+        } else if (mensajeVacio) {
+            mensajeVacio.remove();
         }
-    } else if (mensajeVacio) {
-        mensajeVacio.remove();
     }
-}
 
-function actualizarBadgesFiltros() {
-    const container = document.getElementById('activeFilters');
-    container.innerHTML = '';
+    function actualizarBadgesFiltros() {
+        const container = document.getElementById('activeFilters');
+        container.innerHTML = '';
 
-    const filtros = [];
-    
-    const usuario = document.getElementById('filtroUsuario').value;
-    if (usuario) filtros.push({ label: 'Usuario', valor: usuario, input: 'filtroUsuario' });
-    
-    const accion = document.getElementById('filtroAccion').value;
-    if (accion) filtros.push({ label: 'Acción', valor: accion, input: 'filtroAccion' });
-    
-    const fechaDesde = document.getElementById('filtroFechaDesde').value;
-    if (fechaDesde) filtros.push({ label: 'Desde', valor: fechaDesde, input: 'filtroFechaDesde' });
-    
-    const fechaHasta = document.getElementById('filtroFechaHasta').value;
-    if (fechaHasta) filtros.push({ label: 'Hasta', valor: fechaHasta, input: 'filtroFechaHasta' });
+        const filtros = [];
 
-    filtros.forEach(filtro => {
-        const badge = document.createElement('span');
-        badge.className = 'filter-badge';
-        badge.innerHTML = `
+        const usuario = document.getElementById('filtroUsuario').value;
+        if (usuario) filtros.push({ label: 'Usuario', valor: usuario, input: 'filtroUsuario' });
+
+        const accion = document.getElementById('filtroAccionValue').value;
+        if (accion) filtros.push({ label: 'Acción', valor: accion, input: 'filtroAccion' });
+
+
+        const fechaDesde = document.getElementById('filtroFechaDesde').value;
+        if (fechaDesde) filtros.push({ label: 'Desde', valor: fechaDesde, input: 'filtroFechaDesde' });
+
+        const fechaHasta = document.getElementById('filtroFechaHasta').value;
+        if (fechaHasta) filtros.push({ label: 'Hasta', valor: fechaHasta, input: 'filtroFechaHasta' });
+
+        filtros.forEach(filtro => {
+            const badge = document.createElement('span');
+            badge.className = 'filter-badge';
+            badge.innerHTML = `
             <strong>${filtro.label}:</strong> ${filtro.valor}
             <button onclick="removerFiltro('${filtro.input}')">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -696,41 +904,54 @@ function actualizarBadgesFiltros() {
                 </svg>
             </button>
         `;
-        container.appendChild(badge);
-    });
-}
+            container.appendChild(badge);
+        });
+    }
 
-function removerFiltro(inputId) {
-    const input = document.getElementById(inputId);
-    input.value = '';
-    aplicarFiltros();
-}
+    function removerFiltro(inputId) {
+        if (inputId === 'filtroAccion') {
+            document.getElementById('filtroAccionValue').value = '';
+            document.getElementById('filtroAccionText').textContent = 'Todas las acciones';
+            document.getElementById('filtroAccionText').classList.add('placeholder');
+        } else {
+            const input = document.getElementById(inputId);
+            input.value = '';
+        }
+        aplicarFiltros();
+    }
 
-function limpiarFiltros() {
-    document.getElementById('filtroUsuario').value = '';
-    document.getElementById('filtroAccion').value = '';
-    document.getElementById('filtroFechaDesde').value = '';
-    document.getElementById('filtroFechaHasta').value = '';
-    aplicarFiltros();
-}
 
-// ============== HISTORIAL DE USUARIO - OFFCANVAS ============== //
-function verHistorialUsuario(usuarioId, nombreUsuario) {
-    document.getElementById('historialTitulo').textContent = `Historial de ${nombreUsuario}`;
-    
-    // Abrir offcanvas
-    document.getElementById('historialOverlay').classList.add('active');
-    document.getElementById('historialOffcanvas').classList.add('active');
-    document.body.style.overflow = 'hidden';
+    function limpiarFiltros() {
+        document.getElementById('filtroUsuario').value = '';
 
-    // Cargar datos del usuario
-    fetch(`/admin/api/historial-usuario/${usuarioId}`)
-        .then(response => response.json())
-        .then(data => {
-            mostrarHistorialUsuario(data);
-        })
-        .catch(error => {
-            document.getElementById('historialContenido').innerHTML = `
+        // Reset Custom Select
+        document.getElementById('filtroAccionValue').value = '';
+        document.getElementById('filtroAccionText').textContent = 'Todas las acciones';
+        document.getElementById('filtroAccionText').classList.add('placeholder');
+
+        document.getElementById('filtroFechaDesde').value = '';
+        document.getElementById('filtroFechaHasta').value = '';
+        aplicarFiltros();
+    }
+
+
+    // ============== HISTORIAL DE USUARIO - OFFCANVAS ============== //
+    function verHistorialUsuario(usuarioId, nombreUsuario) {
+        document.getElementById('historialTitulo').textContent = `Historial de ${nombreUsuario}`;
+
+        // Abrir offcanvas
+        document.getElementById('historialOverlay').classList.add('active');
+        document.getElementById('historialOffcanvas').classList.add('active');
+        document.body.style.overflow = 'hidden';
+
+        // Cargar datos del usuario
+        fetch(`/admin/api/historial-usuario/${usuarioId}`)
+            .then(response => response.json())
+            .then(data => {
+                mostrarHistorialUsuario(data);
+            })
+            .catch(error => {
+                document.getElementById('historialContenido').innerHTML = `
                 <div class="empty-state">
                     <div class="empty-icon">
                         <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -741,14 +962,14 @@ function verHistorialUsuario(usuarioId, nombreUsuario) {
                     <p class="empty-text">No se pudo cargar el historial del usuario</p>
                 </div>
             `;
-        });
-}
+            });
+    }
 
-function mostrarHistorialUsuario(registros) {
-    const contenido = document.getElementById('historialContenido');
-    
-    if (!registros || registros.length === 0) {
-        contenido.innerHTML = `
+    function mostrarHistorialUsuario(registros) {
+        const contenido = document.getElementById('historialContenido');
+
+        if (!registros || registros.length === 0) {
+            contenido.innerHTML = `
             <div class="empty-state">
                 <div class="empty-icon">
                     <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -759,24 +980,24 @@ function mostrarHistorialUsuario(registros) {
                 <p class="empty-text">Este usuario no tiene accesos registrados</p>
             </div>
         `;
-        return;
-    }
+            return;
+        }
 
-    let html = '<div style="margin-bottom: 20px;">';
-    html += `<div style="background: var(--bg-primary); padding: 16px; border-radius: var(--radius-md); margin-bottom: 20px;">`;
-    html += `<div style="font-size: 24px; font-weight: 700; color: var(--primary); margin-bottom: 4px;">${registros.length}</div>`;
-    html += `<div style="font-size: 14px; color: var(--text-secondary);">Total de accesos registrados</div>`;
-    html += `</div>`;
-    html += '</div>';
+        let html = '<div style="margin-bottom: 20px;">';
+        html += `<div style="background: var(--bg-primary); padding: 16px; border-radius: var(--radius-md); margin-bottom: 20px;">`;
+        html += `<div style="font-size: 24px; font-weight: 700; color: var(--primary); margin-bottom: 4px;">${registros.length}</div>`;
+        html += `<div style="font-size: 14px; color: var(--text-secondary);">Total de accesos registrados</div>`;
+        html += `</div>`;
+        html += '</div>';
 
-    registros.forEach(registro => {
-        const fecha = new Date(registro.fecha_hora);
-        const accionClass = registro.accion.includes('login') && !registro.accion.includes('failed') ? 'action-login' :
-                           registro.accion.includes('logout') ? 'action-logout' :
-                           registro.accion.includes('failed') || registro.accion.includes('error') ? 'action-error' :
-                           'action-other';
-        
-        html += `
+        registros.forEach(registro => {
+            const fecha = new Date(registro.fecha_hora);
+            const accionClass = registro.accion.includes('login') && !registro.accion.includes('failed') ? 'action-login' :
+                registro.accion.includes('logout') ? 'action-logout' :
+                    registro.accion.includes('failed') || registro.accion.includes('error') ? 'action-error' :
+                        'action-other';
+
+            html += `
             <div class="user-history-item">
                 <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
                     <span class="action-badge ${accionClass}">${registro.accion}</span>
@@ -797,295 +1018,295 @@ function mostrarHistorialUsuario(registros) {
                 ` : ''}
             </div>
         `;
-    });
-
-    contenido.innerHTML = html;
-}
-
-function cerrarHistorial() {
-    document.getElementById('historialOverlay').classList.remove('active');
-    document.getElementById('historialOffcanvas').classList.remove('active');
-    document.body.style.overflow = '';
-}
-
-// Cerrar al hacer clic en overlay
-document.getElementById('historialOverlay').addEventListener('click', cerrarHistorial);
-
-// ============== ANÁLISIS SEMANAL - MODAL ============== //
-document.querySelector('[data-modal="analyticsModal"]').addEventListener('click', function() {
-    cargarAnalisisSemanal();
-});
-
-function cargarAnalisisSemanal() {
-    fetch('/admin/api/analisis-semanal')
-        .then(response => response.json())
-        .then(data => {
-            mostrarGraficoSemanal(data);
-        })
-        .catch(error => {
-            console.error('Error al cargar análisis semanal:', error);
         });
-}
 
-function mostrarGraficoSemanal(data) {
-    const ctx = document.getElementById('weeklyChart');
-    
-    // Destruir gráfico anterior si existe
-    if (weeklyChart) {
-        weeklyChart.destroy();
+        contenido.innerHTML = html;
     }
 
-    // Crear nuevo gráfico
-    weeklyChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
-            datasets: [{
-                label: 'Accesos',
-                data: data.dias,
-                backgroundColor: 'rgba(66, 153, 225, 0.8)',
-                borderColor: 'rgba(66, 153, 225, 1)',
-                borderWidth: 2,
-                borderRadius: 8,
-                barThickness: 50
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(45, 55, 72, 0.95)',
-                    padding: 12,
-                    titleFont: {
-                        size: 14,
-                        weight: '600'
-                    },
-                    bodyFont: {
-                        size: 13
-                    },
-                    borderColor: 'rgba(66, 153, 225, 0.5)',
-                    borderWidth: 1,
-                    displayColors: false,
-                    callbacks: {
-                        label: function(context) {
-                            return 'Accesos: ' + context.parsed.y;
-                        }
-                    }
-                }
+    function cerrarHistorial() {
+        document.getElementById('historialOverlay').classList.remove('active');
+        document.getElementById('historialOffcanvas').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    // Cerrar al hacer clic en overlay
+    document.getElementById('historialOverlay').addEventListener('click', cerrarHistorial);
+
+    // ============== ANÁLISIS SEMANAL - MODAL ============== //
+    document.querySelector('[data-modal="analyticsModal"]').addEventListener('click', function () {
+        cargarAnalisisSemanal();
+    });
+
+    function cargarAnalisisSemanal() {
+        fetch('/admin/api/analisis-semanal')
+            .then(response => response.json())
+            .then(data => {
+                mostrarGraficoSemanal(data);
+            })
+            .catch(error => {
+                console.error('Error al cargar análisis semanal:', error);
+            });
+    }
+
+    function mostrarGraficoSemanal(data) {
+        const ctx = document.getElementById('weeklyChart');
+
+        // Destruir gráfico anterior si existe
+        if (weeklyChart) {
+            weeklyChart.destroy();
+        }
+
+        // Crear nuevo gráfico
+        weeklyChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
+                datasets: [{
+                    label: 'Accesos',
+                    data: data.dias,
+                    backgroundColor: 'rgba(66, 153, 225, 0.8)',
+                    borderColor: 'rgba(66, 153, 225, 1)',
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    barThickness: 50
+                }]
             },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        stepSize: 1,
-                        font: {
-                            size: 12
-                        }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
                     },
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
+                    tooltip: {
+                        backgroundColor: 'rgba(45, 55, 72, 0.95)',
+                        padding: 12,
+                        titleFont: {
+                            size: 14,
+                            weight: '600'
+                        },
+                        bodyFont: {
+                            size: 13
+                        },
+                        borderColor: 'rgba(66, 153, 225, 0.5)',
+                        borderWidth: 1,
+                        displayColors: false,
+                        callbacks: {
+                            label: function (context) {
+                                return 'Accesos: ' + context.parsed.y;
+                            }
+                        }
                     }
                 },
-                x: {
-                    ticks: {
-                        font: {
-                            size: 12
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1,
+                            font: {
+                                size: 12
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
                         }
                     },
-                    grid: {
-                        display: false
+                    x: {
+                        ticks: {
+                            font: {
+                                size: 12
+                            }
+                        },
+                        grid: {
+                            display: false
+                        }
                     }
                 }
             }
-        }
-    });
-
-    // Actualizar estadísticas
-    document.getElementById('totalSemana').textContent = data.total;
-    document.getElementById('promedioSemana').textContent = Math.round(data.promedio);
-    document.getElementById('diaMasActivo').textContent = data.diaMasActivo;
-}
-
-function exportarGrafico() {
-    if (weeklyChart) {
-        const url = weeklyChart.toBase64Image();
-        const link = document.createElement('a');
-        link.download = 'analisis-semanal-accesos.png';
-        link.href = url;
-        link.click();
-    }
-}
-
-// ============== ESTADÍSTICAS ============== //
-function actualizarEstadisticas() {
-    fetch('/admin/api/estadisticas-accesos')
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('totalAccesosHoy').textContent = data.hoy || 0;
-            document.getElementById('accesosExitosos').textContent = data.exitosos || 0;
-            document.getElementById('accesosFallidos').textContent = data.fallidos || 0;
-            document.getElementById('usuariosActivos').textContent = data.usuarios_activos || 0;
-            
-            // Actualizar porcentajes con signo apropiado
-            const cambioHoyEl = document.getElementById('cambioHoy');
-            const cambioValor = data.cambio_hoy || 0;
-            cambioHoyEl.textContent = (cambioValor >= 0 ? '+' : '') + cambioValor + '%';
-            cambioHoyEl.style.color = cambioValor >= 0 ? 'var(--success)' : 'var(--danger)';
-            
-            document.getElementById('tasaExito').textContent = (data.tasa_exito || 0).toFixed(1) + '%';
-            document.getElementById('tasaFallo').textContent = (data.tasa_fallo || 0).toFixed(1) + '%';
-        })
-        .catch(error => {
-            console.error('Error al cargar estadísticas:', error);
         });
-}
 
-// ============== EXPORTAR DATOS ============== //
-function exportarDatos() {
-    window.location.href = '/admin/api/exportar-accesos?formato=csv';
-}
+        // Actualizar estadísticas
+        document.getElementById('totalSemana').textContent = data.total;
+        document.getElementById('promedioSemana').textContent = Math.round(data.promedio);
+        document.getElementById('diaMasActivo').textContent = data.diaMasActivo;
+    }
 
-// ============== PAGINACIÓN ============== //
-function inicializarPaginacion() {
-    const selectItems = document.getElementById('itemsPorPagina');
-    
-    // Inicializar registros filtrados con todos los registros
-    registrosFiltrados = Array.from(document.querySelectorAll('#tablaRegistros tr[data-usuario-id]'));
-    
-    // Event listener para cambio de items por página
-    selectItems.addEventListener('change', function() {
-        itemsPorPagina = parseInt(this.value);
-        paginaActual = 1;
+    function exportarGrafico() {
+        if (weeklyChart) {
+            const url = weeklyChart.toBase64Image();
+            const link = document.createElement('a');
+            link.download = 'analisis-semanal-accesos.png';
+            link.href = url;
+            link.click();
+        }
+    }
+
+    // ============== ESTADÍSTICAS ============== //
+    function actualizarEstadisticas() {
+        fetch('/admin/api/estadisticas-accesos')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('totalAccesosHoy').textContent = data.hoy || 0;
+                document.getElementById('accesosExitosos').textContent = data.exitosos || 0;
+                document.getElementById('accesosFallidos').textContent = data.fallidos || 0;
+                document.getElementById('usuariosActivos').textContent = data.usuarios_activos || 0;
+
+                // Actualizar porcentajes con signo apropiado
+                const cambioHoyEl = document.getElementById('cambioHoy');
+                const cambioValor = data.cambio_hoy || 0;
+                cambioHoyEl.textContent = (cambioValor >= 0 ? '+' : '') + cambioValor + '%';
+                cambioHoyEl.style.color = cambioValor >= 0 ? 'var(--success)' : 'var(--danger)';
+
+                document.getElementById('tasaExito').textContent = (data.tasa_exito || 0).toFixed(1) + '%';
+                document.getElementById('tasaFallo').textContent = (data.tasa_fallo || 0).toFixed(1) + '%';
+            })
+            .catch(error => {
+                console.error('Error al cargar estadísticas:', error);
+            });
+    }
+
+    // ============== EXPORTAR DATOS ============== //
+    function exportarDatos() {
+        window.location.href = '/admin/api/exportar-accesos?formato=csv';
+    }
+
+    // ============== PAGINACIÓN ============== //
+    function inicializarPaginacion() {
+        const selectItems = document.getElementById('itemsPorPagina');
+
+        // Inicializar registros filtrados con todos los registros
+        registrosFiltrados = Array.from(document.querySelectorAll('#tablaRegistros tr[data-usuario-id]'));
+
+        // Event listener para cambio de items por página
+        selectItems.addEventListener('change', function () {
+            itemsPorPagina = parseInt(this.value);
+            paginaActual = 1;
+            aplicarPaginacion();
+        });
+
+        // Aplicar paginación inicial
         aplicarPaginacion();
-    });
-    
-    // Aplicar paginación inicial
-    aplicarPaginacion();
-}
-
-function aplicarPaginacion() {
-    const todasLasFilas = document.querySelectorAll('#tablaRegistros tr[data-usuario-id]');
-    
-    // Ocultar todas las filas primero
-    todasLasFilas.forEach(fila => fila.style.display = 'none');
-    
-    // Si no hay registros filtrados, mostrar mensaje
-    if (registrosFiltrados.length === 0) {
-        mostrarMensajeVacio(true);
-        actualizarInfoPaginacion(0, 0, 0);
-        document.getElementById('paginacionControles').innerHTML = '';
-        return;
     }
-    
-    mostrarMensajeVacio(false);
-    
-    // Calcular índices
-    const totalRegistros = registrosFiltrados.length;
-    const totalPaginas = Math.ceil(totalRegistros / itemsPorPagina);
-    const inicio = (paginaActual - 1) * itemsPorPagina;
-    const fin = Math.min(inicio + itemsPorPagina, totalRegistros);
-    
-    // Mostrar solo los registros de la página actual
-    for (let i = inicio; i < fin; i++) {
-        registrosFiltrados[i].style.display = '';
-    }
-    
-    // Actualizar información de paginación
-    actualizarInfoPaginacion(inicio + 1, fin, totalRegistros);
-    
-    // Generar controles de paginación
-    generarControlesPaginacion(totalPaginas);
-}
 
-function actualizarInfoPaginacion(inicio, fin, total) {
-    document.getElementById('paginaInicio').textContent = inicio;
-    document.getElementById('paginaFin').textContent = fin;
-    document.getElementById('totalRegistros').textContent = total;
-}
+    function aplicarPaginacion() {
+        const todasLasFilas = document.querySelectorAll('#tablaRegistros tr[data-usuario-id]');
 
-function generarControlesPaginacion(totalPaginas) {
-    const controles = document.getElementById('paginacionControles');
-    
-    if (totalPaginas <= 1) {
-        controles.innerHTML = '';
-        return;
+        // Ocultar todas las filas primero
+        todasLasFilas.forEach(fila => fila.style.display = 'none');
+
+        // Si no hay registros filtrados, mostrar mensaje
+        if (registrosFiltrados.length === 0) {
+            mostrarMensajeVacio(true);
+            actualizarInfoPaginacion(0, 0, 0);
+            document.getElementById('paginacionControles').innerHTML = '';
+            return;
+        }
+
+        mostrarMensajeVacio(false);
+
+        // Calcular índices
+        const totalRegistros = registrosFiltrados.length;
+        const totalPaginas = Math.ceil(totalRegistros / itemsPorPagina);
+        const inicio = (paginaActual - 1) * itemsPorPagina;
+        const fin = Math.min(inicio + itemsPorPagina, totalRegistros);
+
+        // Mostrar solo los registros de la página actual
+        for (let i = inicio; i < fin; i++) {
+            registrosFiltrados[i].style.display = '';
+        }
+
+        // Actualizar información de paginación
+        actualizarInfoPaginacion(inicio + 1, fin, totalRegistros);
+
+        // Generar controles de paginación
+        generarControlesPaginacion(totalPaginas);
     }
-    
-    let html = '';
-    
-    // Botón anterior
-    html += `
+
+    function actualizarInfoPaginacion(inicio, fin, total) {
+        document.getElementById('paginaInicio').textContent = inicio;
+        document.getElementById('paginaFin').textContent = fin;
+        document.getElementById('totalRegistros').textContent = total;
+    }
+
+    function generarControlesPaginacion(totalPaginas) {
+        const controles = document.getElementById('paginacionControles');
+
+        if (totalPaginas <= 1) {
+            controles.innerHTML = '';
+            return;
+        }
+
+        let html = '';
+
+        // Botón anterior
+        html += `
         <button class="pagination-item" ${paginaActual === 1 ? 'disabled' : ''} onclick="cambiarPagina(${paginaActual - 1})">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
             </svg>
         </button>
     `;
-    
-    // Páginas
-    const maxPaginasVisibles = 5;
-    let inicioPaginas = Math.max(1, paginaActual - Math.floor(maxPaginasVisibles / 2));
-    let finPaginas = Math.min(totalPaginas, inicioPaginas + maxPaginasVisibles - 1);
-    
-    // Ajustar si estamos cerca del final
-    if (finPaginas - inicioPaginas < maxPaginasVisibles - 1) {
-        inicioPaginas = Math.max(1, finPaginas - maxPaginasVisibles + 1);
-    }
-    
-    // Primera página si no está visible
-    if (inicioPaginas > 1) {
-        html += `<button class="pagination-item" onclick="cambiarPagina(1)">1</button>`;
-        if (inicioPaginas > 2) {
-            html += `<span class="pagination-item" style="cursor: default;">...</span>`;
+
+        // Páginas
+        const maxPaginasVisibles = 5;
+        let inicioPaginas = Math.max(1, paginaActual - Math.floor(maxPaginasVisibles / 2));
+        let finPaginas = Math.min(totalPaginas, inicioPaginas + maxPaginasVisibles - 1);
+
+        // Ajustar si estamos cerca del final
+        if (finPaginas - inicioPaginas < maxPaginasVisibles - 1) {
+            inicioPaginas = Math.max(1, finPaginas - maxPaginasVisibles + 1);
         }
-    }
-    
-    // Páginas numeradas
-    for (let i = inicioPaginas; i <= finPaginas; i++) {
-        html += `
+
+        // Primera página si no está visible
+        if (inicioPaginas > 1) {
+            html += `<button class="pagination-item" onclick="cambiarPagina(1)">1</button>`;
+            if (inicioPaginas > 2) {
+                html += `<span class="pagination-item" style="cursor: default;">...</span>`;
+            }
+        }
+
+        // Páginas numeradas
+        for (let i = inicioPaginas; i <= finPaginas; i++) {
+            html += `
             <button class="pagination-item ${i === paginaActual ? 'active' : ''}" 
                     onclick="cambiarPagina(${i})">
                 ${i}
             </button>
         `;
-    }
-    
-    // Última página si no está visible
-    if (finPaginas < totalPaginas) {
-        if (finPaginas < totalPaginas - 1) {
-            html += `<span class="pagination-item" style="cursor: default;">...</span>`;
         }
-        html += `<button class="pagination-item" onclick="cambiarPagina(${totalPaginas})">${totalPaginas}</button>`;
-    }
-    
-    // Botón siguiente
-    html += `
+
+        // Última página si no está visible
+        if (finPaginas < totalPaginas) {
+            if (finPaginas < totalPaginas - 1) {
+                html += `<span class="pagination-item" style="cursor: default;">...</span>`;
+            }
+            html += `<button class="pagination-item" onclick="cambiarPagina(${totalPaginas})">${totalPaginas}</button>`;
+        }
+
+        // Botón siguiente
+        html += `
         <button class="pagination-item" ${paginaActual === totalPaginas ? 'disabled' : ''} onclick="cambiarPagina(${paginaActual + 1})">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
             </svg>
         </button>
     `;
-    
-    controles.innerHTML = html;
-}
 
-function cambiarPagina(numeroPagina) {
-    const totalPaginas = Math.ceil(registrosFiltrados.length / itemsPorPagina);
-    
-    if (numeroPagina < 1 || numeroPagina > totalPaginas) return;
-    
-    paginaActual = numeroPagina;
-    aplicarPaginacion();
-    
-    // Scroll suave hacia arriba de la tabla
-    document.querySelector('.table-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
+        controles.innerHTML = html;
+    }
 
-console.log('📊 Sistema de Registro de Accesos cargado correctamente');
+    function cambiarPagina(numeroPagina) {
+        const totalPaginas = Math.ceil(registrosFiltrados.length / itemsPorPagina);
+
+        if (numeroPagina < 1 || numeroPagina > totalPaginas) return;
+
+        paginaActual = numeroPagina;
+        aplicarPaginacion();
+
+        // Scroll suave hacia arriba de la tabla
+        document.querySelector('.table-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    console.log('📊 Sistema de Registro de Accesos cargado correctamente');
 </script>
 {% endblock %}

@@ -1,0 +1,1288 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Contratos{% endblock %}
+{% block breadcrumb %}
+<span class="breadcrumb-item">Módulo</span>
+<span class="breadcrumb-item">Lista de Contratos</span>
+{% endblock %}
+
+{% block content %}
+<style>
+    /* Custom Select Styles */
+    .custom-select-wrapper {
+        position: relative;
+    }
+
+    .custom-select-trigger {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 12px;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .custom-select-trigger:hover {
+        border-color: var(--primary);
+    }
+
+    .custom-select-trigger.active {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+    }
+
+    .custom-select-trigger .selected-value {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 14px;
+    }
+
+    .custom-select-trigger .selected-value.placeholder {
+        color: var(--text-tertiary);
+    }
+
+    .custom-select-trigger .arrow {
+        transition: transform 0.2s;
+        color: var(--text-tertiary);
+    }
+
+    .custom-select-trigger.active .arrow {
+        transform: rotate(180deg);
+    }
+
+    .custom-select-dropdown {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-lg);
+        z-index: 1000;
+        display: none;
+        max-height: 280px;
+        overflow: hidden;
+    }
+
+    .custom-select-dropdown.show {
+        display: block;
+        animation: dropdownFade 0.15s ease;
+    }
+
+    @keyframes dropdownFade {
+        from {
+            opacity: 0;
+            transform: translateY(-8px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .custom-select-search {
+        padding: 8px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .custom-select-search input {
+        width: 100%;
+        padding: 8px 10px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        font-size: 13px;
+        outline: none;
+    }
+
+    .custom-select-search input:focus {
+        border-color: var(--primary);
+    }
+
+    .custom-select-options {
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .custom-select-option {
+        padding: 10px 12px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background 0.15s;
+    }
+
+    .custom-select-option:hover {
+        background: var(--bg-secondary);
+    }
+
+    .custom-select-option.selected {
+        background: rgba(var(--primary-rgb), 0.1);
+        color: var(--primary);
+        font-weight: 500;
+    }
+</style>
+<div class="content-area">
+    <!-- Table Card -->
+    <div class="table-container">
+        <div class="table-header">
+            <div>
+                <h3 class="table-title">Contratos de Alquiler</h3>
+                <p class="card-subtitle">Gestiona los contratos activos y finalizados</p>
+            </div>
+            <div class="table-actions">
+                <div class="input-group" style="width: 400px;">
+                    <span class="input-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <circle cx="11" cy="11" r="8" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-4.35-4.35" />
+                        </svg>
+                    </span>
+                    <input type="text" class="form-input" id="searchInput" placeholder="Buscar contrato...">
+                </div>
+                <button class="btn btn-secondary" onclick="location.reload()" title="Actualizar">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path
+                            d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
+                    </svg>
+                    Actualizar
+                </button>
+                <button class="btn btn-primary" onclick="createNewContrato()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Nuevo Contrato
+                </button>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="table" id="contratosTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Inquilino</th>
+                        <th>Vehículo</th>
+                        <th>Monto</th>
+                        <th>Fecha Inicio</th>
+                        <th>Fecha Fin</th>
+                        <th>Tipo Pago</th>
+                        <th>Estado</th>
+                        <th>Depósito</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    {% for contrato in contratos %}
+                    <tr>
+                        <td><span class="badge badge-primary">#{{ contrato.id }}</span></td>
+                        <td><strong>{{ contrato.inquilino.nombre_apellido }}</strong></td>
+                        <td>
+                            <div>
+                                <strong>{{ contrato.vehiculo.placa }}</strong>
+                                <div style="font-size: 11px; color: var(--text-tertiary);">
+                                    {{ contrato.vehiculo.marca_modelo.marca }} {{ contrato.vehiculo.marca_modelo.modelo
+                                    }}
+                                </div>
+                            </div>
+                        </td>
+                        <td><strong>${{ "%.2f"|format(contrato.monto_contrato) }}</strong></td>
+                        <td>{{ contrato.fecha_inicio.strftime('%d/%m/%Y') }}</td>
+                        <td>
+                            {% if contrato.es_indefinido %}
+                            <span class="badge badge-info">Indefinido</span>
+                            {% else %}
+                            {{ contrato.fecha_fin.strftime('%d/%m/%Y') if contrato.fecha_fin else '—' }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span
+                                class="badge {% if contrato.tipo_pago == 'efectivo' %}badge-success{% elif contrato.tipo_pago == 'transferencia' %}badge-info{% else %}badge-warning{% endif %}">
+                                {{ contrato.tipo_pago|capitalize }}
+                            </span>
+                        </td>
+                        <td>
+                            <span
+                                class="badge {% if contrato.estado == 'activo' %}badge-success{% elif contrato.estado == 'finalizado' %}badge-secondary{% else %}badge-danger{% endif %}">
+                                {{ contrato.estado|capitalize }}
+                            </span>
+                        </td>
+                        <td>
+                            {% set deposito = contrato.depositos.first() %}
+                            {% if deposito %}
+                            <span
+                                class="badge {% if deposito.estado == 'completado' %}badge-success{% elif deposito.estado == 'parcial' %}badge-warning{% else %}badge-secondary{% endif %}">
+                                {{ deposito.estado|capitalize }}
+                            </span>
+                            {% else %}
+                            <span class="badge badge-danger">Pendiente</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 8px;">
+                                {% if contrato.comprobante_pago_path %}
+                                <button class="btn btn-sm btn-secondary"
+                                    onclick="viewDocument('{{ contrato.comprobante_pago_path }}', 'Comprobante')"
+                                    title="Ver Comprobante">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                        <polyline points="14 2 14 8 20 8" />
+                                    </svg>
+                                </button>
+                                {% endif %}
+                                {% if contrato.archivo_contrato_path %}
+                                <button class="btn btn-sm btn-info"
+                                    onclick="viewDocument('{{ contrato.archivo_contrato_path }}', 'Archivo de Contrato')"
+                                    title="Ver Archivo de Contrato">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white"
+                                        stroke-width="2">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                        <polyline points="14 2 14 8 20 8" />
+                                        <line x1="16" y1="13" x2="8" y2="13" />
+                                        <line x1="16" y1="17" x2="8" y2="17" />
+                                        <line x1="10" y1="9" x2="8" y2="9" />
+                                    </svg>
+                                </button>
+                                {% endif %}
+                                <button class="btn btn-sm btn-secondary" onclick='viewHistory("{{ contrato.id }}")'
+                                    title="Ver Historial">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </button>
+                                <button class="btn btn-sm btn-primary" onclick='editContrato("{{ contrato.id }}")'
+                                    title="Editar">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                </button>
+
+                                <button class="btn btn-sm btn-danger" onclick='deleteContrato("{{ contrato.id }}")'
+                                    title="Eliminar">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-footer">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 14px; color: var(--text-secondary);">
+                    Mostrando <strong id="showingStart">1</strong>-<strong id="showingEnd">5</strong> de <strong
+                        id="totalRecords">{{ contratos|length }}</strong> registros
+                </span>
+                <select id="itemsPerPage" class="form-select" style="width: 80px; height: 36px;">
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                </select>
+            </div>
+            <div class="pagination" id="paginationContainer"></div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Crear/Editar Contrato -->
+<div class="modal-overlay" id="createModal">
+    <div class="modal modal-lg">
+        <div class="modal-header">
+            <h3 class="modal-title" id="modalTitle">Nuevo Contrato</h3>
+            <button class="modal-close" onclick="closeModal(this.closest('.modal-overlay'))">×</button>
+        </div>
+        <form action="{{ url_for('contrato.crear_contrato') }}" method="POST" enctype="multipart/form-data"
+            id="contratoForm">
+            <input type="hidden" name="contrato_id" id="contratoId">
+            <div class="modal-body">
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+                    <!-- Inquilino Custom Select -->
+                    <div class="form-group">
+                        <label class="form-label required">Inquilino</label>
+                        <input type="hidden" name="inquilino_id" id="inquilinoSelect">
+                        <div class="custom-select-wrapper" id="inquilinoSelectWrapper">
+                            <div class="custom-select-trigger" onclick="toggleContratoSelect('inquilino')">
+                                <span class="selected-value placeholder"
+                                    id="inquilinoSelectedText">Seleccionar...</span>
+                                <svg class="arrow" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                            <div class="custom-select-dropdown" id="inquilinoDropdown">
+                                <div class="custom-select-search">
+                                    <input type="text" placeholder="Buscar inquilino..."
+                                        oninput="filterContratoSelect('inquilino', this.value)">
+                                </div>
+                                <div class="custom-select-options" id="inquilinoOptions">
+                                    {% for inquilino in inquilinos %}
+                                    <div class="custom-select-option" data-value="{{ inquilino.id }}"
+                                        onclick='selectContratoOption("inquilino", "{{ inquilino.id }}", {{ inquilino.nombre_apellido|tojson }})'>
+                                        {{ inquilino.nombre_apellido }}
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vehiculo Custom Select -->
+                    <div class="form-group">
+                        <label class="form-label required">Vehículo</label>
+                        <input type="hidden" name="vehiculo_id" id="vehiculoSelect">
+                        <div class="custom-select-wrapper" id="vehiculoSelectWrapper">
+                            <div class="custom-select-trigger" onclick="toggleContratoSelect('vehiculo')">
+                                <span class="selected-value placeholder" id="vehiculoSelectedText">Seleccionar...</span>
+                                <svg class="arrow" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                            <div class="custom-select-dropdown" id="vehiculoDropdown">
+                                <div class="custom-select-search">
+                                    <input type="text" placeholder="Buscar vehículo..."
+                                        oninput="filterContratoSelect('vehiculo', this.value)">
+                                </div>
+                                <div class="custom-select-options" id="vehiculoOptions">
+                                    {% for vehiculo in vehiculos %}
+                                    <div class="custom-select-option" data-value="{{ vehiculo.id }}"
+                                        data-precio="{{ vehiculo.precio_semanal }}"
+                                        onclick='selectContratoOption("vehiculo", "{{ vehiculo.id }}", {{ (vehiculo.placa + " - " + vehiculo.marca_modelo.marca + " " + vehiculo.marca_modelo.modelo)|tojson }}, {{ vehiculo.precio_semanal|tojson }})'>
+                                        {{ vehiculo.placa }} - {{ vehiculo.marca_modelo.marca }} {{
+                                        vehiculo.marca_modelo.modelo }}
+                                        <span style="color: var(--success); font-weight: 600; margin-left: 4px;">-
+                                            DISPONIBLE</span>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label required">Monto Contrato</label>
+                        <input type="number" name="monto_contrato" id="montoInput" class="form-input" step="0.01"
+                            value="1000.00" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Fecha Inicio</label>
+                        <input type="date" name="fecha_inicio" id="fechaInicioInput" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Duración del Contrato</label>
+                        <input type="hidden" name="duracion_contrato" id="duracionSelect" value="indefinido">
+                        <div class="custom-select-wrapper" id="duracionSelectWrapper">
+                            <div class="custom-select-trigger" onclick="toggleContratoSelect('duracion')">
+                                <span class="selected-value" id="duracionSelectedText">Indefinido</span>
+                                <svg class="arrow" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                            <div class="custom-select-dropdown" id="duracionDropdown">
+                                <div class="custom-select-search">
+                                    <input type="text" placeholder="Buscar..."
+                                        oninput="filterContratoSelect('duracion', this.value)">
+                                </div>
+                                <div class="custom-select-options" id="duracionOptions">
+                                    <div class="custom-select-option selected" data-value="indefinido"
+                                        onclick="selectContratoOption('duracion', 'indefinido', 'Indefinido')">
+                                        Indefinido</div>
+                                    <div class="custom-select-option" data-value="definido"
+                                        onclick="selectContratoOption('duracion', 'definido', 'Con Fecha de Finalización')">
+                                        Con Fecha de Finalización</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group" id="fechaFinGroup" style="display: none;">
+                        <label class="form-label">Fecha Fin</label>
+                        <input type="date" name="fecha_fin" id="fechaFinInput" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Tipo de Pago</label>
+                        <input type="hidden" name="tipo_pago" id="tipoPagoSelect" value="efectivo">
+                        <div class="custom-select-wrapper" id="tipoPagoSelectWrapper">
+                            <div class="custom-select-trigger" onclick="toggleContratoSelect('tipoPago')">
+                                <span class="selected-value" id="tipoPagoSelectedText">Efectivo</span>
+                                <svg class="arrow" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                            <div class="custom-select-dropdown" id="tipoPagoDropdown">
+                                <div class="custom-select-search">
+                                    <input type="text" placeholder="Buscar..."
+                                        oninput="filterContratoSelect('tipoPago', this.value)">
+                                </div>
+                                <div class="custom-select-options" id="tipoPagoOptions">
+                                    <div class="custom-select-option selected" data-value="efectivo"
+                                        onclick="selectContratoOption('tipoPago', 'efectivo', 'Efectivo')">Efectivo
+                                    </div>
+                                    <div class="custom-select-option" data-value="transferencia"
+                                        onclick="selectContratoOption('tipoPago', 'transferencia', 'Transferencia')">
+                                        Transferencia</div>
+                                    <div class="custom-select-option" data-value="pendiente"
+                                        onclick="selectContratoOption('tipoPago', 'pendiente', 'Pendiente')">Pendiente
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="comprobanteGroup" style="display: none;">
+                        <label class="form-label">Comprobante de Pago</label>
+                        <div class="file-upload-container">
+                            <div class="file-upload" id="comprobanteUploadArea">
+                                <input type="file" name="comprobante_pago" id="comprobanteInput" class="file-input"
+                                    accept="image/*,.pdf" onchange="handleComprobantePreview(this)">
+                                <label for="comprobanteInput" class="file-label">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                    </svg>
+                                    <span id="comprobanteText">Subir comprobante</span>
+                                </label>
+                            </div>
+                            <div id="comprobantePreviewContainer" style="display: none; margin-top: 12px;">
+                                <div
+                                    style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg-secondary); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                                    <div id="comprobantePreviewThumb"
+                                        style="width: 60px; height: 60px; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-tertiary); display: flex; align-items: center; justify-content: center;">
+                                    </div>
+                                    <div style="flex: 1; min-width: 0;">
+                                        <div id="comprobantePreviewName"
+                                            style="font-weight: 500; font-size: 13px; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                        </div>
+                                        <div id="comprobantePreviewSize"
+                                            style="font-size: 11px; color: var(--text-tertiary); margin-top: 2px;">
+                                        </div>
+                                    </div>
+                                    <button type="button" onclick="removeComprobantePreview()"
+                                        style="width: 28px; height: 28px; border-radius: 50%; background: var(--danger); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;"
+                                        title="Eliminar">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <path d="M18 6L6 18M6 6l12 12"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="comprobanteExistingContainer" style="display: none; margin-top: 12px;">
+                                <div
+                                    style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg-secondary); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                                    <div id="comprobanteExistingThumb" onclick="openComprobanteModal()"
+                                        style="width: 60px; height: 60px; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-tertiary); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s;"
+                                        onmouseover="this.style.transform='scale(1.05)'"
+                                        onmouseout="this.style.transform='scale(1)'">
+                                    </div>
+                                    <div style="flex: 1; min-width: 0;">
+                                        <div style="font-weight: 500; font-size: 13px; color: var(--text-primary);">
+                                            Comprobante adjunto</div>
+                                    </div>
+                                    <button type="button" onclick="openComprobanteModal()"
+                                        style="padding: 6px 12px; font-size: 12px; background: var(--primary); color: white; border: none; border-radius: var(--radius-sm); cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                        </svg>
+                                        Ver
+                                    </button>
+                                    <button type="button" onclick="changeComprobante()"
+                                        style="padding: 6px 12px; font-size: 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); cursor: pointer;">Cambiar</button>
+                                    <button type="button" onclick="deleteExistingComprobante()"
+                                        style="width: 28px; height: 28px; padding: 0; background: var(--danger); color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;"
+                                        title="Eliminar">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <path d="M18 6L6 18M6 6l12 12"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" name="comprobante_existing" id="comprobanteExisting">
+                    </div>
+
+                    <!-- Archivo Contrato Field -->
+                    <div class="form-group">
+                        <label class="form-label">Archivo de Contrato (PDF/Imagen)</label>
+                        <div class="file-upload-container">
+                            <div class="file-upload" id="archivoContratoUploadArea">
+                                <input type="file" name="archivo_contrato" id="archivoContratoInput" class="file-input"
+                                    accept="image/*,.pdf" onchange="handleFilePreview(this, 'archivoContrato')">
+                                <label for="archivoContratoInput" class="file-label">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    <span id="archivoContratoText">Subir contrato</span>
+                                </label>
+                            </div>
+                            <div id="archivoContratoPreviewContainer" style="display: none; margin-top: 12px;">
+                                <div
+                                    style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg-secondary); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                                    <div id="archivoContratoPreviewThumb"
+                                        style="width: 60px; height: 60px; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-tertiary); display: flex; align-items: center; justify-content: center;">
+                                    </div>
+                                    <div style="flex: 1; min-width: 0;">
+                                        <div id="archivoContratoPreviewName"
+                                            style="font-weight: 500; font-size: 13px; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                        </div>
+                                        <div id="archivoContratoPreviewSize"
+                                            style="font-size: 11px; color: var(--text-tertiary); margin-top: 2px;">
+                                        </div>
+                                    </div>
+                                    <button type="button" onclick="removeFilePreview('archivoContrato')"
+                                        style="width: 28px; height: 28px; border-radius: 50%; background: var(--danger); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;"
+                                        title="Eliminar">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <path d="M18 6L6 18M6 6l12 12"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="archivoContratoExistingContainer" style="display: none; margin-top: 12px;">
+                                <div
+                                    style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg-secondary); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                                    <div id="archivoContratoExistingThumb" onclick="openFileModal('archivoContrato')"
+                                        style="width: 60px; height: 60px; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-tertiary); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s;"
+                                        onmouseover="this.style.transform='scale(1.05)'"
+                                        onmouseout="this.style.transform='scale(1)'">
+                                    </div>
+                                    <div style="flex: 1; min-width: 0;">
+                                        <div style="font-weight: 500; font-size: 13px; color: var(--text-primary);">
+                                            Contrato adjunto</div>
+                                    </div>
+                                    <button type="button" onclick="openFileModal('archivoContrato')"
+                                        style="padding: 6px 12px; font-size: 12px; background: var(--primary); color: white; border: none; border-radius: var(--radius-sm); cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                        </svg>
+                                        Ver
+                                    </button>
+                                    <button type="button" onclick="changeFile('archivoContrato')"
+                                        style="padding: 6px 12px; font-size: 12px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); cursor: pointer;">Cambiar</button>
+                                    <button type="button" onclick="deleteExistingFile('archivoContrato')"
+                                        style="width: 28px; height: 28px; padding: 0; background: var(--danger); color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;"
+                                        title="Eliminar">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <path d="M18 6L6 18M6 6l12 12"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" name="archivo_contrato_existing" id="archivoContratoExisting">
+                        <input type="hidden" name="archivo_contrato_delete" id="archivoContratoDelete" value="false">
+                    </div>
+
+                    <div class="form-group" id="confirmacionGroup">
+                        <div class="checkbox-wrapper" style="margin-top: 32px;">
+                            <input type="checkbox" name="confirmacion_pago" id="confirmacionCheck" class="checkbox">
+                            <label for="confirmacionCheck" class="checkbox-label">Pago Confirmado</label>
+                        </div>
+                    </div>
+                </div> <!-- End Grid -->
+
+                <!-- Estado Group (only visible when editing) -->
+                <div class="form-group" id="estadoGroup" style="display: none; margin-top: 16px;">
+                    <label class="form-label required">Estado</label>
+                    <input type="hidden" name="estado" id="estadoSelect" value="activo">
+                    <div class="custom-select-wrapper" id="estadoSelectWrapper">
+                        <div class="custom-select-trigger" onclick="toggleContratoSelect('estado')">
+                            <span class="selected-value" id="estadoSelectedText">Activo</span>
+                            <svg class="arrow" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7">
+                                </path>
+                            </svg>
+                        </div>
+                        <div class="custom-select-dropdown" id="estadoDropdown">
+                            <div class="custom-select-search">
+                                <input type="text" placeholder="Buscar..."
+                                    oninput="filterContratoSelect('estado', this.value)">
+                            </div>
+                            <div class="custom-select-options" id="estadoOptions">
+                                <div class="custom-select-option selected" data-value="activo"
+                                    onclick="selectContratoOption('estado', 'activo', 'Activo')">Activo</div>
+                                <div class="custom-select-option" data-value="finalizado"
+                                    onclick="selectContratoOption('estado', 'finalizado', 'Finalizado')">Finalizado
+                                </div>
+                                <div class="custom-select-option" data-value="cancelado"
+                                    onclick="selectContratoOption('estado', 'cancelado', 'Cancelado')">Cancelado</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 16px;">
+                    <label class="form-label">Notas</label>
+                    <textarea name="notas" id="notasInput" class="form-input" rows="3"
+                        placeholder="Notas adicionales..."></textarea>
+                </div>
+            </div> <!-- End Modal Body -->
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button>
+                <button type="submit" class="btn btn-primary" id="submitBtn">Guardar Contrato</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: Confirmar Eliminación -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal modal-sm">
+        <div class="modal-header">
+            <h3 class="modal-title">Confirmar Eliminación</h3>
+            <button class="modal-close" data-modal-close>×</button>
+        </div>
+        <form id="deleteForm" method="POST">
+            <div class="modal-body">
+                <p>¿Estás seguro de eliminar este contrato?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button>
+                <button type="submit" class="btn btn-danger">Eliminar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: Ver Comprobante -->
+<div class="modal-overlay" id="comprobanteViewModal" onclick="if(event.target === this) closeModal(this)">
+    <div class="modal" style="max-width: 800px; max-height: 90vh;">
+        <div class="modal-header">
+            <h3 class="modal-title">Comprobante de Pago</h3>
+            <div style="display: flex; gap: 8px;">
+                <a id="comprobanteDownloadLink" href="#" download
+                    style="padding: 6px 12px; font-size: 12px; background: var(--primary); color: white; border-radius: var(--radius-sm); text-decoration: none; display: flex; align-items: center; gap: 4px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Descargar
+                </a>
+                <button class="modal-close" onclick="closeModal(this.closest('.modal-overlay'))">×</button>
+            </div>
+        </div>
+        <div class="modal-body"
+            style="padding: 0; display: flex; align-items: center; justify-content: center; background: var(--bg-secondary); min-height: 400px; max-height: 70vh; overflow: auto;">
+            <div id="comprobanteViewContent"
+                style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+                <!-- Content will be inserted here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Historial de Contrato -->
+<div class="modal-overlay" id="historyModal" onclick="if(event.target === this) closeModal(this)">
+    <div class="modal modal-lg" style="max-height: 90vh; overflow: hidden; display: flex; flex-direction: column;">
+        <div class="modal-header">
+            <h3 class="modal-title">Historial de Modificaciones</h3>
+            <button class="modal-close" data-modal-close>×</button>
+        </div>
+        <div class="modal-body" style="padding: 0; overflow-y: auto;">
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Fecha/Hora</th>
+                            <th>Usuario</th>
+                            <th>Operación</th>
+                            <th>Detalles</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                        <!-- Content will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+            <!-- Empty State -->
+            <div id="historyEmpty" style="text-align: center; padding: 40px; display: none;">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)"
+                    style="margin: 0 auto 16px;">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 6v6l4 2" />
+                </svg>
+                <p style="color: var(--text-secondary); font-size: 15px;">No hay historial disponible para este
+                    contrato.</p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary"
+                onclick="closeModal(this.closest('.modal-overlay'))">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentPage = 1;
+    let itemsPerPage = 5;
+    let allRows = [];
+    let filteredRows = [];
+
+    document.addEventListener('DOMContentLoaded', function () {
+        allRows = Array.from(document.querySelectorAll('#tableBody tr'));
+        filteredRows = [...allRows];
+        updatePagination();
+
+        document.getElementById('searchInput')?.addEventListener('input', function (e) {
+            const searchTerm = e.target.value.toLowerCase();
+            filteredRows = allRows.filter(row => row.textContent.toLowerCase().includes(searchTerm));
+            currentPage = 1;
+            updatePagination();
+        });
+
+        document.getElementById('itemsPerPage')?.addEventListener('change', function (e) {
+            itemsPerPage = parseInt(e.target.value);
+            currentPage = 1;
+            updatePagination();
+        });
+    });
+
+    function updatePagination() {
+        const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+
+        allRows.forEach(row => row.style.display = 'none');
+        filteredRows.slice(start, end).forEach(row => row.style.display = '');
+
+        document.getElementById('showingStart').textContent = filteredRows.length > 0 ? start + 1 : 0;
+        document.getElementById('showingEnd').textContent = Math.min(end, filteredRows.length);
+        document.getElementById('totalRecords').textContent = filteredRows.length;
+
+        generatePaginationButtons(totalPages);
+    }
+
+    function generatePaginationButtons(totalPages) {
+        const container = document.getElementById('paginationContainer');
+        if (!container) return;
+        container.innerHTML = '';
+
+        const prevBtn = document.createElement('button');
+        prevBtn.className = 'pagination-item';
+        prevBtn.disabled = currentPage === 1;
+        prevBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>';
+        prevBtn.onclick = () => { if (currentPage > 1) { currentPage--; updatePagination(); } };
+        container.appendChild(prevBtn);
+
+        for (let i = 1; i <= totalPages; i++) {
+            const btn = document.createElement('button');
+            btn.className = 'pagination-item' + (i === currentPage ? ' active' : '');
+            btn.textContent = i;
+            btn.onclick = () => { currentPage = i; updatePagination(); };
+            container.appendChild(btn);
+        }
+
+        const nextBtn = document.createElement('button');
+        nextBtn.className = 'pagination-item';
+        nextBtn.disabled = currentPage === totalPages || totalPages === 0;
+        nextBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>';
+        nextBtn.onclick = () => { if (currentPage < totalPages) { currentPage++; updatePagination(); } };
+        container.appendChild(nextBtn);
+    }
+
+    function createNewContrato() {
+        document.getElementById('modalTitle').textContent = 'Nuevo Contrato';
+        document.getElementById('contratoForm').action = '{{ url_for("contrato.crear_contrato") }}';
+        document.getElementById('contratoForm').reset();
+        document.getElementById('contratoId').value = '';
+
+        resetContratoSelects();
+
+        document.getElementById('fechaFinGroup').style.display = 'none';
+        document.getElementById('comprobanteGroup').style.display = 'none';
+        document.getElementById('estadoGroup').style.display = 'none';
+        openModal('createModal');
+    }
+
+    async function editContrato(id) {
+        try {
+            const response = await fetch(`/contrato/${id}`);
+            const data = await response.json();
+
+            if (data.success) {
+                const c = data.contrato;
+                document.getElementById('modalTitle').textContent = 'Editar Contrato';
+                document.getElementById('contratoForm').action = `/contrato/${id}/editar`;
+                document.getElementById('contratoId').value = id;
+
+                // Set custom selects
+                selectContratoOption('inquilino', c.inquilino_id.toString(), c.inquilino_nombre || '');
+                selectContratoOption('vehiculo', c.vehiculo_id.toString(), c.vehiculo_info || '', c.monto_contrato);
+
+                document.getElementById('montoInput').value = c.monto_contrato;
+                document.getElementById('fechaInicioInput').value = c.fecha_inicio;
+
+                // Set custom selects for duration and payment type
+                const duracionVal = c.es_indefinido ? 'indefinido' : 'definido';
+                const duracionText = c.es_indefinido ? 'Indefinido' : 'Con Fecha de Finalización';
+                selectContratoOption('duracion', duracionVal, duracionText);
+
+                const tipoPagoMap = {
+                    'efectivo': 'Efectivo',
+                    'transferencia': 'Transferencia',
+                    'pendiente': 'Pendiente'
+                };
+                selectContratoOption('tipoPago', c.tipo_pago, tipoPagoMap[c.tipo_pago] || c.tipo_pago);
+
+                document.getElementById('fechaFinInput').value = c.fecha_fin || '';
+                document.getElementById('confirmacionCheck').checked = c.confirmacion_pago;
+                document.getElementById('notasInput').value = c.notas || '';
+
+                // Set Estado select
+                const estadoMap = {
+                    'activo': 'Activo',
+                    'finalizado': 'Finalizado',
+                    'cancelado': 'Cancelado'
+                };
+                selectContratoOption('estado', c.estado, estadoMap[c.estado] || c.estado);
+                document.getElementById('estadoGroup').style.display = 'block';
+
+                toggleFechaFin();
+                toggleComprobante();
+
+                // Handle comprobante existing file
+                document.getElementById('comprobantePreviewContainer').style.display = 'none';
+                if (c.comprobante_pago_path) {
+                    document.getElementById('comprobanteExisting').value = c.comprobante_pago_path;
+                    updateExistingComprobanteThumb(c.comprobante_pago_path);
+                    document.getElementById('comprobanteExistingContainer').style.display = 'block';
+                    document.getElementById('comprobanteUploadArea').style.display = 'none';
+                } else {
+                    document.getElementById('comprobanteExistingContainer').style.display = 'none';
+                    document.getElementById('comprobanteUploadArea').style.display = 'block';
+                }
+
+                // Handle archivo contrato existing file
+                document.getElementById('archivoContratoPreviewContainer').style.display = 'none';
+                document.getElementById('archivoContratoDelete').value = 'false';
+                if (c.archivo_contrato_path) {
+                    document.getElementById('archivoContratoExisting').value = c.archivo_contrato_path;
+                    updateFileThumb('archivoContrato', c.archivo_contrato_path);
+                    document.getElementById('archivoContratoExistingContainer').style.display = 'block';
+                    document.getElementById('archivoContratoUploadArea').style.display = 'none';
+                } else {
+                    document.getElementById('archivoContratoExistingContainer').style.display = 'none';
+                    document.getElementById('archivoContratoUploadArea').style.display = 'block';
+                }
+
+                openModal('createModal');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error al cargar datos del contrato');
+        }
+    }
+
+    async function viewHistory(id) {
+        try {
+            const tableBody = document.getElementById('historyTableBody');
+            const emptyState = document.getElementById('historyEmpty');
+
+            tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">Cargando historial...</td></tr>';
+            emptyState.style.display = 'none';
+            openModal('historyModal');
+
+            const response = await fetch(`/contrato/${id}/historial`);
+            const data = await response.json();
+
+            if (data.success) {
+                if (data.historial.length === 0) {
+                    tableBody.innerHTML = '';
+                    emptyState.style.display = 'block';
+                } else {
+                    tableBody.innerHTML = '';
+                    data.historial.forEach(h => {
+                        let badgeClass = 'badge-info';
+                        if (h.tipo_operacion === 'INSERT') badgeClass = 'badge-success';
+                        if (h.tipo_operacion === 'DELETE') badgeClass = 'badge-danger';
+
+                        const row = `
+                            <tr>
+                                <td>${h.fecha_hora}</td>
+                                <td><strong>${h.usuario_nombre}</strong></td>
+                                <td><span class="badge ${badgeClass}">${h.tipo_operacion}</span></td>
+                                <td>${formatHistoryDetails(h)}</td>
+                            </tr>
+                        `;
+                        tableBody.insertAdjacentHTML('beforeend', row);
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error al cargar historial');
+        }
+    }
+
+    function formatHistoryDetails(record) {
+        if (record.tipo_operacion === 'INSERT') {
+            return `
+                <div style="font-size: 13px;">
+                    <strong>Registro Inicial:</strong><br>
+                    <span style="color: var(--text-secondary);">
+                        Inquilino: ${record.inquilino}<br>
+                        Vehículo: ${record.vehiculo}<br>
+                        Monto: $${parseFloat(record.monto_contrato).toLocaleString(undefined, { minimumFractionDigits: 2 })}<br>
+                        Estado: ${record.estado}
+                    </span>
+                </div>
+            `;
+        } else if (record.tipo_operacion === 'DELETE') {
+            return `
+                <div style="font-size: 13px;">
+                    <strong>Registro Eliminado:</strong><br>
+                    <span style="color: var(--text-secondary);">
+                        Inquilino: ${record.inquilino}<br>
+                        Vehículo: ${record.vehiculo}
+                    </span>
+                </div>
+            `;
+        } else if (record.tipo_operacion === 'UPDATE') {
+            let changes = [];
+            if (record.cambios && record.cambios.length > 0) {
+                record.cambios.forEach(cambio => {
+                    changes.push(`
+                        <div style="margin-bottom: 4px; padding: 4px 8px; background: var(--bg-secondary); border-radius: 4px; font-size: 12px;">
+                            <strong>${cambio.campo}:</strong> 
+                            <code style="background: rgba(245, 101, 101, 0.1); padding: 1px 4px; border-radius: 2px;">${cambio.valor_anterior}</code>
+                            <span style="margin: 0 4px;">→</span>
+                            <code style="background: rgba(76, 175, 80, 0.1); padding: 1px 4px; border-radius: 2px;">${cambio.valor_nuevo}</code>
+                        </div>
+                    `);
+                });
+            }
+            return changes.length > 0 ? changes.join('') : '<span style="color: var(--text-secondary); font-size: 12px;">Sin cambios específicos</span>';
+        }
+        return '-';
+    }
+
+    function deleteContrato(id) {
+        document.getElementById('deleteForm').action = `/contrato/${id}/eliminar`;
+        openModal('deleteModal');
+    }
+
+    function toggleFechaFin() {
+        const duracion = document.getElementById('duracionSelect').value;
+        const group = document.getElementById('fechaFinGroup');
+        const input = document.getElementById('fechaFinInput');
+
+        if (duracion === 'definido') {
+            group.style.display = 'block';
+            input.required = true;
+        } else {
+            group.style.display = 'none';
+            input.required = false;
+            input.value = '';
+        }
+    }
+
+    function toggleComprobante() {
+        const tipo = document.getElementById('tipoPagoSelect').value;
+        const group = document.getElementById('comprobanteGroup');
+
+        if (tipo === 'transferencia') {
+            group.style.display = 'block';
+        } else {
+            group.style.display = 'none';
+        }
+    }
+
+    function viewDocument(path, title) {
+        const fullPath = '/static/' + path;
+        const contentContainer = document.getElementById('comprobanteViewContent');
+        const downloadLink = document.getElementById('comprobanteDownloadLink');
+        const modalTitle = document.querySelector('#comprobanteViewModal .modal-title');
+
+        if (modalTitle && title) {
+            modalTitle.textContent = title;
+        }
+
+        downloadLink.href = fullPath;
+
+        // Check if PDF or image
+        const isPdf = path.toLowerCase().endsWith('.pdf');
+
+        if (isPdf) {
+            contentContainer.innerHTML = `
+                <iframe src="${fullPath}" style="width: 100%; height: 500px; border: none;"></iframe>
+            `;
+        } else {
+            contentContainer.innerHTML = `
+                <img src="${fullPath}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+            `;
+        }
+
+        openModal('comprobanteViewModal');
+    }
+
+    // ==================== CUSTOM SELECT FUNCTIONS ====================
+    const contratoSelectData = {
+        inquilino: { value: '', text: '' },
+        vehiculo: { value: '', text: '' },
+        duracion: { value: 'indefinido', text: 'Indefinido' },
+        tipoPago: { value: 'efectivo', text: 'Efectivo' },
+        estado: { value: 'activo', text: 'Activo' }
+    };
+
+    function toggleContratoSelect(selectName) {
+        const dropdown = document.getElementById(`${selectName}Dropdown`);
+        const trigger = dropdown.previousElementSibling;
+        const isOpen = dropdown.classList.contains('show');
+
+        closeAllContratoSelects();
+
+        if (!isOpen) {
+            dropdown.classList.add('show');
+            trigger.classList.add('active');
+            const searchInput = dropdown.querySelector('input[type="text"]');
+            if (searchInput) {
+                setTimeout(() => searchInput.focus(), 100);
+            }
+        }
+    }
+
+    function closeAllContratoSelects() {
+        document.querySelectorAll('.custom-select-dropdown.show').forEach(dropdown => {
+            dropdown.classList.remove('show');
+            dropdown.previousElementSibling?.classList.remove('active');
+        });
+    }
+
+    function selectContratoOption(selectName, value, text, precio = null) {
+        contratoSelectData[selectName].value = value;
+        contratoSelectData[selectName].text = text;
+
+        document.getElementById(`${selectName}Select`).value = value;
+
+        const textEl = document.getElementById(`${selectName}SelectedText`);
+        textEl.textContent = text;
+        textEl.classList.remove('placeholder');
+
+        // Mark as selected
+        const options = document.getElementById(`${selectName}Options`);
+        options.querySelectorAll('.custom-select-option').forEach(opt => {
+            opt.classList.toggle('selected', opt.dataset.value === value);
+        });
+
+        // Auto-fill price if vehicle selected
+        if (selectName === 'vehiculo' && precio) {
+            document.getElementById('montoInput').value = parseFloat(precio).toFixed(2);
+        }
+
+        // Trigger toggles
+        if (selectName === 'duracion') toggleFechaFin();
+        if (selectName === 'tipoPago') toggleComprobante();
+
+        closeAllContratoSelects();
+    }
+
+    function filterContratoSelect(selectName, query) {
+        const options = document.getElementById(`${selectName}Options`);
+        const items = options.querySelectorAll('.custom-select-option');
+        const lowerQuery = query.toLowerCase();
+
+        let hasResults = false;
+        items.forEach(item => {
+            const matches = item.textContent.toLowerCase().includes(lowerQuery);
+            item.style.display = matches ? '' : 'none';
+            if (matches) hasResults = true;
+        });
+    }
+
+    function resetContratoSelects() {
+        ['inquilino', 'vehiculo'].forEach(name => {
+            contratoSelectData[name].value = '';
+            contratoSelectData[name].text = '';
+
+            document.getElementById(`${name}Select`).value = '';
+
+            const textEl = document.getElementById(`${name}SelectedText`);
+            if (textEl) {
+                textEl.textContent = 'Seleccionar...';
+                textEl.classList.add('placeholder');
+            }
+
+            const dropdown = document.getElementById(`${name}Dropdown`);
+            const searchInput = dropdown?.querySelector('input[type="text"]');
+            if (searchInput) searchInput.value = '';
+
+            const options = document.getElementById(`${name}Options`);
+            if (options) {
+                options.querySelectorAll('.custom-select-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                    opt.style.display = '';
+                });
+            }
+        });
+
+        // Specific resets for defaults
+        selectContratoOption('duracion', 'indefinido', 'Indefinido');
+        selectContratoOption('tipoPago', 'efectivo', 'Efectivo');
+        selectContratoOption('estado', 'activo', 'Activo');
+    }
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.custom-select-wrapper')) {
+            closeAllContratoSelects();
+        }
+    });
+
+    // ==================== FILE PREVIEW FUNCTIONS ====================
+    function handleFilePreview(input, type) {
+        const file = input.files[0];
+        if (!file) return;
+
+        const previewContainer = document.getElementById(`${type}PreviewContainer`);
+        const previewThumb = document.getElementById(`${type}PreviewThumb`);
+        const previewName = document.getElementById(`${type}PreviewName`);
+        const previewSize = document.getElementById(`${type}PreviewSize`);
+        const uploadArea = document.getElementById(`${type}UploadArea`);
+
+        // Hide upload area, show preview
+        uploadArea.style.display = 'none';
+        previewContainer.style.display = 'block';
+        const existingContainer = document.getElementById(`${type}ExistingContainer`);
+        if (existingContainer) existingContainer.style.display = 'none';
+
+        if (type === 'archivoContrato') {
+            document.getElementById('archivoContratoDelete').value = 'false';
+        }
+
+        // Set name and size
+        previewName.textContent = file.name;
+        previewSize.textContent = formatFileSize(file.size);
+
+        // Show thumbnail
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                previewThumb.innerHTML = `<img src="${e.target.result}" style="width: 100%; height: 100%; object-fit: cover;">`;
+            };
+            reader.readAsDataURL(file);
+        } else {
+            // PDF icon
+            previewThumb.innerHTML = `
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <text x="6" y="17" font-size="6" fill="var(--danger)" stroke="none" font-weight="bold">PDF</text>
+                </svg>
+            `;
+        }
+    }
+
+    function removeFilePreview(type) {
+        document.getElementById(`${type}Input`).value = '';
+        document.getElementById(`${type}PreviewContainer`).style.display = 'none';
+        document.getElementById(`${type}UploadArea`).style.display = 'block';
+    }
+
+    function changeFile(type) {
+        const existingContainer = document.getElementById(`${type}ExistingContainer`);
+        if (existingContainer) existingContainer.style.display = 'none';
+        document.getElementById(`${type}UploadArea`).style.display = 'block';
+        document.getElementById(`${type}Input`).click();
+    }
+
+    function deleteExistingFile(type) {
+        const existingInput = document.getElementById(`${type}Existing`);
+        if (existingInput) existingInput.value = '';
+
+        if (type === 'archivoContrato') {
+            document.getElementById('archivoContratoDelete').value = 'true';
+        }
+
+        const existingContainer = document.getElementById(`${type}ExistingContainer`);
+        if (existingContainer) existingContainer.style.display = 'none';
+        document.getElementById(`${type}UploadArea`).style.display = 'block';
+    }
+
+    function openFileModal(type) {
+        const path = document.getElementById(`${type}Existing`).value;
+        if (!path) return;
+
+        viewDocument(path, type === 'archivoContrato' ? 'Archivo de Contrato' : 'Comprobante');
+    }
+
+    function updateFileThumb(type, path) {
+        const thumbContainer = document.getElementById(`${type}ExistingThumb`);
+        if (!thumbContainer || !path) return;
+
+        const fullPath = '/static/' + path;
+        const isPdf = path.toLowerCase().endsWith('.pdf');
+
+        if (isPdf) {
+            thumbContainer.innerHTML = `
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                </svg>
+            `;
+        } else {
+            thumbContainer.innerHTML = `<img src="${fullPath}" style="width: 100%; height: 100%; object-fit: cover;">`;
+        }
+    }
+
+    // Keep legacy support for old names if needed, but updated call sites should use handleFilePreview
+    function handleComprobantePreview(input) { handleFilePreview(input, 'comprobante'); }
+    function removeComprobantePreview() { removeFilePreview('comprobante'); }
+    function changeComprobante() { changeFile('comprobante'); }
+    function deleteExistingComprobante() { deleteExistingFile('comprobante'); }
+    function openComprobanteModal() { openFileModal('comprobante'); }
+    function updateExistingComprobanteThumb(path) { updateFileThumb('comprobante', path); }
+
+    function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    // Update createNewContrato to reset custom selects
+    const originalCreateNewContrato = createNewContrato;
+    createNewContrato = function () {
+        originalCreateNewContrato();
+        resetContratoSelects();
+
+        // Comprobante resets
+        document.getElementById('comprobantePreviewContainer').style.display = 'none';
+        document.getElementById('comprobanteExistingContainer').style.display = 'none';
+        document.getElementById('comprobanteUploadArea').style.display = 'block';
+
+        // Archivo Contrato resets
+        document.getElementById('archivoContratoPreviewContainer').style.display = 'none';
+        document.getElementById('archivoContratoExistingContainer').style.display = 'none';
+        document.getElementById('archivoContratoUploadArea').style.display = 'block';
+        document.getElementById('archivoContratoDelete').value = 'false';
+    };
+</script>
+
+{% endblock %}

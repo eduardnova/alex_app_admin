@@ -142,6 +142,25 @@ class VehiculoMarcaModelo(db.Model):
         return f'<VehiculoMarcaModelo {self.marca} {self.modelo}>'
 
 
+
+# ==================== TABLA: configuracion_alquiler ====================
+class ConfiguracionAlquiler(db.Model):
+    __tablename__ = 'configuracion_alquiler'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    dias_incautacion = db.Column(db.Integer, default=3, nullable=False)
+    porcentaje_mora = db.Column(db.Float, default=5.0, nullable=False)
+    costo_lavado = db.Column(db.Numeric(10, 2), default=350.00, nullable=False)
+    
+    usuario_actualizo_id = db.Column(db.Integer, db.ForeignKey('usuarios.id', ondelete='SET NULL'))
+    fecha_hora_actualizo = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    usuario_actualizo = db.relationship('Usuario')
+    
+    def __repr__(self):
+        return f'<ConfiguracionAlquiler dias={self.dias_incautacion} mora={self.porcentaje_mora}%>'
+
+
 # ==================== TABLA: estados_alquiler ====================
 class EstadoAlquiler(db.Model):
     __tablename__ = 'estados_alquiler'
@@ -177,6 +196,8 @@ class MetodoPago(db.Model):
                                      db.ForeignKey('usuarios.id', ondelete='CASCADE'))
     fecha_hora_actualizo = db.Column(db.DateTime, default=datetime.utcnow, 
                                      onupdate=datetime.utcnow)
+    
+    activo = db.Column(db.Boolean, default=True)
     
     pagos = db.relationship('Pago', backref='metodo_pago', lazy='dynamic')
     
@@ -265,6 +286,12 @@ class Propietario(db.Model):
     _telefono = db.Column("telefono", db.Text)
     _email = db.Column("email", db.Text)
 
+    # Información de Pago (NUEVOS)
+    metodo_pago_id = db.Column(db.Integer, db.ForeignKey('metodos_pago.id', ondelete='SET NULL'))
+    _banco_nombre = db.Column("banco_nombre", db.Text)
+    _numero_cuenta = db.Column("numero_cuenta", db.Text)
+    tipo_cuenta_id = db.Column(db.Integer, db.ForeignKey('tipo_cuentas.id', ondelete='SET NULL'))
+
     usuario_registro_id = db.Column(db.Integer, db.ForeignKey('usuarios.id', ondelete='CASCADE'))
     fecha_hora_registro = db.Column(db.DateTime, default=datetime.utcnow)
     usuario_actualizo_id = db.Column(db.Integer, db.ForeignKey('usuarios.id', ondelete='CASCADE'))
@@ -274,6 +301,8 @@ class Propietario(db.Model):
     vehiculos = db.relationship('Vehiculo', backref='propietario', lazy='dynamic')
     referencias = db.relationship('ReferenciaPropietario', backref='propietario',
                                   cascade='all, delete-orphan', lazy='dynamic')
+    metodo_pago = db.relationship('MetodoPago')
+    tipo_cuenta = db.relationship('TipoCuenta')
 
     # ------------------------
     # PROPIEDADES ENCRIPTADAS
@@ -359,6 +388,24 @@ class Propietario(db.Model):
     @email.setter
     def email(self, value):
         self._email = encrypt_data(value)
+
+    # banco_nombre
+    @property
+    def banco_nombre(self):
+        return decrypt_data(self._banco_nombre)
+
+    @banco_nombre.setter
+    def banco_nombre(self, value):
+        self._banco_nombre = encrypt_data(value)
+
+    # numero_cuenta
+    @property
+    def numero_cuenta(self):
+        return decrypt_data(self._numero_cuenta)
+
+    @numero_cuenta.setter
+    def numero_cuenta(self, value):
+        self._numero_cuenta = encrypt_data(value)
         
     @property
     def tipo_socio(self):
@@ -1123,6 +1170,7 @@ class DetalleAlquilerSemanal(db.Model):
     banco_id = db.Column(db.Integer,  db.ForeignKey('bancos.id', ondelete='SET NULL'))
     fecha_confirmacion_pago = db.Column(db.Date)
     pago_confirmado = db.Column(db.Boolean, default=False)
+    _comprobante_pago_path = db.Column('comprobante_pago_path', db.Text)
     
     # Notas adicionales
     notas = db.Column(db.Text)
@@ -1142,6 +1190,14 @@ class DetalleAlquilerSemanal(db.Model):
     
     def __repr__(self):
         return f'<DetalleAlquilerSemanal {self.id} - Semana {self.semana_alquiler_id}>'
+
+    @property
+    def comprobante_pago_path(self):
+        return decrypt_data(self._comprobante_pago_path)
+
+    @comprobante_pago_path.setter
+    def comprobante_pago_path(self, value):
+        self._comprobante_pago_path = encrypt_data(value) if value else None
     
     @property
     def esta_en_mora(self):
@@ -1158,6 +1214,49 @@ class DetalleAlquilerSemanal(db.Model):
             from datetime import date
             return (date.today() - self.fecha_limite_pago).days
         return 0
+
+
+# ==================== TABLA: deducciones ====================
+class Deduccion(db.Model):
+    """
+    Tabla para gestionar gastos y deducciones asociados a vehículos
+    """
+    __tablename__ = 'deducciones'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Relaciones principales
+    vehiculo_id = db.Column(db.Integer, db.ForeignKey('vehiculos.id', ondelete='CASCADE'), nullable=False, index=True)
+    propietario_id = db.Column(db.Integer, db.ForeignKey('propietarios.id', ondelete='CASCADE'), nullable=False, index=True)
+    semana_alquiler_id = db.Column(db.Integer, db.ForeignKey('semanas_alquiler.id', ondelete='SET NULL'), nullable=True, index=True)
+    
+    # Detalle de la deducción
+    concepto = db.Column(db.String(255), nullable=False)
+    monto = db.Column(db.Numeric(10, 2), nullable=False)
+    fecha = db.Column(db.Date, nullable=False, default=datetime.utcnow)
+    
+    # Tipo y Estado
+    tipo_deduccion = db.Column(db.Enum('Mantenimiento', 'Reparación', 'Repuesto', 'Servicio', 'Otro'), 
+                              default='Mantenimiento', nullable=False)
+    estado = db.Column(db.Enum('pendiente', 'aplicada', 'pagada'), 
+                      default='pendiente', nullable=False)
+    
+    # Evidencia
+    evidencia_path = db.Column(db.String(255), nullable=True)
+    
+    # Auditoría
+    usuario_registro_id = db.Column(db.Integer, db.ForeignKey('usuarios.id', ondelete='CASCADE'))
+    fecha_hora_registro = db.Column(db.DateTime, default=datetime.utcnow)
+    usuario_actualizo_id = db.Column(db.Integer, db.ForeignKey('usuarios.id', ondelete='CASCADE'))
+    fecha_hora_actualizo = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relaciones
+    vehiculo = db.relationship('Vehiculo', backref='deducciones')
+    propietario = db.relationship('Propietario', backref='deducciones')
+    semana_alquiler = db.relationship('SemanaAlquiler', backref='deducciones')
+    
+    def __repr__(self):
+        return f'<Deduccion {self.id} - {self.concepto} - {self.monto}>'
 
 
 # ==================== TABLA: historico_porcentajes_ganancia ====================
@@ -1253,12 +1352,8 @@ class Pago(db.Model):
     __tablename__ = 'pagos'
     
     id = db.Column(db.Integer, primary_key=True)
-    alquiler_id = db.Column(db.Integer, 
-                            db.ForeignKey('alquileres.id', ondelete='CASCADE'), 
-                            nullable=False, index=True)
-    metodo_pago_id = db.Column(db.Integer, 
-                               db.ForeignKey('metodos_pago.id', ondelete='RESTRICT'), 
-                               nullable=False)
+    alquiler_id = db.Column(db.Integer,  db.ForeignKey('alquileres.id', ondelete='CASCADE'), nullable=False, index=True)
+    metodo_pago_id = db.Column(db.Integer,  db.ForeignKey('metodos_pago.id', ondelete='RESTRICT'),  nullable=False)
     monto = db.Column(db.Numeric(10, 2), nullable=False)
     fecha_pago = db.Column(db.Date, nullable=False, index=True)
     deducciones = db.Column(db.Numeric(10, 2), default=0.00)
@@ -1276,6 +1371,220 @@ class Pago(db.Model):
     def __repr__(self):
         return f'<Pago {self.id} - ${self.monto}>'
     
+
+# ==================== TABLA: tipos_depositos ====================
+class TipoDeposito(db.Model):
+    __tablename__ = 'tipos_depositos'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    tipo_vehiculo = db.Column(db.String(50), unique=True, nullable=False, index=True)
+    deposito_total = db.Column(db.Numeric(10, 2), nullable=False)
+    cantidad_depositos = db.Column(db.Integer, nullable=False)
+    monto_por_deposito = db.Column(db.Numeric(10, 2), nullable=False)
+    activo = db.Column(db.Boolean, default=True)
+    
+    usuario_registro_id = db.Column(db.Integer, db.ForeignKey('usuarios.id', ondelete='CASCADE'))
+    fecha_hora_registro = db.Column(db.DateTime, default=datetime.utcnow)
+    usuario_actualizo_id = db.Column(db.Integer, db.ForeignKey('usuarios.id', ondelete='CASCADE'))
+    fecha_hora_actualizo = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<TipoDeposito {self.tipo_vehiculo}>'
+
+
+# ==================== TABLA: contratos ====================
+class Contrato(db.Model):
+    __tablename__ = 'contratos'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    inquilino_id = db.Column(db.Integer, db.ForeignKey('inquilinos.id', ondelete='CASCADE'), nullable=False, index=True)
+    vehiculo_id = db.Column(db.Integer, db.ForeignKey('vehiculos.id', ondelete='CASCADE'), nullable=False, index=True)
+    monto_contrato = db.Column(db.Numeric(10, 2), nullable=False, default=1000.00)
+    fecha_inicio = db.Column(db.Date, nullable=False, index=True)
+    fecha_fin = db.Column(db.Date, nullable=True, index=True)  # NULL = indefinido
+    es_indefinido = db.Column(db.Boolean, default=False)
+    tipo_pago = db.Column(db.Enum('efectivo', 'transferencia', 'cheque'), nullable=False)
+    _comprobante_pago_path = db.Column('comprobante_pago_path', db.Text)
+    _archivo_contrato_path = db.Column('archivo_contrato_path', db.Text)
+    confirmacion_pago = db.Column(db.Boolean, default=False)
+    estado = db.Column(db.Enum('activo', 'finalizado', 'cancelado'), default='activo')
+    notas = db.Column(db.Text)
+    
+    usuario_registro_id = db.Column(db.Integer, db.ForeignKey('usuarios.id', ondelete='CASCADE'))
+    fecha_hora_registro = db.Column(db.DateTime, default=datetime.utcnow)
+    usuario_actualizo_id = db.Column(db.Integer, db.ForeignKey('usuarios.id', ondelete='CASCADE'))
+    fecha_hora_actualizo = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    inquilino = db.relationship('Inquilino', backref='contratos')
+    vehiculo = db.relationship('Vehiculo', backref='contratos')
+    depositos = db.relationship('Deposito', backref='contrato', cascade='all, delete-orphan', lazy='dynamic')
+    
+    @property
+    def comprobante_pago_path(self):
+        return decrypt_data(self._comprobante_pago_path)
+    
+    @comprobante_pago_path.setter
+    def comprobante_pago_path(self, value):
+        self._comprobante_pago_path = encrypt_data(value) if value else None
+    
+    @property
+    def archivo_contrato_path(self):
+        return decrypt_data(self._archivo_contrato_path)
+    
+    @archivo_contrato_path.setter
+    def archivo_contrato_path(self, value):
+        self._archivo_contrato_path = encrypt_data(value) if value else None
+    
+    def __repr__(self):
+        return f'<Contrato {self.id} - {self.inquilino.nombre_apellido if self.inquilino else "N/A"}>'
+
+
+# ==================== TABLA: depositos ====================
+class Deposito(db.Model):
+    __tablename__ = 'depositos'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    contrato_id = db.Column(db.Integer, db.ForeignKey('contratos.id', ondelete='CASCADE'), nullable=False, index=True)
+    inquilino_id = db.Column(db.Integer, db.ForeignKey('inquilinos.id', ondelete='CASCADE'), nullable=False, index=True)
+    vehiculo_id = db.Column(db.Integer, db.ForeignKey('vehiculos.id', ondelete='CASCADE'), nullable=False, index=True)
+    tipo_vehiculo = db.Column(db.String(50), nullable=False, index=True)
+    
+    # Montos y cantidades
+    deposito_total = db.Column(db.Numeric(10, 2), nullable=False)
+    cantidad_depositos = db.Column(db.Integer, nullable=False)
+    monto_por_deposito = db.Column(db.Numeric(10, 2), nullable=False)
+    depositos_pagados = db.Column(db.Integer, default=0)
+    depositos_pendientes = db.Column(db.Integer, nullable=False)
+    
+    # Estado
+    estado = db.Column(db.Enum('pendiente', 'parcial', 'completado'), default='pendiente')
+    notas = db.Column(db.Text)
+    
+    usuario_registro_id = db.Column(db.Integer, db.ForeignKey('usuarios.id', ondelete='CASCADE'))
+    fecha_hora_registro = db.Column(db.DateTime, default=datetime.utcnow)
+    usuario_actualizo_id = db.Column(db.Integer, db.ForeignKey('usuarios.id', ondelete='CASCADE'))
+    fecha_hora_actualizo = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    inquilino = db.relationship('Inquilino', backref='depositos_realizados')
+    vehiculo = db.relationship('Vehiculo', backref='depositos_vehiculo')
+    pagos_deposito = db.relationship('PagoDeposito', backref='deposito', cascade='all, delete-orphan', lazy='dynamic')
+    
+    @property
+    def monto_pagado(self):
+        """Calcula el total pagado sumando los montos de los pagos registrados"""
+        total = db.session.query(db.func.sum(PagoDeposito.monto)).filter(PagoDeposito.deposito_id == self.id).scalar()
+        return total if total else 0
+    
+    @property
+    def porcentaje_completado(self):
+        """Calcula el porcentaje basado en el monto pagado vs total"""
+        if self.deposito_total == 0:
+            return 0
+        porcentaje = (self.monto_pagado / self.deposito_total) * 100
+        return int(min(porcentaje, 100))
+    
+    @property
+    def monto_pendiente(self):
+        return max(self.deposito_total - self.monto_pagado, 0)
+    
+    def __repr__(self):
+        return f'<Deposito {self.id} - {self.tipo_vehiculo}>'
+
+
+# ==================== TABLA: historico_depositos ====================
+class HistoricoDeposito(db.Model):
+    __tablename__ = 'historico_depositos'
+    
+    id_historico = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    tipo_operacion = db.Column(db.Enum('INSERT', 'UPDATE', 'DELETE'), nullable=False)
+    fecha_hora_operacion = db.Column(db.DateTime, default=datetime.utcnow)
+    usuario_operacion_id = db.Column(db.Integer)
+    
+    id = db.Column(db.Integer)
+    contrato_id = db.Column(db.Integer)
+    inquilino_id = db.Column(db.Integer)
+    vehiculo_id = db.Column(db.Integer)
+    tipo_vehiculo = db.Column(db.String(50))
+    deposito_total = db.Column(db.Numeric(10, 2))
+    cantidad_depositos = db.Column(db.Integer)
+    monto_por_deposito = db.Column(db.Numeric(10, 2))
+    depositos_pagados = db.Column(db.Integer)
+    depositos_pendientes = db.Column(db.Integer)
+    estado = db.Column(db.String(20))
+    notas = db.Column(db.Text)
+    
+    usuario_registro_id = db.Column(db.Integer)
+    fecha_hora_registro = db.Column(db.DateTime)
+    usuario_actualizo_id = db.Column(db.Integer)
+    fecha_hora_actualizo = db.Column(db.DateTime)
+    
+    def __repr__(self):
+        return f'<HistoricoDeposito {self.id} - {self.tipo_operacion}>'
+
+
+
+# ==================== TABLA: pagos_deposito ====================
+class PagoDeposito(db.Model):
+    __tablename__ = 'pagos_deposito'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    deposito_id = db.Column(db.Integer, db.ForeignKey('depositos.id', ondelete='CASCADE'), nullable=False, index=True)
+    numero_pago = db.Column(db.Integer, nullable=False)  # 1, 2, 3...
+    monto = db.Column(db.Numeric(10, 2), nullable=False)
+    fecha_pago = db.Column(db.Date, nullable=False, index=True)
+    tipo_pago = db.Column(db.Enum('efectivo', 'transferencia', 'cheque'), nullable=False)
+    _comprobante_path = db.Column('comprobante_path', db.Text)
+    confirmado = db.Column(db.Boolean, default=False)
+    notas = db.Column(db.Text)
+    
+    usuario_registro_id = db.Column(db.Integer, db.ForeignKey('usuarios.id', ondelete='CASCADE'))
+    fecha_hora_registro = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    @property
+    def comprobante_path(self):
+        return decrypt_data(self._comprobante_path)
+    
+    @comprobante_path.setter
+    def comprobante_path(self, value):
+        self._comprobante_path = encrypt_data(value) if value else None
+    
+    def __repr__(self):
+        return f'<PagoDeposito {self.id} - #{self.numero_pago}>'
+
+
+# ==================== TABLAS HISTÓRICAS ====================
+
+class HistoricoContrato(db.Model):
+    __tablename__ = 'historico_contratos'
+    
+    id_historico = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    tipo_operacion = db.Column(db.Enum('INSERT', 'UPDATE', 'DELETE'), nullable=False)
+    fecha_hora_operacion = db.Column(db.DateTime, default=datetime.utcnow)
+    usuario_operacion_id = db.Column(db.Integer)
+    
+    id = db.Column(db.Integer)
+    inquilino_id = db.Column(db.Integer)
+    vehiculo_id = db.Column(db.Integer)
+    monto_contrato = db.Column(db.Numeric(10, 2))
+    fecha_inicio = db.Column(db.Date)
+    fecha_fin = db.Column(db.Date)
+    es_indefinido = db.Column(db.Boolean)
+    tipo_pago = db.Column(db.String(20))
+    comprobante_pago_path = db.Column(db.String(255))
+    archivo_contrato_path = db.Column(db.String(255))
+    confirmacion_pago = db.Column(db.Boolean)
+    estado = db.Column(db.String(20))
+    notas = db.Column(db.Text)
+    usuario_registro_id = db.Column(db.Integer)
+    fecha_hora_registro = db.Column(db.DateTime)
+    usuario_actualizo_id = db.Column(db.Integer)
+    fecha_hora_actualizo = db.Column(db.DateTime)
+    
+    def __repr__(self):
+        return f'<HistoricoContrato {self.id} - {self.tipo_operacion}>'
+
 
 # ==================== TABLA: historico_usuarios ====================
 class HistoricoUsuario(db.Model):
@@ -1363,6 +1672,7 @@ class HistoricoMetodoPago(db.Model):
     fecha_hora_registro = db.Column(db.DateTime)
     usuario_actualizo_id = db.Column(db.Integer)
     fecha_hora_actualizo = db.Column(db.DateTime)
+    activo = db.Column(db.Boolean)
     
     def __repr__(self):
         return f'<HistoricoMetodoPago {self.id} - {self.tipo_operacion}>'
@@ -1455,6 +1765,10 @@ class HistoricoPropietario(db.Model):
     direccion = db.Column(db.String(255))
     telefono = db.Column(db.String(20))
     email = db.Column(db.String(100))
+    metodo_pago_id = db.Column(db.Integer)
+    banco_nombre = db.Column(db.String(100))
+    numero_cuenta = db.Column(db.String(50))
+    tipo_cuenta_id = db.Column(db.Integer)
     usuario_registro_id = db.Column(db.Integer)
     fecha_hora_registro = db.Column(db.DateTime)
     usuario_actualizo_id = db.Column(db.Integer)
@@ -1575,14 +1889,14 @@ class HistoricoVehiculo(db.Model):
     
     id = db.Column(db.Integer)
     propietario_id = db.Column(db.Integer)
-    placa = db.Column(db.String(20))
+    placa = db.Column(db.Text)  # Encrypted data
     marca_modelo_vehiculo_id = db.Column(db.Integer)
-    ano = db.Column(db.Integer)
-    color = db.Column(db.String(30))
-    descripcion = db.Column(db.Text)
-    precio_semanal = db.Column(db.Numeric(10, 2))
-    condiciones = db.Column(db.Text)
-    disponible = db.Column(db.Boolean)
+    ano = db.Column(db.Text)  # Encrypted data
+    color = db.Column(db.Text)  # Encrypted data
+    descripcion = db.Column(db.Text)  # Encrypted data
+    precio_semanal = db.Column(db.Text)  # Encrypted data
+    condiciones = db.Column(db.Text)  # Encrypted data
+    disponible = db.Column(db.Text)  # Encrypted data
     usuario_registro_id = db.Column(db.Integer)
     fecha_hora_registro = db.Column(db.DateTime)
     usuario_actualizo_id = db.Column(db.Integer)

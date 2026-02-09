@@ -8,7 +8,7 @@ from app import db
 from app.models import (
     Vehiculo, Alquiler, VehiculoMarcaModelo, Propietario,
     HistoricoVehiculo, HistoricoAlquiler,
-    Usuario
+    Usuario, VehiculoImagen
 )
 from datetime import datetime
 import os
@@ -70,21 +70,21 @@ def delete_document(path):
 
 
 def registrar_historico_vehiculo(vehiculo, tipo_operacion):
-    """Register vehiculo history"""
+    """Register vehiculo history - stores encrypted data"""
     historico = HistoricoVehiculo(
         tipo_operacion=tipo_operacion,
         fecha_hora_operacion=datetime.now(),
         usuario_operacion_id=current_user.id if current_user.is_authenticated else None,
         id=vehiculo.id,
         propietario_id=vehiculo.propietario_id,
-        placa=vehiculo.placa,
+        placa=vehiculo._placa,  # Store encrypted
         marca_modelo_vehiculo_id=vehiculo.marca_modelo_vehiculo_id,
-        ano=vehiculo.ano,
-        color=vehiculo.color,
-        descripcion=vehiculo.descripcion,
-        precio_semanal=vehiculo.precio_semanal,
-        condiciones=vehiculo.condiciones,
-        disponible=vehiculo.disponible,
+        ano=vehiculo._ano,  # Store encrypted
+        color=vehiculo._color,  # Store encrypted
+        descripcion=vehiculo._descripcion,  # Store encrypted
+        precio_semanal=vehiculo._precio_semanal,  # Store encrypted
+        condiciones=vehiculo._condiciones,  # Store encrypted
+        disponible=vehiculo._disponible,  # Store encrypted
         usuario_registro_id=vehiculo.usuario_registro_id,
         fecha_hora_registro=vehiculo.fecha_hora_registro,
         usuario_actualizo_id=vehiculo.usuario_actualizo_id,
@@ -161,7 +161,8 @@ def crear_vehiculo():
     db.session.add(nuevo_vehiculo)
     db.session.flush()
         
-        #registrar_historico_vehiculo(nuevo_vehiculo, 'INSERT')
+    print(f"✅ Registrando histórico INSERT para vehículo: {nuevo_vehiculo.id} - {nuevo_vehiculo.placa}")
+    registrar_historico_vehiculo(nuevo_vehiculo, 'INSERT')
         
     db.session.commit()
     flash(f'Vehículo creado exitosamente.', 'success')
@@ -348,15 +349,21 @@ def historial_vehiculo(id):
                 'message': 'Vehículo no encontrado'
             }), 404
         
-        # Obtener historial - filtrar por el id del vehículo (no id_historico)
-        historicos = HistoricoVehiculo.query.filter_by(id=id).order_by(
+        # Obtener historial - usar filter explicitamente para evitar confusion con id/pk
+        print(f"🔍 Buscando historial para vehículo ID: {id}")
+        historicos = HistoricoVehiculo.query.filter(HistoricoVehiculo.id == id).order_by(
             HistoricoVehiculo.fecha_hora_operacion.desc()
         ).all()
         
         print(f"📊 Historial encontrado: {len(historicos)} registros para vehículo {id}")
+        if len(historicos) > 0:
+             print(f"   Primer registro: {historicos[0].tipo_operacion} - {historicos[0].fecha_hora_operacion}")
         
         result = []
-        for hist in historicos:
+        prev_hist = None
+        
+        # Process in chronological order for change detection, then reverse
+        for hist in reversed(historicos):
             # Obtener información del usuario
             usuario_nombre = 'Sistema'
             usuario_iniciales = 'SYS'
@@ -383,7 +390,53 @@ def historial_vehiculo(id):
                 except:
                     placa = hist.placa  # Si falla, usar texto plano
             
-            cambios = []  # Lógica para diffs si needed (comparar con prev)
+            # Detect changes between this record and the previous one
+            cambios = []
+            if hist.tipo_operacion == 'UPDATE' and prev_hist:
+                # Compare encrypted fields
+                campos = [
+                    ('placa', 'Placa'),
+                    ('ano', 'Año'),
+                    ('color', 'Color'),
+                    ('descripcion', 'Descripción'),
+                    ('precio_semanal', 'Precio Semanal'),
+                    ('condiciones', 'Condiciones'),
+                    ('disponible', 'Disponible')
+                ]
+                
+                for campo, label in campos:
+                    old_val = getattr(prev_hist, campo, None)
+                    new_val = getattr(hist, campo, None)
+                    
+                    # Try to decrypt if they're encrypted
+                    try:
+                        if old_val:
+                            old_val = decrypt_data(old_val)
+                    except:
+                        pass
+                    try:
+                        if new_val:
+                            new_val = decrypt_data(new_val)
+                    except:
+                        pass
+                    
+                    if str(old_val) != str(new_val):
+                        cambios.append({
+                            'campo': label,
+                            'valor_anterior': str(old_val) if old_val else 'N/A',
+                            'valor_nuevo': str(new_val) if new_val else 'N/A'
+                        })
+                
+                # Check marca_modelo change
+                if prev_hist.marca_modelo_vehiculo_id != hist.marca_modelo_vehiculo_id:
+                    old_mm = VehiculoMarcaModelo.query.get(prev_hist.marca_modelo_vehiculo_id) if prev_hist.marca_modelo_vehiculo_id else None
+                    new_mm = VehiculoMarcaModelo.query.get(hist.marca_modelo_vehiculo_id) if hist.marca_modelo_vehiculo_id else None
+                    cambios.append({
+                        'campo': 'Marca/Modelo',
+                        'valor_anterior': f'{old_mm.marca} {old_mm.modelo}' if old_mm else 'N/A',
+                        'valor_nuevo': f'{new_mm.marca} {new_mm.modelo}' if new_mm else 'N/A'
+                    })
+            
             result.append({
                 'tipo_operacion': hist.tipo_operacion,
                 'fecha_hora': hist.fecha_hora_operacion.strftime('%d/%m/%Y %H:%M'),
@@ -394,6 +447,11 @@ def historial_vehiculo(id):
                 'placa': placa,
                 'cambios': cambios
             })
+            
+            prev_hist = hist
+        
+        # Reverse to show newest first
+        result.reverse()
         
         vehiculo_nombre = 'Desconocido'
         if vehiculo and vehiculo.marca_modelo:
@@ -475,3 +533,140 @@ def api_buscar_vehiculos():
             })
     
     return jsonify(result)
+
+
+# ==================== VEHICULO IMAGES ====================
+
+@vehiculo_bp.route('/vehiculos/<int:id>/imagenes')
+@login_required
+@admin_required
+def listar_imagenes_vehiculo(id):
+    """List images for a vehicle"""
+    vehiculo = Vehiculo.query.get_or_404(id)
+    imagenes = VehiculoImagen.query.filter_by(vehiculo_id=id).order_by(
+        VehiculoImagen.es_principal.desc(),
+        VehiculoImagen.orden.asc()
+    ).all()
+    
+    result = []
+    for img in imagenes:
+        result.append({
+            'id': img.id,
+            'ruta': img.ruta,
+            'nombre_archivo': img.nombre_archivo,
+            'tipo': img.tipo,
+            'es_principal': img.es_principal,
+            'orden': img.orden
+        })
+    
+    return jsonify({'success': True, 'imagenes': result})
+
+
+@vehiculo_bp.route('/vehiculos/<int:id>/imagenes/subir', methods=['POST'])
+@login_required
+@admin_required
+def subir_imagen_vehiculo(id):
+    """Upload image for a vehicle"""
+    vehiculo = Vehiculo.query.get_or_404(id)
+    
+    if 'imagen' not in request.files:
+        return jsonify({'success': False, 'message': 'No se encontró archivo'}), 400
+    
+    file = request.files['imagen']
+    if file.filename == '':
+        return jsonify({'success': False, 'message': 'No se seleccionó archivo'}), 400
+    
+    if not allowed_file(file.filename):
+        return jsonify({'success': False, 'message': 'Tipo de archivo no permitido'}), 400
+    
+    try:
+        # Save file
+        ruta = save_document(file, f'vehiculo_{id}')
+        
+        if not ruta:
+            return jsonify({'success': False, 'message': 'Error al guardar imagen'}), 500
+        
+        # Check if it's the first image (make it principal)
+        count = VehiculoImagen.query.filter_by(vehiculo_id=id).count()
+        es_principal = count == 0
+        
+        # Create image record
+        nueva_imagen = VehiculoImagen(
+            vehiculo_id=id,
+            tipo='imagen',
+            ruta=ruta,
+            nombre_archivo=secure_filename(file.filename),
+            orden=count,
+            es_principal=es_principal,
+            usuario_registro_id=current_user.id
+        )
+        
+        db.session.add(nueva_imagen)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Imagen subida exitosamente',
+            'imagen': {
+                'id': nueva_imagen.id,
+                'ruta': nueva_imagen.ruta,
+                'nombre_archivo': nueva_imagen.nombre_archivo,
+                'es_principal': nueva_imagen.es_principal
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@vehiculo_bp.route('/vehiculos/imagenes/<int:id>/eliminar', methods=['POST'])
+@login_required
+@admin_required
+def eliminar_imagen_vehiculo(id):
+    """Delete vehicle image"""
+    imagen = VehiculoImagen.query.get_or_404(id)
+    vehiculo_id = imagen.vehiculo_id
+    era_principal = imagen.es_principal
+    
+    try:
+        # Delete file
+        delete_document(imagen.ruta)
+        
+        db.session.delete(imagen)
+        db.session.commit()
+        
+        # If deleted image was principal, make next image principal
+        if era_principal:
+            siguiente = VehiculoImagen.query.filter_by(vehiculo_id=vehiculo_id).first()
+            if siguiente:
+                siguiente.es_principal = True
+                db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Imagen eliminada'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@vehiculo_bp.route('/vehiculos/imagenes/<int:id>/principal', methods=['POST'])
+@login_required
+@admin_required
+def set_imagen_principal(id):
+    """Set image as main/principal"""
+    imagen = VehiculoImagen.query.get_or_404(id)
+    
+    try:
+        # Remove principal from all other images
+        VehiculoImagen.query.filter_by(vehiculo_id=imagen.vehiculo_id).update({'es_principal': False})
+        
+        # Set this one as principal
+        imagen.es_principal = True
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Imagen establecida como principal'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500

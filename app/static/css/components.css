@@ -6,7 +6,7 @@
 .card {
     background: var(--bg-elevated);
     border-radius: var(--radius-lg);
-    padding: 24px;
+    padding: 10px;
     box-shadow: var(--neu-shadow-medium);
     transition: all 0.3s;
     border: 1px solid transparent;

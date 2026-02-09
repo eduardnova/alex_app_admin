@@ -1,1767 +1,1943 @@
 // ==========================================
-// ALQUILERES.JS - ACCORDION STYLE (EXCEL-LIKE)
+// ALQUILERES.JS - VERSIÓN CORREGIDA COMPLETA
+// Fecha: 28/12/2025
+// Cambios: Corrección de 5 errores críticos
 // ==========================================
 
-// Global variables
-let semanasData = {};
-let bancosGlobal = [];
-let tiposTrabajo = [];
-let mecanicos = [];
-let currentEditingDetalleId = null;
-let currentSemanaId = null;
-let userRol = null;
+// ==========================================
+// VARIABLES GLOBALES
+// ==========================================
+let semanaActualId = null;
+let semanasAbiertas = new Map();
+let inversionesCache = new Map();
 
 // ==========================================
-// INITIALIZATION
+// INICIALIZACIÓN
 // ==========================================
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Alquileres Sistema Inicializado');
-    
-    // Get user rol from DOM
-    userRol = document.body.dataset.userRol || 'user';
-    console.log('👤 User rol:', userRol);
-    
-    // Load resources
-    loadBancos();
-    loadTiposTrabajo();
-    loadMecanicos();
-    
-    // ✅ VALIDAR SEMANAS ACTIVAS AL CARGAR
+document.addEventListener('DOMContentLoaded', function () {
+    console.log('✅ Inicializando sistema de alquileres...');
+
     validarSemanasActivas();
-    
-    // Setup filters
-    const filtroEstado = document.getElementById('filtroEstado');
-    if (filtroEstado) {
-        filtroEstado.addEventListener('change', filtrarSemanas);
+    setupFiltros();
+    setupFechaInicioSemana();
+    setupModals();
+
+    console.log('✅ Sistema inicializado correctamente');
+});
+
+// ==========================================
+// HELPERS PARA CUSTOM SELECTS
+// ==========================================
+function toggleSelect(id) {
+    const wrapper = document.getElementById(id);
+    if (!wrapper) return;
+
+    // Cerrar otros abiertos
+    document.querySelectorAll('.custom-select-wrapper').forEach(el => {
+        if (el.id !== id) el.classList.remove('open');
+    });
+
+    wrapper.classList.toggle('open');
+
+    // Si se abre, enfocar el search input
+    if (wrapper.classList.contains('open')) {
+        const searchInput = wrapper.querySelector('.custom-select-search input');
+        if (searchInput) {
+            searchInput.value = '';
+            searchInput.focus();
+            filterOptions(id, ''); // Resetear filtros
+        }
     }
-    
-    // Setup forms
-    setupForms();
-    
-    // ✅ OCULTAR BOTONES SI NO ES ADMIN
-    if (userRol !== 'admin') {
-        ocultarBotonesAdmin();
+}
+
+// Cerrar selects si se hace click fuera
+document.addEventListener('click', function (e) {
+    if (!e.target.closest('.custom-select-wrapper')) {
+        document.querySelectorAll('.custom-select-wrapper').forEach(el => {
+            el.classList.remove('open');
+        });
     }
 });
 
-/ ==========================================
-// ✅ VALIDAR SEMANAS ACTIVAS (NUEVO)
-// ==========================================
-function validarSemanasActivas() {
-    fetch('/alquiler/semanas/validar-activas')
-        .then(response => response.json())
-        .then(result => {
-            if (result.success && result.tiene_problemas) {
-                mostrarModalSemanasProblematicas(result);
-            }
-        })
-        .catch(error => console.error('Error validando semanas:', error));
-}
+function selectOption(wrapperId, value, text, callback = null) {
+    const wrapper = document.getElementById(wrapperId);
+    if (!wrapper) return;
 
-function mostrarModalSemanasProblematicas(data) {
-    const problemas = data.problemas;
-    
-    let mensaje = `<div style="text-align: left;">
-        <p><strong>⚠️ Se detectaron ${problemas.length} semanas activas con problemas:</strong></p>
-        <ul style="margin-top: 10px;">`;
-    
-    problemas.forEach(p => {
-        const tipo = p.tipo === 'pasada' ? '🔴 Pasada' : '🔵 Futura';
-        mensaje += `<li>
-            <strong>${tipo}</strong>: Semana #${p.numero_semana} 
-            (${p.fecha_inicio} - ${p.fecha_fin})
-            <br><span style="font-size: 12px; color: #666;">
-            ${p.tipo === 'pasada' ? 
-                `Venció hace ${p.dias_diferencia} días` : 
-                `Inicia en ${p.dias_diferencia} días`}
-            </span>
-        </li>`;
+    const textEl = wrapper.querySelector('.selected-value');
+    const valueEl = wrapper.querySelector('input[type="hidden"]');
+
+    if (valueEl) valueEl.value = value;
+    if (textEl) {
+        textEl.textContent = text;
+        textEl.classList.remove('placeholder');
+    }
+
+    // Marcar como seleccionado en la lista
+    wrapper.querySelectorAll('.custom-select-option').forEach(opt => {
+        opt.classList.toggle('selected', opt.dataset.value == value);
     });
-    
-    mensaje += `</ul>
-        <p style="margin-top: 15px; font-size: 13px; color: #856404; background: #fff3cd; padding: 10px; border-radius: 4px;">
-            <strong>Recomendación:</strong> ${userRol === 'admin' ? 
-                'Cierra las semanas completadas para mantener el sistema organizado.' : 
-                'Contacta a un administrador para cerrar estas semanas.'}
-        </p>
-    </div>`;
-    
-    showAlert('Semanas Activas Detectadas', mensaje, 'warning');
-}
 
-// ==========================================
-// ✅ OCULTAR BOTONES ADMIN (NUEVO)
-// ==========================================
-function ocultarBotonesAdmin() {
-    // Ocultar botones de eliminar y cerrar semana
-    document.querySelectorAll('[onclick^="cerrarSemana"], [onclick^="eliminarSemana"]').forEach(btn => {
-        btn.style.display = 'none';
-    });
-}
+    wrapper.classList.remove('open');
 
-
-
-// ==========================================
-// LOAD RESOURCES
-// ==========================================
-function loadBancos() {
-    fetch('/alquiler/bancos/json')
-        .then(response => response.json())
-        .then(result => {
-            if (result.success) {
-                bancosGlobal = result.bancos;
-                console.log('✅ Bancos loaded:', bancosGlobal.length);
-            }
-        })
-        .catch(error => console.error('❌ Error loading bancos:', error));
-}
-
-function loadTiposTrabajo() {
-    // Tipos de trabajo con íconos
-    tiposTrabajo = [
-        { id: 1, nombre: 'Reparación Mecánica', icon: '🔧' },
-        { id: 2, nombre: 'Cambio de Pieza', icon: '⚙️' },
-        { id: 3, nombre: 'Mantenimiento Preventivo', icon: '🛠️' },
-        { id: 4, nombre: 'Ajustes', icon: '🔩' },
-        { id: 5, nombre: 'Sistema Eléctrico', icon: '⚡' },
-        { id: 6, nombre: 'Sistema de Frenos', icon: '🛑' },
-        { id: 7, nombre: 'Suspensión', icon: '🚗' },
-        { id: 8, nombre: 'Transmisión', icon: '⚙️' },
-        { id: 9, nombre: 'Otros', icon: '📋' }
-    ];
-}
-
-function loadMecanicos() {
-    // Los mecánicos se cargan desde el backend en el template
-    const mecanicosEl = document.getElementById('mecanicosList');
-    if (mecanicosEl && mecanicosEl.dataset.mecanicos) {
-        mecanicos = JSON.parse(mecanicosEl.dataset.mecanicos);
+    if (callback && typeof callback === 'function') {
+        callback(value);
     }
 }
 
+function filterOptions(wrapperId, query) {
+    const wrapper = document.getElementById(wrapperId);
+    if (!wrapper) return;
+
+    query = query.toLowerCase().trim();
+    const options = wrapper.querySelectorAll('.custom-select-option:not(.no-results)');
+    let visibleCount = 0;
+
+    options.forEach(opt => {
+        const text = opt.textContent.toLowerCase();
+        if (text.includes(query)) {
+            opt.style.display = 'block';
+            visibleCount++;
+        } else {
+            opt.style.display = 'none';
+        }
+    });
+
+    // Mostrar/ocultar mensaje de "sin resultados"
+    let noResultsEl = wrapper.querySelector('.no-results');
+    if (!noResultsEl && visibleCount === 0) {
+        const optionsCont = wrapper.querySelector('.custom-select-options');
+        noResultsEl = document.createElement('div');
+        noResultsEl.className = 'custom-select-option no-results';
+        noResultsEl.textContent = 'No se encontraron resultados';
+        optionsCont.appendChild(noResultsEl);
+    } else if (noResultsEl) {
+        noResultsEl.style.display = visibleCount === 0 ? 'block' : 'none';
+    }
+}
+
+// ==========================================
+// VALIDACIÓN DE SEMANAS ACTIVAS
+// ==========================================
+function validarSemanasActivas() {
+    fetch('/alquiler/semanas/validar-activas')
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.tiene_problemas) {
+                // mostrarAlertaSemanasActivas(data.problemas);
+            }
+        })
+        .catch(err => console.error('Error validando semanas:', err));
+}
+
+function mostrarAlertaSemanasActivas(problemas) {
+    const html = `
+        <div class="alert alert-warning" style="margin: 20px; padding: 20px; border-radius: 8px;">
+            <div style="display: flex; align-items: start; gap: 12px;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="flex-shrink: 0;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <div style="flex: 1;">
+                    <h4 style="margin: 0 0 8px 0; font-weight: 600;">⚠️ Advertencia: Semanas Activas Fuera de Rango</h4>
+                    <p style="margin: 0 0 12px 0;">Se detectaron las siguientes semanas activas que no corresponden a la semana actual:</p>
+                    <ul style="margin: 0; padding-left: 20px;">
+                        ${problemas.map(p => `
+                            <li>
+                                <strong>Semana ${p.numero_semana}:</strong> 
+                                ${p.fecha_inicio} - ${p.fecha_fin}
+                                <span style="color: #dc3545;">(${p.tipo === 'pasada' ? 'Pasada' : 'Futura'} - ${p.dias_diferencia} días)</span>
+                            </li>
+                        `).join('')}
+                    </ul>
+                    <p style="margin: 12px 0 0 0; font-size: 14px; color: #856404;">
+                        <strong>Recomendación:</strong> Revisa y cierra las semanas que ya pasaron.
+                    </p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    const contentArea = document.querySelector('.content-area');
+    contentArea.insertAdjacentHTML('afterbegin', html);
+}
+
+// ==========================================
+// CONFIGURACIÓN DE FECHA INICIO SEMANA
+// ==========================================
+function setupFechaInicioSemana() {
+    const fechaInicio = document.getElementById('fechaInicio');
+    const fechaFin = document.getElementById('fechaFin');
+
+    if (!fechaInicio || !fechaFin) return;
+
+    fechaInicio.addEventListener('change', function () {
+        const fecha = new Date(this.value + 'T00:00:00');
+        const diaSemana = fecha.getDay();
+
+        if (diaSemana !== 3) {
+            alert('⚠️ La fecha de inicio debe ser un MIÉRCOLES');
+            this.value = '';
+            fechaFin.value = '';
+            return;
+        }
+
+        const fechaFinCalculada = new Date(fecha);
+        fechaFinCalculada.setDate(fechaFinCalculada.getDate() + 8);
+
+        const year = fechaFinCalculada.getFullYear();
+        const month = String(fechaFinCalculada.getMonth() + 1).padStart(2, '0');
+        const day = String(fechaFinCalculada.getDate()).padStart(2, '0');
+
+        fechaFin.value = `${year}-${month}-${day}`;
+    });
+}
+
+// ==========================================
+// ✅ CORRECCIÓN 2: FUNCIONES DE MODAL CORREGIDAS
+// ==========================================
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        // Forzar display y remover clase show primero
+        modal.classList.remove('show');
+        modal.style.display = 'flex';
+
+        // Agregar clase después de un frame para animación
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                modal.classList.add('show');
+            });
+        });
+    }
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('show');
+
+        setTimeout(() => {
+            modal.style.display = 'none';
+
+            // Resetear formularios
+            const form = modal.querySelector('form');
+            if (form) {
+                form.reset();
+            }
+
+            // Limpiar estados específicos
+            if (modalId === 'agregarAlquilerModal') {
+                document.getElementById('alquilerPreview').style.display = 'none';
+            }
+        }, 300);
+    }
+}
+
+function setupModals() {
+    // Cerrar al hacer click en overlay
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+        overlay.addEventListener('click', function (e) {
+            if (e.target === this) {
+                closeModal(this.id);
+            }
+        });
+    });
+
+    // Cerrar con botón X
+    document.querySelectorAll('.modal-close').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const modal = this.closest('.modal-overlay');
+            if (modal) {
+                closeModal(modal.id);
+            }
+        });
+    });
+
+    // Cerrar con ESC
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.modal-overlay.show').forEach(modal => {
+                closeModal(modal.id);
+            });
+        }
+    });
+}
+
+function openCrearSemanaModal() {
+    // Calcular próximo miércoles
+    const hoy = new Date();
+    const diaSemana = hoy.getDay();
+    const diasHastaMiercoles = (3 - diaSemana + 7) % 7;
+    const proximoMiercoles = new Date(hoy);
+    proximoMiercoles.setDate(hoy.getDate() + (diasHastaMiercoles === 0 ? 7 : diasHastaMiercoles));
+
+    const year = proximoMiercoles.getFullYear();
+    const month = String(proximoMiercoles.getMonth() + 1).padStart(2, '0');
+    const day = String(proximoMiercoles.getDate()).padStart(2, '0');
+
+    document.getElementById('fechaInicio').value = `${year}-${month}-${day}`;
+    document.getElementById('fechaInicio').dispatchEvent(new Event('change'));
+
+    openModal('crearSemanaModal');
+}
 
 // ==========================================
 // TOGGLE SEMANA
 // ==========================================
 function toggleSemana(semanaId) {
-    const item = document.querySelector(`[data-semana-id="${semanaId}"]`);
     const details = document.getElementById(`details-${semanaId}`);
-    
-    if (!item || !details) return;
-    
-    const isActive = item.classList.contains('active');
-    
-    if (isActive) {
-        item.classList.remove('active');
-        details.style.display = 'none';
-    } else {
-        item.classList.add('active');
+    const toggle = document.getElementById(`toggle-${semanaId}`);
+    const loading = document.getElementById(`loading-${semanaId}`);
+
+    if (details.style.display === 'none' || details.style.display === '') {
         details.style.display = 'block';
-        
-        // ✅ CARGAR DETALLES SOLO DE ESTA SEMANA
-        if (!semanasData[semanaId]) {
-            loadDetallesSemana(semanaId);
+        toggle.classList.add('open');
+
+        if (!semanasAbiertas.has(semanaId)) {
+            loading.style.display = 'flex';
+            cargarDetallesSemana(semanaId);
         }
+    } else {
+        details.style.display = 'none';
+        toggle.classList.remove('open');
     }
 }
 
-
-
 // ==========================================
-// LOAD DETALLES SEMANA
+// CARGAR DETALLES DE SEMANA
 // ==========================================
-function loadDetallesSemana(semanaId) {
-    console.log('📋 Loading detalles for semana:', semanaId);
-    
-    const loading = document.getElementById(`loading-${semanaId}`);
-    const tableWrapper = document.getElementById(`table-wrapper-${semanaId}`);
-    const empty = document.getElementById(`empty-${semanaId}`);
-    
-    loading.style.display = 'flex';
-    tableWrapper.style.display = 'none';
-    empty.style.display = 'none';
-    
+function cargarDetallesSemana(semanaId) {
+    console.log(`📊 Cargando detalles de semana ${semanaId}...`);
+
     fetch(`/alquiler/semanas/${semanaId}/detalles`)
-        .then(response => response.json())
-        .then(result => {
-            loading.style.display = 'none';
-            
-            if (result.success) {
-                // ✅ ALMACENAR DATOS POR SEMANA (SEPARADOS)
-                semanasData[semanaId] = {
-                    detalles: result.detalles,
-                    modificados: new Set(),
-                    semana: result.semana
-                };
-                
-                if (result.detalles.length > 0) {
-                    renderDetallesTable(semanaId, result.detalles, result.semana);
-                    tableWrapper.style.display = 'block';
-                } else {
-                    empty.style.display = 'flex';
-                }
-                
-                console.log('✅ Detalles loaded:', result.detalles.length);
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                semanasAbiertas.set(semanaId, data.detalles);
+                renderizarTablaSemana(semanaId, data.detalles);
+                console.log(`✅ Semana ${semanaId} cargada: ${data.detalles.length} alquileres`);
             } else {
-                showAlert('Error', result.message, 'error');
-                empty.style.display = 'flex';
+                mostrarError('Error al cargar detalles de la semana');
             }
         })
-        .catch(error => {
-            console.error('❌ Error loading detalles:', error);
-            loading.style.display = 'none';
-            empty.style.display = 'flex';
+        .catch(err => {
+            console.error('Error:', err);
+            mostrarError('Error al cargar detalles de la semana');
+        })
+        .finally(() => {
+            document.getElementById(`loading-${semanaId}`).style.display = 'none';
         });
 }
 
-
 // ==========================================
-// RENDER DETALLES TABLE
+// RENDERIZAR TABLA SEMANA
 // ==========================================
-function renderDetallesTable(semanaId, detalles, semana) {
+function renderizarTablaSemana(semanaId, detalles) {
     const tbody = document.getElementById(`tbody-${semanaId}`);
+    const tfoot = document.getElementById(`tfoot-${semanaId}`);
+    const tableWrapper = document.getElementById(`table-wrapper-${semanaId}`);
+    const emptyState = document.getElementById(`empty-${semanaId}`);
+
+    if (!tbody) {
+        console.error(`❌ No se encontró tbody para semana ${semanaId}`);
+        return;
+    }
+
     tbody.innerHTML = '';
-    
-    let totals = {
-        semanal: 0,
-        ingreso: 0,
-        inversion: 0,
-        descuento: 0,
-        nomina: 0,
-        porcentaje_empresa: 0,
-        deuda: 0,
-        nomina2: 0
-    };
-    
-    detalles.forEach((detalle, index) => {
-        const row = document.createElement('tr');
-        row.dataset.detalleId = detalle.id;
-        row.dataset.index = index;
-        
-        // ✅ CALCULAR INVERSIONES TOTALES
-        const inversionTotal = detalle.inversiones_totales || detalle.inversion_mecanica || 0;
-        
-        // ✅ INDICADOR DE COLOR (amarillo si inversión >= semanal)
-        const inversionAlert = inversionTotal >= detalle.precio_semanal;
-        const inversionClass = inversionAlert ? 'inversion-alert' : '';
-        
-        // Calculate values
-        const ingreso = detalle.precio_semanal * detalle.dias_trabajo;
-        const nominaEmpresa = ingreso * (detalle.porcentaje_empresa / 100);
-        const nomina2 = ingreso + detalle.monto_deuda;
-        
-        // Update totals
-        totals.semanal += parseFloat(detalle.precio_semanal);
-        totals.ingreso += ingreso;
-        totals.inversion += parseFloat(inversionTotal);
-        totals.descuento += parseFloat(detalle.monto_descuento || 0);
-        totals.nomina += parseFloat(detalle.nomina_empresa);
-        totals.porcentaje_empresa += nominaEmpresa;
-        totals.deuda += parseFloat(detalle.monto_deuda || 0);
-        totals.nomina2 += nomina2;
-        
-        row.innerHTML = `
+    tfoot.innerHTML = '';
+
+    if (detalles.length === 0) {
+        tableWrapper.style.display = 'none';
+        emptyState.style.display = 'block';
+        return;
+    }
+
+    tableWrapper.style.display = 'block';
+    emptyState.style.display = 'none';
+
+    let totalIngreso = 0;
+    let totalInversion = 0;
+    let totalNomina = 0;
+    let totalPorcentajeEmpresa = 0;
+    let totalDeuda = 0;
+    let totalNominaFinal = 0;
+
+    detalles.forEach(detalle => {
+        const precioSemanal = parseFloat(detalle.precio_semanal || 0);
+        const inversion = parseFloat(detalle.inversiones_totales || 0);
+        const ingreso = parseFloat(detalle.ingreso_calculado || 0);
+        const porcentaje = parseFloat(detalle.porcentaje_empresa || 0);
+        const montoPorcentaje = ingreso * (porcentaje / 100);
+
+        let inversionClass = '';
+        if (inversion >= precioSemanal) {
+            inversionClass = 'inversion-danger';
+        } else if (inversion >= precioSemanal * 0.7) {
+            inversionClass = 'inversion-warning';
+        }
+
+        const tr = document.createElement('tr');
+        tr.dataset.detalleId = detalle.id;
+
+        // Aplicar clase si está confirmado
+        if (detalle.pago_confirmado) {
+            tr.classList.add('fila-confirmada');
+        }
+
+        const statusBadge = detalle.pago_confirmado
+            ? `<span class="status-badge confirmed">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Confirmado
+               </span>`
+            : `<span class="status-badge unconfirmed">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Sin confirmar
+               </span>`;
+
+        tr.innerHTML = `
             <td class="sticky-col">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--bg-primary); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 12px; color: var(--primary);">
-                        ${detalle.propietario_iniciales}
-                    </div>
-                    <span>${detalle.propietario_nombre}</span>
+                    <div class="avatar-circle">${detalle.propietario_iniciales || '??'}</div>
+                    <span>${detalle.propietario_nombre || 'Sin propietario'}</span>
                 </div>
             </td>
-            <td><strong>${detalle.vehiculo_marca}</strong> ${detalle.vehiculo_modelo}</td>
-            <td>
-                <code style="background: var(--bg-primary); padding: 4px 8px; border-radius: 4px; font-size: 12px;">
-                    ${detalle.vehiculo_placa}
-                </code>
+            <td>${detalle.vehiculo_marca || ''} ${detalle.vehiculo_modelo || ''}</td>
+            <td><span class="placa-badge">${detalle.vehiculo_placa || ''}</span></td>
+            <td>${detalle.inquilino_nombre || ''}</td>
+            <td>${detalle.inquilino_telefono || ''}</td>
+            <td class="text-right">
+                ${detalle.contrato_deuda > 0
+                ? `<span style="color: #e67e22; font-weight: bold;">No Pagado</span><div style="font-size: 0.85em; color: #e67e22;">$${detalle.contrato_deuda.toFixed(2)}</div>`
+                : '<span style="color: #27ae60; font-weight: bold;">Pagado</span>'}
             </td>
-            <td><strong>${detalle.inquilino_nombre}</strong></td>
-            <td>
-                <a href="tel:${detalle.inquilino_telefono}" style="color: var(--primary); font-size: 12px;">
-                    📞 ${detalle.inquilino_telefono}
-                </a>
+            <td class="text-right">
+                ${detalle.depositos_deuda > 0
+                ? `<span style="color: #d35400; font-weight: bold; display: block; font-size: 0.8em;">Pendiente</span><span style="color: #d35400; font-weight: bold;">$${detalle.depositos_deuda.toFixed(2)}</span>`
+                : `<span style="color: #27ae60; font-weight: bold;">Pagado</span>`}
             </td>
-            <td>
-                <input type="number" 
-                       class="form-input" 
-                       value="${detalle.precio_semanal}" 
-                       step="0.01" 
-                       min="0"
-                       data-field="precio_semanal"
-                       onchange="updateDetalle(${semanaId}, ${index}, 'precio_semanal', this.value)"
-                       style="min-width: 90px;">
+            <td class="text-right">$${precioSemanal.toFixed(2)}</td>
+            <td class="text-center">
+                ${detalle.dias_trabajo || 0}
             </td>
-            <td>
-                <input type="number" 
-                       class="form-input" 
-                       value="${detalle.dias_trabajo}" 
-                       min="1" 
-                       max="7"
-                       data-field="dias_trabajo"
-                       onchange="updateDetalle(${semanaId}, ${index}, 'dias_trabajo', this.value)"
-                       style="width: 60px;">
-            </td>
-            <td class="calculated-cell">
-                <span class="currency-display" data-calculated="ingreso">
-                    $${formatCurrency(ingreso)}
-                </span>
-            </td>
-            <td class="${inversionClass}" style="position: relative;">
-                <div style="display: flex; align-items: center; gap: 4px;">
-                    <span class="currency-display" style="color: ${inversionAlert ? '#d32f2f' : '#0a8754'};">
-                        $${formatCurrency(inversionTotal)}
-                    </span>
-                    <button class="btn btn-xs btn-info" 
-                            onclick="abrirModalInversiones(${semanaId}, ${index})"
-                            style="padding: 2px 6px; font-size: 11px;">
-                        ➕
-                    </button>
-                </div>
-                ${inversionAlert ? `
-                    <div style="position: absolute; top: -8px; right: -8px; background: #ff5722; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold;">
-                        ⚠️
-                    </div>
-                ` : ''}
-            </td>
-            <td>
-                <input type="text" 
-                       class="form-input" 
-                       value="${detalle.concepto_descuento || ''}" 
-                       placeholder="Concepto..."
-                       data-field="concepto_descuento"
-                       onchange="updateDetalle(${semanaId}, ${index}, 'concepto_descuento', this.value)"
-                       style="min-width: 140px;">
-            </td>
-            <td class="calculated-cell">
-                <span class="currency-display">
-                    $${formatCurrency(detalle.nomina_empresa)}
-                </span>
-            </td>
-            <td>
-                <span class="badge badge-primary">${detalle.porcentaje_empresa}%</span>
-            </td>
-            <td>
-                <input type="number" 
-                       class="form-input" 
-                       value="${detalle.monto_deuda || 0}" 
-                       step="0.01" 
-                       min="0"
-                       data-field="monto_deuda"
-                       onchange="updateDetalle(${semanaId}, ${index}, 'monto_deuda', this.value)"
-                       style="min-width: 90px;">
-                ${detalle.tiene_deuda ? '<div class="debt-badge">⚠️ MORA</div>' : ''}
-            </td>
-            <td class="calculated-cell">
-                <span class="currency-display" data-calculated="nomina2">
-                    $${formatCurrency(nomina2)}
-                </span>
-            </td>
-            <td>
-                <select class="form-select" 
-                        data-field="banco_id"
-                        onchange="updateDetalle(${semanaId}, ${index}, 'banco_id', this.value)"
-                        style="min-width: 140px;">
-                    <option value="">Seleccionar...</option>
-                    ${bancosGlobal.map(banco => `
-                        <option value="${banco.id}" ${banco.id == detalle.banco_id ? 'selected' : ''}>
-                            ${banco.banco}
-                        </option>
-                    `).join('')}
-                </select>
-            </td>
-            <td>
-                <input type="date" 
-                       class="form-input" 
-                       value="${detalle.fecha_confirmacion_pago || ''}"
-                       data-field="fecha_confirmacion_pago"
-                       onchange="updateDetalle(${semanaId}, ${index}, 'fecha_confirmacion_pago', this.value)"
-                       style="min-width: 120px;">
-                ${detalle.pago_confirmado ? `
-                    <span class="payment-status confirmed">✓ Confirmado</span>
-                ` : `
-                    <span class="payment-status pending">⏱️ Pendiente</span>
-                `}
-            </td>
-            <td>${detalle.dias_trabajo}</td>
-            <td>
-                <div class="action-buttons">
-                    <button class="btn btn-sm btn-primary" 
-                            onclick="editarDetalleCompleto(${semanaId}, ${index})" 
-                            data-tooltip="Editar completo">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            <td class="text-right">$${ingreso.toFixed(2)}</td>
+            <td class="text-right ${inversionClass}">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <span>$${inversion.toFixed(2)}</span>
+                    <button class="btn-icon" onclick="gestionarInversiones(${detalle.id})" title="Gestionar inversiones">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M12 5v14m-7-7h14"/>
                         </svg>
                     </button>
-                    <button class="btn btn-sm btn-danger" 
-                            onclick="eliminarDetalle(${semanaId}, ${detalle.id}, '${detalle.inquilino_nombre}')" 
-                            data-tooltip="Eliminar">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </div>
+            </td>
+            <td class="text-right">$${(ingreso - montoPorcentaje).toFixed(0)}</td> <!-- Corrected: Owner Share -->
+            <td class="text-right" title="Porcentaje: ${porcentaje.toFixed(2)}%">
+                $${montoPorcentaje.toFixed(0)}
+            </td>
+            <td class="text-right">
+                $${parseFloat(detalle.monto_deuda || 0).toFixed(2)}
+            </td>
+            <td class="text-right font-bold">$${parseFloat(detalle.nomina_final || 0).toFixed(2)}</td>
+            <td>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+                    ${statusBadge}
+                    <button class="btn-icon" onclick="abrirModalConfirmarPago(${detalle.id})" title="Confirmar Pago">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </div>
+                ${detalle.banco_nombre ? `<div style="font-size: 10px; color: #6c757d; margin-top: 2px;">${detalle.banco_nombre}</div>` : ''}
+            </td>
+            <td class="text-center">${detalle.dias_trabajo || 0}</td>
+            <td class="text-center">
+                <div style="display: flex; gap: 4px; justify-content: center;">
+                    <button class="btn-icon btn-edit" onclick="editarDetalle(${detalle.id})" title="Editar">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                    </button>
+                    <button class="btn-icon btn-delete" onclick="eliminarDetalle(${detalle.id}, ${semanaId})" title="Eliminar">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
                         </svg>
                     </button>
                 </div>
             </td>
         `;
-        
-        tbody.appendChild(row);
+
+        tbody.appendChild(tr);
+
+        totalIngreso += ingreso;
+        totalInversion += inversion;
+        totalNomina += parseFloat(detalle.nomina_empresa || 0);
+        totalPorcentajeEmpresa += montoPorcentaje;
+        totalDeuda += parseFloat(detalle.monto_deuda || 0);
+        totalNominaFinal += parseFloat(detalle.nomina_final || 0);
     });
-    
-    renderFooterTotals(semanaId, totals, detalles.length);
-}
 
-// ==========================================
-// ✅ MODAL DE INVERSIONES (NUEVO)
-// ==========================================
-function abrirModalInversiones(semanaId, index) {
-    const detalle = semanasData[semanaId].detalles[index];
-    if (!detalle) return;
-    
-    currentSemanaId = semanaId;
-    currentEditingDetalleId = detalle.id;
-    
-    // Cargar inversiones existentes
-    fetch(`/alquiler/detalles/${detalle.id}/inversiones`)
-        .then(response => response.json())
-        .then(result => {
-            if (result.success) {
-                mostrarModalInversiones(detalle, result.inversiones, result.total);
-            }
-        })
-        .catch(error => {
-            console.error('Error cargando inversiones:', error);
-            showAlert('Error', 'Error al cargar inversiones', 'error');
-        });
-}
-
-function mostrarModalInversiones(detalle, inversiones, total) {
-    // Crear modal dinámicamente
-    const modalHTML = `
-        <div class="modal-overlay" id="inversionesModal" style="display: flex;">
-            <div class="modal modal-lg" style="max-width: 900px;">
-                <div class="modal-header">
-                    <h3 class="modal-title">
-                        💰 Inversiones Mecánicas - ${detalle.vehiculo_placa}
-                    </h3>
-                    <button class="modal-close" onclick="cerrarModalInversiones()">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div class="alert alert-info" style="margin-bottom: 20px;">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <circle cx="12" cy="12" r="10"/>
-                            <path d="M12 16v-4"/>
-                            <path d="M12 8h.01"/>
-                        </svg>
-                        <div>
-                            <strong>Total Invertido:</strong> $${formatCurrency(total)}
-                            <br><strong>Vehículo:</strong> ${detalle.vehiculo_marca} ${detalle.vehiculo_modelo}
-                            <br><strong>Precio Semanal:</strong> $${formatCurrency(detalle.precio_semanal)}
-                            ${total >= detalle.precio_semanal ? 
-                                '<br><span style="color: #d32f2f; font-weight: 600;">⚠️ La inversión supera el valor semanal</span>' : 
-                                ''}
-                        </div>
-                    </div>
-
-                    <div style="margin-bottom: 20px;">
-                        <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 10px;">
-                            📋 Inversiones Registradas
-                        </h4>
-                        <div class="inversiones-table-wrapper" style="max-height: 300px; overflow-y: auto;">
-                            <table class="table" style="font-size: 13px;">
-                                <thead>
-                                    <tr>
-                                        <th>Fecha</th>
-                                        <th>Tipo</th>
-                                        <th>Mecánico</th>
-                                        <th>Descripción</th>
-                                        <th>Tipo Inv.</th>
-                                        <th>Costo</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="inversionesListBody">
-                                    ${inversiones.length > 0 ? 
-                                        inversiones.map(inv => `
-                                            <tr>
-                                                <td>${inv.fecha}</td>
-                                                <td>${inv.tipo_trabajo}</td>
-                                                <td>${inv.mecanico}</td>
-                                                <td>${inv.descripcion}</td>
-                                                <td><span class="badge badge-${inv.tipo_inversion === 'falla_mecanica' ? 'warning' : 'danger'}">${inv.tipo_inversion}</span></td>
-                                                <td><strong>$${formatCurrency(inv.costo)}</strong></td>
-                                            </tr>
-                                        `).join('') : 
-                                        '<tr><td colspan="6" style="text-align: center; padding: 20px; color: #999;">No hay inversiones registradas</td></tr>'
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div style="border-top: 2px solid var(--border-color); padding-top: 20px;">
-                        <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 15px;">
-                            ➕ Agregar Nueva Inversión
-                        </h4>
-                        <form id="nuevaInversionForm">
-                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
-                                <div class="form-group">
-                                    <label class="form-label required">Tipo de Trabajo</label>
-                                    <select name="tipo_trabajo_id" class="form-select" required>
-                                        <option value="">Seleccionar tipo...</option>
-                                        ${tiposTrabajo.map(tipo => `
-                                            <option value="${tipo.id}">${tipo.icon} ${tipo.nombre}</option>
-                                        `).join('')}
-                                    </select>
-                                </div>
-
-                                <div class="form-group">
-                                    <label class="form-label required">Mecánico</label>
-                                    <select name="mecanico_id" class="form-select" required>
-                                        <option value="">Seleccionar mecánico...</option>
-                                        ${mecanicos.map(mec => `
-                                            <option value="${mec.id}">${mec.nombre}</option>
-                                        `).join('')}
-                                    </select>
-                                </div>
-
-                                <div class="form-group">
-                                    <label class="form-label required">Tipo de Inversión</label>
-                                    <select name="tipo_inversion" class="form-select" required>
-                                        <option value="">Seleccionar...</option>
-                                        <option value="falla_mecanica">🔧 Falla Mecánica</option>
-                                        <option value="accidente">💥 Accidente</option>
-                                    </select>
-                                </div>
-
-                                <div class="form-group">
-                                    <label class="form-label required">Costo</label>
-                                    <input type="number" name="costo" class="form-input" step="0.01" min="0" required placeholder="0.00">
-                                </div>
-
-                                <div class="form-group" style="grid-column: 1 / -1;">
-                                    <label class="form-label required">Descripción/Concepto</label>
-                                    <textarea name="descripcion" class="form-textarea" rows="2" required placeholder="Ej: Cambio de aceite y filtros"></textarea>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="cerrarModalInversiones()">Cerrar</button>
-                    <button type="button" class="btn btn-primary" onclick="guardarNuevaInversion()">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                        </svg>
-                        Guardar Inversión
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // Insertar modal en el DOM
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
-}
-
-function cerrarModalInversiones() {
-    const modal = document.getElementById('inversionesModal');
-    if (modal) {
-        modal.remove();
-    }
-}
-
-function guardarNuevaInversion() {
-    const form = document.getElementById('nuevaInversionForm');
-    const formData = new FormData(form);
-    
-    if (!form.checkValidity()) {
-        form.reportValidity();
-        return;
-    }
-    
-    const data = {
-        detalle_id: currentEditingDetalleId,
-        tipo_trabajo_id: formData.get('tipo_trabajo_id'),
-        mecanico_id: formData.get('mecanico_id'),
-        tipo_inversion: formData.get('tipo_inversion'),
-        descripcion: formData.get('descripcion'),
-        costo: formData.get('costo')
-    };
-    
-    fetch('/alquiler/inversiones/crear', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            showAlert('Éxito', 'Inversión registrada correctamente', 'success');
-            cerrarModalInversiones();
-            
-            // Recargar detalles
-            delete semanasData[currentSemanaId];
-            loadDetallesSemana(currentSemanaId);
-        } else {
-            showAlert('Error', result.message, 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Error guardando inversión:', error);
-        showAlert('Error', 'Error al guardar inversión', 'error');
-    });
-}
-
-
-// ==========================================
-// RENDER FOOTER TOTALS
-// ==========================================
-function renderFooterTotals(semanaId, totals, count) {
-    const tfoot = document.getElementById(`tfoot-${semanaId}`);
     tfoot.innerHTML = `
-        <tr>
-            <td class="sticky-col"><strong>TOTALES (${count})</strong></td>
-            <td colspan="4"></td>
-            <td class="total-value">$${formatCurrency(totals.semanal)}</td>
-            <td></td>
-            <td class="total-value">$${formatCurrency(totals.ingreso)}</td>
-            <td class="total-value">$${formatCurrency(totals.inversion)}</td>
-            <td></td>
-            <td class="total-value">$${formatCurrency(totals.nomina)}</td>
-            <td class="total-value">$${formatCurrency(totals.porcentaje_empresa)}</td>
-            <td class="total-value">$${formatCurrency(totals.deuda)}</td>
-            <td class="total-value">$${formatCurrency(totals.nomina2)}</td>
-            <td colspan="4"></td>
+        <tr style="background: #f8f9fa; font-weight: 700;">
+            <td colspan="9" class="text-right">TOTALES:</td> <!-- Corrected colspan -->
+            <td class="text-right">$${totalIngreso.toFixed(2)}</td>
+            <td class="text-right">$${totalInversion.toFixed(2)}</td>
+            <td class="text-right">$${(totalIngreso - totalPorcentajeEmpresa).toFixed(0)}</td> <!-- Corrected: Owner Share -->
+            <td class="text-right">$${totalPorcentajeEmpresa.toFixed(0)}</td>
+            <td class="text-right">$${totalDeuda.toFixed(2)}</td>
+            <td class="text-right">$${totalNominaFinal.toFixed(2)}</td>
+            <td colspan="2"></td>
         </tr>
     `;
+
+    cargarBancosEnSelect(semanaId);
 }
 
 // ==========================================
-// CERRAR SEMANA (CON VALIDACIÓN ADMIN)
+// CARGAR BANCOS EN SELECT
 // ==========================================
-function cerrarSemana(semanaId) {
-    if (userRol !== 'admin') {
-        showAlert('Acceso Denegado', 'Solo los administradores pueden cerrar semanas', 'error');
-        return;
-    }
-    
-    showConfirm(
-        '¿Cerrar Semana?',
-        'Una vez cerrada, no podrás modificar los datos.',
-        function() {
-            fetch(`/alquiler/semanas/${semanaId}/cerrar`, {
-                method: 'POST'
-            })
-            .then(response => response.json())
-            .then(result => {
-                if (result.success) {
-                    showAlert('Éxito', 'Semana cerrada', 'success');
-                    setTimeout(() => window.location.reload(), 1500);
-                } else {
-                    showAlert('Error', result.message, 'error');
-                }
-            })
-            .catch(error => {
-                console.error('❌ Error:', error);
-                showAlert('Error', 'Error al cerrar semana', 'error');
-            });
+function cargarBancosEnSelect(semanaId) {
+    fetch('/alquiler/bancos/json')
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const selects = document.querySelectorAll(`#tbody-${semanaId} select[data-field="banco_id"]`);
+                selects.forEach(select => {
+                    const detalleId = select.dataset.detalleId;
+                    const detalle = semanasAbiertas.get(semanaId).find(d => d.id == detalleId);
+
+                    select.innerHTML = '<option value="">Sin banco</option>';
+                    data.bancos.forEach(banco => {
+                        const option = document.createElement('option');
+                        option.value = banco.id;
+                        option.textContent = `${banco.banco} - ${banco.cuenta}`;
+                        if (detalle && detalle.banco_id == banco.id) {
+                            option.selected = true;
+                        }
+                        select.appendChild(option);
+                    });
+                });
+            }
+        })
+        .catch(err => console.error('Error cargando bancos:', err));
+}
+
+// ==========================================
+// GUARDAR CAMBIOS SEMANA
+// ==========================================
+function guardarCambiosSemana(semanaId) {
+    console.log(`💾 Guardando cambios de semana ${semanaId}...`);
+
+    const tbody = document.getElementById(`tbody-${semanaId}`);
+    if (!tbody) return;
+
+    const cambios = [];
+    const inputs = tbody.querySelectorAll('[data-detalle-id]');
+
+    const detallesPorId = {};
+    inputs.forEach(input => {
+        const detalleId = input.dataset.detalleId;
+        if (!detallesPorId[detalleId]) {
+            detallesPorId[detalleId] = { id: parseInt(detalleId) };
         }
-    );
-}
 
-// ==========================================
-// ELIMINAR SEMANA (CON VALIDACIÓN ADMIN)
-// ==========================================
-function eliminarSemana(semanaId, totalVehiculos) {
-    if (userRol !== 'admin') {
-        showAlert('Acceso Denegado', 'Solo los administradores pueden eliminar semanas', 'error');
-        return;
-    }
-    
-    let message = totalVehiculos > 0 
-        ? `Esta semana tiene ${totalVehiculos} alquileres. ¿Deseas eliminarla?`
-        : 'Esta semana está vacía. ¿Deseas eliminarla?';
-    
-    showConfirm(
-        '¿Eliminar Semana?',
-        message,
-        function() {
-            fetch(`/alquiler/semanas/${semanaId}/eliminar`, {
-                method: 'POST'
-            })
-            .then(response => response.json())
-            .then(result => {
-                if (result.success) {
-                    showAlert('Éxito', 'Semana eliminada', 'success');
-                    setTimeout(() => window.location.reload(), 1500);
-                } else {
-                    showAlert('Error', result.message, 'error');
-                }
-            })
-            .catch(error => {
-                console.error('❌ Error:', error);
-                showAlert('Error', 'Error al eliminar semana', 'error');
-            });
+        const field = input.dataset.field;
+        let value = input.value;
+
+        if (['dias_trabajo', 'monto_deuda', 'precio_semanal', 'banco_id'].includes(field)) {
+            value = value ? parseFloat(value) : null;
         }
-    );
-}
 
-// ==========================================
-// UTILITY
-// ==========================================
-function formatCurrency(value) {
-    return parseFloat(value || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-}
-
-// ==========================================
-// UPDATE DETALLE (INLINE EDIT)
-// ==========================================
-function updateDetalle(semanaId, index, field, value) {
-    if (!semanasData[semanaId]) return;
-    
-    const detalles = semanasData[semanaId].detalles;
-    if (!detalles[index]) return;
-    
-    // Update value
-    detalles[index][field] = value;
-    
-    // Mark as modified
-    semanasData[semanaId].modificados.add(detalles[index].id);
-    
-    // Mark row visually
-    const row = document.querySelector(`[data-detalle-id="${detalles[index].id}"]`);
-    if (row) row.classList.add('modified-row');
-    
-    // Recalculate if necessary
-    if (field === 'precio_semanal' || field === 'dias_trabajo' || field === 'monto_deuda') {
-        recalcularFila(semanaId, index);
-    }
-    
-    console.log('✏️ Updated:', field, '=', value, 'for detalle', detalles[index].id);
-}
-
-// ==========================================
-// RECALCULAR FILA
-// ==========================================
-function recalcularFila(semanaId, index) {
-    const detalle = semanasData[semanaId].detalles[index];
-    if (!detalle) return;
-    
-    const row = document.querySelector(`[data-detalle-id="${detalle.id}"]`);
-    if (!row) return;
-    
-    // Calculate
-    const ingreso = parseFloat(detalle.precio_semanal) * parseInt(detalle.dias_trabajo);
-    const nominaEmpresa = ingreso * (parseFloat(detalle.porcentaje_empresa) / 100);
-    const nomina2 = ingreso + parseFloat(detalle.monto_deuda || 0);
-    
-    // Update calculated cells
-    const ingresoCell = row.querySelector('[data-calculated="ingreso"]');
-    const nomina2Cell = row.querySelector('[data-calculated="nomina2"]');
-    
-    if (ingresoCell) ingresoCell.textContent = `$${formatCurrency(ingreso)}`;
-    if (nomina2Cell) nomina2Cell.textContent = `$${formatCurrency(nomina2)}`;
-    
-    // Update data
-    detalle.ingreso_calculado = ingreso;
-    detalle.nomina_empresa = nominaEmpresa;
-    detalle.nomina_final = nomina2;
-    
-    // Recalculate totals
-    recalcularTotales(semanaId);
-}
-
-// ==========================================
-// RECALCULAR TOTALES
-// ==========================================
-function recalcularTotales(semanaId) {
-    const detalles = semanasData[semanaId].detalles;
-    
-    let totals = {
-        semanal: 0,
-        ingreso: 0,
-        inversion: 0,
-        descuento: 0,
-        nomina: 0,
-        porcentaje_empresa: 0,
-        deuda: 0,
-        nomina2: 0
-    };
-    
-    detalles.forEach(detalle => {
-        totals.semanal += parseFloat(detalle.precio_semanal);
-        totals.ingreso += parseFloat(detalle.ingreso_calculado || 0);
-        totals.inversion += parseFloat(detalle.inversion_mecanica || 0);
-        totals.descuento += parseFloat(detalle.monto_descuento || 0);
-        totals.nomina += parseFloat(detalle.nomina_empresa || 0);
-        totals.deuda += parseFloat(detalle.monto_deuda || 0);
-        totals.nomina2 += parseFloat(detalle.nomina_final || 0);
+        detallesPorId[detalleId][field] = value;
     });
-    
-    renderFooterTotals(semanaId, totals, detalles.length);
-}
 
-// ==========================================
-// EDITAR DETALLE COMPLETO (MODAL)
-// ==========================================
-// ==========================================
-// EDITAR DETALLE COMPLETO (VERSIÓN MEJORADA)
-// ==========================================
-function editarDetalleCompleto(semanaId, index) {
-    const detalle = semanasData[semanaId].detalles[index];
-    if (!detalle) return;
-    
-    currentSemanaId = semanaId;
-    currentEditingDetalleId = detalle.id;
-    
-    // Store original values for comparison
-    window.originalDetalleValues = {
-        vehiculo_id: detalle.vehiculo_id,
-        inquilino_id: detalle.inquilino_id
-    };
-    
-    // Fill form
-    const form = document.getElementById('editarDetalleForm');
-    document.getElementById('editDetalleId').value = detalle.id;
-    form.querySelector('[name="precio_semanal"]').value = detalle.precio_semanal;
-    form.querySelector('[name="dias_trabajo"]').value = detalle.dias_trabajo;
-    form.querySelector('[name="inversion_mecanica"]').value = detalle.inversion_mecanica || 0;
-    form.querySelector('[name="concepto_inversion"]').value = detalle.concepto_inversion || '';
-    form.querySelector('[name="monto_descuento"]').value = detalle.monto_descuento || 0;
-    form.querySelector('[name="concepto_descuento"]').value = detalle.concepto_descuento || '';
-    form.querySelector('[name="monto_deuda"]').value = detalle.monto_deuda || 0;
-    form.querySelector('[name="banco_id"]').value = detalle.banco_id || '';
-    form.querySelector('[name="fecha_confirmacion_pago"]').value = detalle.fecha_confirmacion_pago || '';
-    form.querySelector('[name="pago_confirmado"]').checked = detalle.pago_confirmado || false;
-    form.querySelector('[name="notas"]').value = detalle.notas || '';
-    
-    // Load vehículos and inquilinos disponibles (including current ones)
-    loadEditVehiculosSelect(semanaId, detalle.vehiculo_id);
-    loadEditInquilinosSelect(semanaId, detalle.inquilino_id);
-    
-    // Open modal
-    window.AppUtils.openModal('editarDetalleModal');
-    
-    console.log('📝 Editing detalle completo:', detalle.id);
-}
+    Object.values(detallesPorId).forEach(detalle => {
+        cambios.push(detalle);
+    });
 
-// ==========================================
-// LOAD VEHÍCULOS FOR EDIT (including current)
-// ==========================================
-function loadEditVehiculosSelect(semanaId, currentVehiculoId) {
-    const select = document.getElementById('editVehiculoSelect');
-    select.innerHTML = '<option value="">Cargando...</option>';
-    
-    fetch(`/alquiler/semanas/${semanaId}/disponibles`)
-        .then(response => response.json())
-        .then(result => {
-            if (result.success) {
-                select.innerHTML = '<option value="">Seleccionar vehículo...</option>';
-                
-                // Add current vehicle first (if exists)
-                const currentIndex = result.vehiculos.findIndex(v => v.id === currentVehiculoId);
-                if (currentIndex === -1 && currentVehiculoId) {
-                    // Current vehicle not in available list, fetch it separately
-                    // For now, we'll trust it's in the DB
-                }
-                
-                result.vehiculos.forEach(veh => {
-                    const option = document.createElement('option');
-                    option.value = veh.id;
-                    option.textContent = `${veh.placa} - ${veh.marca} ${veh.modelo} ${veh.ano || ''} ${veh.color || ''} - $${formatCurrency(veh.precio_semanal)}`;
-                    option.dataset.vehiculo = JSON.stringify(veh);
-                    
-                    if (veh.id === currentVehiculoId) {
-                        option.selected = true;
-                    }
-                    
-                    select.appendChild(option);
-                });
-                
-                // If current vehicle ID provided but not in list, add it
-                if (currentVehiculoId && !select.querySelector(`option[value="${currentVehiculoId}"]`)) {
-                    // Fetch current vehicle data
-                    const currentDetalle = semanasData[semanaId].detalles.find(d => d.vehiculo_id === currentVehiculoId);
-                    if (currentDetalle) {
-                        const option = document.createElement('option');
-                        option.value = currentVehiculoId;
-                        option.textContent = `${currentDetalle.vehiculo_placa} - ${currentDetalle.vehiculo_marca} ${currentDetalle.vehiculo_modelo} (Actual)`;
-                        option.selected = true;
-                        select.insertBefore(option, select.firstChild.nextSibling);
-                    }
-                }
-                
-                // Add change listener
-                select.addEventListener('change', showEditPreview);
+    fetch(`/alquiler/semanas/${semanaId}/guardar-cambios`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ cambios })
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                mostrarExito(`✅ ${data.updated} detalles actualizados`);
+                semanasAbiertas.delete(semanaId);
+                cargarDetallesSemana(semanaId);
+            } else {
+                mostrarError(data.message || 'Error al guardar cambios');
             }
         })
-        .catch(error => {
-            console.error('Error loading vehiculos:', error);
-            select.innerHTML = '<option value="">Error al cargar</option>';
+        .catch(err => {
+            console.error('Error:', err);
+            mostrarError('Error al guardar cambios');
         });
 }
 
 // ==========================================
-// LOAD INQUILINOS FOR EDIT (including current)
+// AGREGAR ALQUILER
 // ==========================================
-function loadEditInquilinosSelect(semanaId, currentInquilinoId) {
-    const select = document.getElementById('editInquilinoSelect');
-    select.innerHTML = '<option value="">Cargando...</option>';
-    
+function agregarAlquiler(semanaId) {
+    console.log(`➕ Abriendo modal para agregar alquiler a semana ${semanaId}`);
+
+    semanaActualId = semanaId;
+    document.getElementById('agregarAlquilerSemanaId').value = semanaId;
+
     fetch(`/alquiler/semanas/${semanaId}/disponibles`)
-        .then(response => response.json())
-        .then(result => {
-            if (result.success) {
-                select.innerHTML = '<option value="">Seleccionar inquilino...</option>';
-                
-                result.inquilinos.forEach(inq => {
-                    const option = document.createElement('option');
-                    option.value = inq.id;
-                    option.textContent = `${inq.nombre_apellido}${inq.telefono ? ' - ' + inq.telefono : ''}`;
-                    option.dataset.inquilino = JSON.stringify(inq);
-                    
-                    if (inq.id === currentInquilinoId) {
-                        option.selected = true;
-                    }
-                    
-                    select.appendChild(option);
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // Configurar Vehículos
+                const vehiculoOptions = document.getElementById('vehiculoSelectOptions');
+                const vehiculoText = document.getElementById('vehiculoSelectText');
+                const vehiculoValue = document.getElementById('vehiculoSelectValue');
+
+                vehiculoOptions.innerHTML = '';
+                vehiculoText.textContent = 'Seleccionar vehículo...';
+                vehiculoText.classList.add('placeholder');
+                vehiculoValue.value = '';
+
+                data.vehiculos.forEach(v => {
+                    const opt = document.createElement('div');
+                    opt.className = 'custom-select-option';
+                    opt.dataset.value = v.id;
+                    opt.dataset.precio = v.precio_semanal;
+                    opt.dataset.propietario = v.propietario_nombre;
+                    opt.dataset.inquilinoId = v.inquilino_asociado_id || ''; // Store associated tenant ID
+
+                    const inquilinoText = v.inquilino_nombre ? ` - [${v.inquilino_nombre}]` : '';
+                    opt.textContent = `${v.placa} - ${v.marca} ${v.modelo} (${v.propietario_nombre})${inquilinoText}`;
+
+                    opt.onclick = () => {
+                        selectOption('vehiculoSelectWrapper', v.id, opt.textContent, () => {
+                            // ✅ Auto-seleccionar inquilino asociado
+                            if (v.inquilino_asociado_id) {
+                                const inquilinoId = v.inquilino_asociado_id;
+                                const inquilinoOpt = document.querySelector(`#inquilinoSelectOptions .custom-select-option[data-value="${inquilinoId}"]`);
+
+                                if (inquilinoOpt) {
+                                    console.log(`🔄 Auto-seleccionando inquilino ${inquilinoId}`);
+                                    inquilinoOpt.click();
+                                } else {
+                                    console.warn(`⚠️ Inquilino asociado ${inquilinoId} no encontrado en lista`);
+                                }
+                            }
+                            updateAlquilerPreview();
+                        });
+                    };
+                    vehiculoOptions.appendChild(opt);
                 });
-                
-                // If current inquilino ID provided but not in list, add it
-                if (currentInquilinoId && !select.querySelector(`option[value="${currentInquilinoId}"]`)) {
-                    const currentDetalle = semanasData[semanaId].detalles.find(d => d.inquilino_id === currentInquilinoId);
-                    if (currentDetalle) {
-                        const option = document.createElement('option');
-                        option.value = currentInquilinoId;
-                        option.textContent = `${currentDetalle.inquilino_nombre} (Actual)`;
-                        option.selected = true;
-                        select.insertBefore(option, select.firstChild.nextSibling);
-                    }
-                }
-                
-                // Add change listener
-                select.addEventListener('change', showEditPreview);
+
+                // Configurar Inquilinos
+                const inquilinoOptions = document.getElementById('inquilinoSelectOptions');
+                const inquilinoText = document.getElementById('inquilinoSelectText');
+                const inquilinoValue = document.getElementById('inquilinoSelectValue');
+
+                inquilinoOptions.innerHTML = '';
+                inquilinoText.textContent = 'Seleccionar inquilino...';
+                inquilinoText.classList.add('placeholder');
+                inquilinoValue.value = '';
+
+                data.inquilinos.forEach(i => {
+                    const opt = document.createElement('div');
+                    opt.className = 'custom-select-option';
+                    opt.dataset.value = i.id;
+                    opt.textContent = `${i.nombre_apellido} - ${i.cedula || 'Sin cédula'}`;
+
+                    opt.onclick = () => {
+                        selectOption('inquilinoSelectWrapper', i.id, opt.textContent, () => {
+                            updateAlquilerPreview();
+                        });
+                    };
+                    inquilinoOptions.appendChild(opt);
+                });
+
+                openModal('agregarAlquilerModal');
             }
         })
-        .catch(error => {
-            console.error('Error loading inquilinos:', error);
-            select.innerHTML = '<option value="">Error al cargar</option>';
+        .catch(err => {
+            console.error('Error:', err);
+            mostrarError('Error al cargar datos disponibles');
         });
 }
 
-// ==========================================
-// SHOW EDIT PREVIEW
-// ==========================================
-function showEditPreview() {
-    const vehiculoSelect = document.getElementById('editVehiculoSelect');
-    const inquilinoSelect = document.getElementById('editInquilinoSelect');
-    const preview = document.getElementById('editPreview');
-    const previewList = document.getElementById('editPreviewList');
-    
-    const changes = [];
-    
-    // Check vehicle change
-    if (vehiculoSelect.value && vehiculoSelect.value != window.originalDetalleValues.vehiculo_id) {
-        const option = vehiculoSelect.selectedOptions[0];
-        changes.push(`<li>Vehículo cambiado a: <strong>${option.textContent}</strong></li>`);
-    }
-    
-    // Check inquilino change
-    if (inquilinoSelect.value && inquilinoSelect.value != window.originalDetalleValues.inquilino_id) {
-        const option = inquilinoSelect.selectedOptions[0];
-        changes.push(`<li>Inquilino cambiado a: <strong>${option.textContent}</strong></li>`);
-    }
-    
-    if (changes.length > 0) {
-        previewList.innerHTML = changes.join('');
-        preview.style.display = 'block';
+function updateAlquilerPreview() {
+    const vehiculoId = document.getElementById('vehiculoSelectValue')?.value;
+    const inquilinoId = document.getElementById('inquilinoSelectValue')?.value;
+    const preview = document.getElementById('alquilerPreview');
+
+    if (vehiculoId && inquilinoId) {
+        const vehiculoOpt = document.querySelector(`#vehiculoSelectOptions .custom-select-option[data-value="${vehiculoId}"]`);
+        const inquilinoText = document.getElementById('inquilinoSelectText').textContent;
+
+        if (vehiculoOpt) {
+            const precio = vehiculoOpt.dataset.precio || '0';
+            const propietario = vehiculoOpt.dataset.propietario || '';
+
+            document.getElementById('previewVehiculo').textContent = vehiculoOpt.textContent.split(' (')[0];
+            document.getElementById('previewPrecio').textContent = `$${parseFloat(precio).toFixed(2)}`;
+            document.getElementById('previewInquilino').textContent = inquilinoText;
+            document.getElementById('previewPropietario').textContent = propietario;
+
+            preview.style.display = 'block';
+        }
     } else {
         preview.style.display = 'none';
     }
 }
 
-// ==========================================
-// SETUP EDITAR DETALLE FORM (VERSIÓN MEJORADA)
-// ==========================================
-function setupEditarDetalleForm() {
-    const form = document.getElementById('editarDetalleForm');
-    if (!form) return;
-    
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        if (!currentSemanaId || !currentEditingDetalleId) return;
-        
-        const formData = new FormData(this);
-        const data = {
-            vehiculo_id: formData.get('vehiculo_id'),
-            inquilino_id: formData.get('inquilino_id'),
-            precio_semanal: formData.get('precio_semanal'),
-            dias_trabajo: formData.get('dias_trabajo'),
-            inversion_mecanica: formData.get('inversion_mecanica'),
-            concepto_inversion: formData.get('concepto_inversion'),
-            monto_descuento: formData.get('monto_descuento'),
-            concepto_descuento: formData.get('concepto_descuento'),
-            monto_deuda: formData.get('monto_deuda'),
-            banco_id: formData.get('banco_id'),
-            fecha_confirmacion_pago: formData.get('fecha_confirmacion_pago'),
-            pago_confirmado: this.querySelector('[name="pago_confirmado"]').checked,
-            notas: formData.get('notas')
-        };
-        
-        // Disable submit
-        const submitBtn = form.querySelector('[type="submit"]');
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = `
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="animation: spin 1s linear infinite;">
-                <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32"/>
-            </svg>
-            Guardando...
-        `;
-        
-        fetch(`/alquiler/detalles/${currentEditingDetalleId}/editar-completo`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(data)
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.success) {
-                window.AppUtils.closeModal('editarDetalleModal');
-                
-                // Reload detalles
-                delete semanasData[currentSemanaId];
-                loadDetallesSemana(currentSemanaId);
-                
-                showAlert('Éxito', 'Detalle actualizado correctamente', 'success');
+document.getElementById('agregarAlquilerForm')?.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    const formData = {
+        semana_id: document.getElementById('agregarAlquilerSemanaId').value,
+        vehiculo_id: document.getElementById('vehiculoSelectValue').value,
+        inquilino_id: document.getElementById('inquilinoSelectValue').value,
+        dias_trabajo: document.querySelector('[name="dias_trabajo"]').value
+    };
+
+    fetch('/alquiler/semanas/agregar_alquiler', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                mostrarExito('✅ Alquiler agregado correctamente');
+                closeModal('agregarAlquilerModal');
+
+                semanasAbiertas.delete(parseInt(formData.semana_id));
+                cargarDetallesSemana(parseInt(formData.semana_id));
             } else {
-                showAlert('Error', result.message, 'error');
+                mostrarError(data.message || 'Error al agregar alquiler');
             }
         })
-        .catch(error => {
-            console.error('❌ Error saving:', error);
-            showAlert('Error', 'Error al guardar cambios', 'error');
-        })
-        .finally(() => {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = `
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                </svg>
-                Guardar Cambios
-            `;
+        .catch(err => {
+            console.error('Error:', err);
+            mostrarError('Error al agregar alquiler');
         });
-    });
-}
+});
+
 // ==========================================
-// GUARDAR CAMBIOS SEMANA
+// EDITAR DETALLE
 // ==========================================
-function guardarCambiosSemana(semanaId) {
-    if (!semanasData[semanaId]) {
-        showAlert('Error', 'No hay datos cargados para esta semana', 'error');
-        return;
-    }
-    
-    const modificados = semanasData[semanaId].modificados;
-    
-    if (modificados.size === 0) {
-        showAlert('Sin cambios', 'No hay modificaciones para guardar', 'info');
-        return;
-    }
-    
-    console.log('💾 Saving', modificados.size, 'changes for semana', semanaId);
-    
-    // Prepare data
-    const detalles = semanasData[semanaId].detalles;
-    const cambios = detalles
-        .filter(d => modificados.has(d.id))
-        .map(d => ({
-            id: d.id,
-            precio_semanal: d.precio_semanal,
-            dias_trabajo: d.dias_trabajo,
-            inversion_mecanica: d.inversion_mecanica,
-            concepto_inversion: d.concepto_inversion,
-            monto_descuento: d.monto_descuento,
-            concepto_descuento: d.concepto_descuento,
-            monto_deuda: d.monto_deuda,
-            banco_id: d.banco_id,
-            fecha_confirmacion_pago: d.fecha_confirmacion_pago,
-            pago_confirmado: d.pago_confirmado,
-            notas: d.notas
-        }));
-    
-    // Send to server
-    fetch(`/alquiler/semanas/${semanaId}/guardar-cambios`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ cambios })
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            modificados.clear();
-            
-            // Remove modified class from rows
-            document.querySelectorAll('.modified-row').forEach(row => {
-                row.classList.remove('modified-row');
-            });
-            
-            showAlert('Éxito', `${result.updated} detalles guardados`, 'success');
-            console.log('✅ Changes saved');
-        } else {
-            showAlert('Error', result.message, 'error');
+function editarDetalle(detalleId) {
+    console.log(`✏️ Editando detalle ${detalleId}`);
+
+    let detalle = null;
+    let semanaId = null;
+
+    for (let [sId, detalles] of semanasAbiertas.entries()) {
+        detalle = detalles.find(d => d.id === detalleId);
+        if (detalle) {
+            semanaId = sId;
+            break;
         }
-    })
-    .catch(error => {
-        console.error('❌ Error saving:', error);
-        showAlert('Error', 'Error al guardar cambios', 'error');
-    });
-}
+    }
 
+    if (!detalle) {
+        mostrarError('No se encontró el detalle');
+        return;
+    }
 
+    document.getElementById('editDetalleId').value = detalleId;
+    document.querySelector('#editarDetalleForm [name="precio_semanal"]').value = detalle.precio_semanal || '';
+    document.querySelector('#editarDetalleForm [name="dias_trabajo"]').value = detalle.dias_trabajo || '';
+    document.querySelector('#editarDetalleForm [name="inversion_mecanica"]').value = detalle.inversiones_totales || 0;
+    document.querySelector('#editarDetalleForm [name="concepto_inversion"]').value = detalle.concepto_inversion || '';
+    document.querySelector('#editarDetalleForm [name="monto_descuento"]').value = detalle.monto_descuento || '';
+    document.querySelector('#editarDetalleForm [name="concepto_descuento"]').value = detalle.concepto_descuento || '';
+    document.querySelector('#editarDetalleForm [name="monto_deuda"]').value = detalle.monto_deuda || '';
+    document.querySelector('#editarDetalleForm [name="notas"]').value = detalle.notas || '';
 
+    // Poblar campos de pago
+    const bancoSelect = document.querySelector('#editarDetalleForm [name="banco_id"]');
+    const fechaPagoInput = document.querySelector('#editarDetalleForm [name="fecha_confirmacion_pago"]');
+    const pagoConfirmadoCheck = document.querySelector('#editarDetalleForm [name="pago_confirmado"]');
 
-// ==========================================
-// ELIMINAR DETALLE
-// ==========================================
-function eliminarDetalle(semanaId, detalleId, inquilinoNombre) {
-    showConfirm(
-        '¿Eliminar Alquiler?',
-        `El alquiler de "${inquilinoNombre}" será eliminado de esta semana.`,
-        function() {
-            fetch(`/alquiler/detalles/${detalleId}/eliminar`, {
-                method: 'POST'
-            })
-            .then(response => response.json())
-            .then(result => {
-                if (result.success) {
-                    // Reload detalles
-                    delete semanasData[semanaId];
-                    loadDetallesSemana(semanaId);
-                    showAlert('Éxito', 'Alquiler eliminado', 'success');
-                } else {
-                    showAlert('Error', result.message, 'error');
+    if (fechaPagoInput) fechaPagoInput.value = detalle.fecha_confirmacion_pago || '';
+    if (pagoConfirmadoCheck) pagoConfirmadoCheck.checked = !!detalle.pago_confirmado;
+
+    // Cargar bancos y seleccionar el actual
+    if (bancoSelect) {
+        fetch('/alquiler/bancos/json')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    bancoSelect.innerHTML = '<option value="">Seleccionar banco...</option>';
+
+                    // Opción efectivo
+                    const optEfectivo = document.createElement('option');
+                    optEfectivo.value = '0';
+                    optEfectivo.textContent = 'EFECTIVO';
+                    bancoSelect.appendChild(optEfectivo);
+
+                    data.bancos.forEach(b => {
+                        const opt = document.createElement('option');
+                        opt.value = b.id;
+                        opt.textContent = `${b.banco} - ${b.cuenta}`;
+                        bancoSelect.appendChild(opt);
+                    });
+
+                    // Seleccionar valor actual
+                    bancoSelect.value = detalle.banco_id || (detalle.pago_confirmado && !detalle.banco_id ? '0' : '');
                 }
-            })
-            .catch(error => {
-                console.error('❌ Error deleting:', error);
-                showAlert('Error', 'Error al eliminar', 'error');
             });
-        }
-    );
+    }
+
+    if (semanaId) {
+        fetch(`/alquiler/semanas/${semanaId}/disponibles`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    // Configurar Vehículo
+                    const vehiculoOptions = document.getElementById('editVehiculoSelectOptions');
+                    vehiculoOptions.innerHTML = '';
+
+                    // Opción actual
+                    const currentV = {
+                        id: detalle.vehiculo_id,
+                        text: `${detalle.vehiculo_placa} - ${detalle.vehiculo_marca} ${detalle.vehiculo_modelo} (Actual)`
+                    };
+
+                    const addOption = (v, isCurrent = false) => {
+                        const opt = document.createElement('div');
+                        opt.className = 'custom-select-option' + (isCurrent ? ' selected' : '');
+                        opt.dataset.value = v.id;
+                        opt.textContent = isCurrent ? v.text : `${v.placa} - ${v.marca} ${v.modelo} (${v.propietario_nombre})`;
+                        opt.onclick = () => selectOption('editVehiculoSelectWrapper', v.id, opt.textContent);
+                        vehiculoOptions.appendChild(opt);
+                    };
+
+                    addOption(currentV, true);
+                    selectOption('editVehiculoSelectWrapper', currentV.id, currentV.text);
+
+                    data.vehiculos.forEach(v => {
+                        if (v.id !== detalle.vehiculo_id) {
+                            addOption(v);
+                        }
+                    });
+
+                    // Configurar Inquilino
+                    const inquilinoOptions = document.getElementById('editInquilinoSelectOptions');
+                    inquilinoOptions.innerHTML = '';
+
+                    const currentI = {
+                        id: detalle.inquilino_id,
+                        text: `${detalle.inquilino_nombre} (Actual)`
+                    };
+
+                    const addIOption = (i, isCurrent = false) => {
+                        const opt = document.createElement('div');
+                        opt.className = 'custom-select-option' + (isCurrent ? ' selected' : '');
+                        opt.dataset.value = i.id;
+                        opt.textContent = isCurrent ? i.text : `${i.nombre_apellido} - ${i.cedula || 'Sin cédula'}`;
+                        opt.onclick = () => selectOption('editInquilinoSelectWrapper', i.id, opt.textContent);
+                        inquilinoOptions.appendChild(opt);
+                    };
+
+                    addIOption(currentI, true);
+                    selectOption('editInquilinoSelectWrapper', currentI.id, currentI.text);
+
+                    data.inquilinos.forEach(i => {
+                        if (i.id !== detalle.inquilino_id) {
+                            addIOption(i);
+                        }
+                    });
+                }
+            });
+    }
+
+    openModal('editarDetalleModal');
+}
+
+document.getElementById('editarDetalleForm')?.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    const detalleId = document.getElementById('editDetalleId').value;
+
+    const formData = {
+        detalle_id: detalleId,
+        vehiculo_id: document.getElementById('editVehiculoSelectValue')?.value,
+        inquilino_id: document.getElementById('editInquilinoSelectValue')?.value,
+        precio_semanal: document.querySelector('#editarDetalleForm [name="precio_semanal"]')?.value,
+        dias_trabajo: document.querySelector('#editarDetalleForm [name="dias_trabajo"]')?.value,
+        inversion_mecanica: document.querySelector('#editarDetalleForm [name="inversion_mecanica"]')?.value,
+        concepto_inversion: document.querySelector('#editarDetalleForm [name="concepto_inversion"]')?.value,
+        monto_descuento: document.querySelector('#editarDetalleForm [name="monto_descuento"]')?.value,
+        concepto_descuento: document.querySelector('#editarDetalleForm [name="concepto_descuento"]')?.value,
+        monto_deuda: document.querySelector('#editarDetalleForm [name="monto_deuda"]')?.value,
+        banco_id: document.querySelector('#editarDetalleForm [name="banco_id"]')?.value || null,
+        fecha_confirmacion_pago: document.querySelector('#editarDetalleForm [name="fecha_confirmacion_pago"]')?.value,
+        pago_confirmado: document.querySelector('#editarDetalleForm [name="pago_confirmado"]')?.checked || false,
+        notas: document.querySelector('#editarDetalleForm [name="notas"]')?.value
+    };
+
+    fetch(`/alquiler/detalles/${detalleId}/editar_completo`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                mostrarExito('✅ Detalle actualizado correctamente');
+                closeModal('editarDetalleModal');
+
+                semanasAbiertas.forEach((_, semanaId) => {
+                    semanasAbiertas.delete(semanaId);
+                    if (document.getElementById(`details-${semanaId}`).style.display !== 'none') {
+                        cargarDetallesSemana(semanaId);
+                    }
+                });
+            } else {
+                mostrarError(data.message || 'Error al actualizar detalle');
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            mostrarError('Error al actualizar detalle');
+        });
+});
+
+// ==========================================
+// CORRECCIÓN 3: ELIMINAR CON MODAL DE CONFIRMACIÓN
+// ==========================================
+// Modificar función eliminarDetalle para usar modal
+function eliminarDetalle(detalleId, semanaId) {
+    // Guardar IDs en campos ocultos
+    document.getElementById('eliminarDetalleId').value = detalleId;
+    document.getElementById('eliminarSemanaId').value = semanaId;
+
+    // Abrir modal de confirmación
+    openModal('confirmarEliminarModal');
+}
+// Nueva función para ejecutar la eliminación
+function confirmarEliminacionDetalle() {
+    const detalleId = document.getElementById('eliminarDetalleId').value;
+    const semanaId = document.getElementById('eliminarSemanaId').value;
+
+    if (!detalleId || !semanaId) {
+        mostrarError('Error: datos de eliminación no válidos');
+        return;
+    }
+
+    // Cerrar modal
+    closeModal('confirmarEliminarModal');
+
+    // Ejecutar eliminación
+    fetch(`/alquiler/detalles/${detalleId}/eliminar`, {
+        method: 'POST'
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                mostrarExito('✅ Alquiler eliminado correctamente');
+                semanasAbiertas.delete(parseInt(semanaId));
+                cargarDetallesSemana(parseInt(semanaId));
+            } else {
+                mostrarError(data.message || 'Error al eliminar');
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            mostrarError('Error al eliminar alquiler');
+        });
 }
 
 // ==========================================
 // CERRAR SEMANA
 // ==========================================
 function cerrarSemana(semanaId) {
-    showConfirm(
-        '¿Cerrar Semana?',
-        'Una vez cerrada, no podrás modificar los datos.',
-        function() {
-            fetch(`/alquiler/semanas/${semanaId}/cerrar`, {
-                method: 'POST'
-            })
-            .then(response => response.json())
-            .then(result => {
-                if (result.success) {
-                    showAlert('Éxito', 'Semana cerrada', 'success');
-                    setTimeout(() => window.location.reload(), 1500);
-                } else {
-                    showAlert('Error', result.message, 'error');
-                }
-            })
-            .catch(error => {
-                console.error('❌ Error:', error);
-                showAlert('Error', 'Error al cerrar semana', 'error');
-            });
-        }
-    );
-}
-
-// ==========================================
-// EXPORTAR EXCEL
-// ==========================================
-function exportarExcelSemana(semanaId) {
-    window.location.href = `/alquiler/semanas/${semanaId}/exportar-excel`;
-    showAlert('Procesando', 'Generando archivo Excel...', 'info');
-}
-
-// ==========================================
-// FILTRAR SEMANAS
-// ==========================================
-function filtrarSemanas() {
-    const filtro = document.getElementById('filtroEstado').value;
-    const items = document.querySelectorAll('.semana-accordion-item');
-    
-    items.forEach(item => {
-        const estado = item.dataset.estado;
-        item.style.display = (!filtro || estado === filtro) ? '' : 'none';
-    });
-    
-    console.log('🔍 Filtered by:', filtro);
-}
-
-// ==========================================
-// CREAR SEMANA MODAL
-// ==========================================
-function openCrearSemanaModal() {
-    const today = new Date();
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - today.getDay() + 1);
-    
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    
-    const fechaInicio = document.querySelector('[name="fecha_inicio"]');
-    const fechaFin = document.querySelector('[name="fecha_fin"]');
-    
-    if (fechaInicio) fechaInicio.valueAsDate = monday;
-    if (fechaFin) fechaFin.valueAsDate = sunday;
-    
-    window.AppUtils.openModal('crearSemanaModal');
-}
-// ==========================================
-// AGREGAR ALQUILER (VERSION CORREGIDA CON DEBUG)
-// ==========================================
-function agregarAlquiler(semanaId) {
-    console.log('📋 Opening agregar alquiler for semana:', semanaId);
-    
-    currentSemanaId = semanaId;
-    document.getElementById('agregarAlquilerSemanaId').value = semanaId;
-    
-    // Reset form
-    const vehiculoSelect = document.getElementById('vehiculoSelect');
-    const inquilinoSelect = document.getElementById('inquilinoSelect');
-    const preview = document.getElementById('alquilerPreview');
-    
-    if (!vehiculoSelect || !inquilinoSelect) {
-        console.error('❌ ERROR: No se encontraron los selects en el DOM');
-        showAlert('Error', 'Error en la interfaz del formulario', 'error');
+    if (window.APP_DATA.userRol !== 'admin') {
+        mostrarError('⛔ Solo administradores pueden cerrar semanas');
         return;
     }
-    
-    vehiculoSelect.innerHTML = '<option value="">Cargando vehículos...</option>';
-    inquilinoSelect.innerHTML = '<option value="">Cargando inquilinos...</option>';
-    
-    if (preview) {
-        preview.style.display = 'none';
-    }
-    
-    // Open modal
-    window.AppUtils.openModal('agregarAlquilerModal');
-    
-    // Load available vehiculos and inquilinos
-    const url = `/alquiler/semanas/${semanaId}/disponibles`;
-    console.log('🌐 Fetching from:', url);
-    
-    fetch(url)
-        .then(response => {
-            console.log('📡 Response status:', response.status);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(result => {
-            console.log('📦 Response data:', result);
-            
-            if (result.success) {
-                console.log('✅ Success! Vehículos:', result.vehiculos.length, 'Inquilinos:', result.inquilinos.length);
-                loadVehiculosSelect(result.vehiculos);
-                loadInquilinosSelect(result.inquilinos);
+
+    if (!confirm('¿Cerrar esta semana? No podrás editarla después.')) return;
+
+    fetch(`/alquiler/semanas/${semanaId}/cerrar`, {
+        method: 'POST'
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                mostrarExito('✅ Semana cerrada correctamente');
+                location.reload();
             } else {
-                console.error('❌ Server returned success=false:', result.message);
-                showAlert('Error', result.message, 'error');
-                vehiculoSelect.innerHTML = '<option value="">Error al cargar</option>';
-                inquilinoSelect.innerHTML = '<option value="">Error al cargar</option>';
+                mostrarError(data.message);
             }
         })
-        .catch(error => {
-            console.error('❌ Error loading disponibles:', error);
-            showAlert('Error', `Error al cargar datos: ${error.message}`, 'error');
-            vehiculoSelect.innerHTML = '<option value="">Error de conexión</option>';
-            inquilinoSelect.innerHTML = '<option value="">Error de conexión</option>';
+        .catch(err => {
+            console.error('Error:', err);
+            mostrarError('Error al cerrar semana');
         });
-}
-
-// ==========================================
-// LOAD VEHICULOS SELECT (CON DEBUG)
-// ==========================================
-function loadVehiculosSelect(vehiculos) {
-    console.log('🚗 Loading vehículos select:', vehiculos);
-    
-    const select = document.getElementById('vehiculoSelect');
-    
-    if (!select) {
-        console.error('❌ ERROR: vehiculoSelect not found in DOM!');
-        return;
-    }
-    
-    if (!vehiculos || vehiculos.length === 0) {
-        console.warn('⚠️ No hay vehículos disponibles');
-        select.innerHTML = '<option value="">No hay vehículos disponibles</option>';
-        return;
-    }
-    
-    select.innerHTML = '<option value="">Seleccionar vehículo...</option>';
-    
-    vehiculos.forEach((veh, index) => {
-        try {
-            const option = document.createElement('option');
-            option.value = veh.id;
-            
-            // Build display text
-            const displayText = `${veh.placa || 'N/A'} - ${veh.marca || ''} ${veh.modelo || ''} ${veh.ano || ''} ${veh.color || ''} - $${formatCurrency(veh.precio_semanal)}`.trim();
-            
-            option.textContent = displayText;
-            option.dataset.vehiculo = JSON.stringify(veh);
-            select.appendChild(option);
-            
-            console.log(`  ✓ Added vehicle ${index + 1}:`, displayText);
-        } catch (error) {
-            console.error(`❌ Error adding vehicle ${veh.id}:`, error);
-        }
-    });
-    
-    console.log(`✅ Total vehículos en select: ${select.options.length - 1}`);
-    
-    // Add change listener (remove previous ones first)
-    const newSelect = select.cloneNode(true);
-    select.parentNode.replaceChild(newSelect, select);
-    newSelect.addEventListener('change', updatePreview);
-}
-
-// ==========================================
-// LOAD INQUILINOS SELECT (CON DEBUG)
-// ==========================================
-function loadInquilinosSelect(inquilinos) {
-    console.log('👥 Loading inquilinos select:', inquilinos);
-    
-    const select = document.getElementById('inquilinoSelect');
-    
-    if (!select) {
-        console.error('❌ ERROR: inquilinoSelect not found in DOM!');
-        return;
-    }
-    
-    if (!inquilinos || inquilinos.length === 0) {
-        console.warn('⚠️ No hay inquilinos disponibles');
-        select.innerHTML = '<option value="">No hay inquilinos disponibles</option>';
-        return;
-    }
-    
-    select.innerHTML = '<option value="">Seleccionar inquilino...</option>';
-    
-    inquilinos.forEach((inq, index) => {
-        try {
-            const option = document.createElement('option');
-            option.value = inq.id;
-            
-            const displayText = `${inq.nombre_apellido}${inq.telefono ? ' - ' + inq.telefono : ''}`;
-            
-            option.textContent = displayText;
-            option.dataset.inquilino = JSON.stringify(inq);
-            select.appendChild(option);
-            
-            console.log(`  ✓ Added inquilino ${index + 1}:`, displayText);
-        } catch (error) {
-            console.error(`❌ Error adding inquilino ${inq.id}:`, error);
-        }
-    });
-    
-    console.log(`✅ Total inquilinos en select: ${select.options.length - 1}`);
-    
-    // Add change listener (remove previous ones first)
-    const newSelect = select.cloneNode(true);
-    select.parentNode.replaceChild(newSelect, select);
-    newSelect.addEventListener('change', updatePreview);
-}
-
-// ==========================================
-// UPDATE PREVIEW (SIMPLIFICADO)
-// ==========================================
-function updatePreview() {
-    const vehiculoSelect = document.getElementById('vehiculoSelect');
-    const inquilinoSelect = document.getElementById('inquilinoSelect');
-    const preview = document.getElementById('alquilerPreview');
-    
-    if (!vehiculoSelect || !inquilinoSelect || !preview) {
-        return;
-    }
-    
-    const vehiculoOption = vehiculoSelect.selectedOptions[0];
-    const inquilinoOption = inquilinoSelect.selectedOptions[0];
-    
-    if (!vehiculoOption || !vehiculoOption.value || !inquilinoOption || !inquilinoOption.value) {
-        preview.style.display = 'none';
-        return;
-    }
-    
-    try {
-        const vehiculo = JSON.parse(vehiculoOption.dataset.vehiculo);
-        const inquilino = JSON.parse(inquilinoOption.dataset.inquilino);
-        
-        document.getElementById('previewVehiculo').textContent = 
-            `${vehiculo.placa} - ${vehiculo.marca} ${vehiculo.modelo}`;
-        document.getElementById('previewPrecio').textContent = 
-            `$${formatCurrency(vehiculo.precio_semanal)}`;
-        document.getElementById('previewInquilino').textContent = 
-            inquilino.nombre_apellido;
-        document.getElementById('previewPropietario').textContent = 
-            vehiculo.propietario_nombre || 'N/A';
-        
-        preview.style.display = 'block';
-    } catch (error) {
-        console.error('Error updating preview:', error);
-        preview.style.display = 'none';
-    }
-}
-
-// ==========================================
-// RENDER ALQUILERES LIST (CARD STYLE)
-// ==========================================
-function renderAlquileresList(alquileres) {
-    const container = document.getElementById('alquileresList');
-    
-    if (!alquileres || alquileres.length === 0) {
-        showEmptyAlquileres('No hay alquileres disponibles para agregar a esta semana');
-        return;
-    }
-    
-    // Store alquileres for search
-    window.alquileresData = alquileres;
-    
-    container.innerHTML = '';
-    
-    alquileres.forEach(alq => {
-        const card = createAlquilerCard(alq);
-        container.appendChild(card);
-    });
-}
-
-// ==========================================
-// CREATE ALQUILER CARD
-// ==========================================
-function createAlquilerCard(alquiler) {
-    const card = document.createElement('div');
-    card.className = 'alquiler-card';
-    card.dataset.alquilerId = alquiler.id;
-    card.dataset.searchText = `${alquiler.vehiculo_placa} ${alquiler.vehiculo_marca} ${alquiler.vehiculo_modelo} ${alquiler.inquilino_nombre}`.toLowerCase();
-    
-    card.innerHTML = `
-        <div class="alquiler-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
-            </svg>
-        </div>
-        
-        <div class="alquiler-info">
-            <div class="alquiler-primary">
-                <div class="alquiler-placa">${alquiler.vehiculo_placa}</div>
-                <div class="alquiler-vehiculo">${alquiler.vehiculo_marca} ${alquiler.vehiculo_modelo}</div>
-            </div>
-            <div class="alquiler-secondary">
-                <div class="alquiler-detail">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                    </svg>
-                    <span>${alquiler.inquilino_nombre}</span>
-                </div>
-                ${alquiler.propietario_nombre ? `
-                <div class="alquiler-detail">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                    </svg>
-                    <span>${alquiler.propietario_nombre}</span>
-                </div>
-                ` : ''}
-            </div>
-        </div>
-        
-        <div class="alquiler-price">
-            <div class="alquiler-price-value">$${formatCurrency(alquiler.precio_semanal)}</div>
-            <div class="alquiler-price-label">Semanal</div>
-        </div>
-    `;
-    
-    // Click handler
-    card.addEventListener('click', function() {
-        selectAlquiler(alquiler.id);
-    });
-    
-    return card;
-}
-
-// ==========================================
-// SELECT ALQUILER
-// ==========================================
-function selectAlquiler(alquilerId) {
-    // Remove previous selection
-    document.querySelectorAll('.alquiler-card').forEach(card => {
-        card.classList.remove('selected');
-    });
-    
-    // Add selection to clicked card
-    const card = document.querySelector(`[data-alquiler-id="${alquilerId}"]`);
-    if (card) {
-        card.classList.add('selected');
-    }
-    
-    // Set hidden input
-    document.getElementById('selectedAlquilerId').value = alquilerId;
-    
-    // Enable submit button
-    document.getElementById('agregarAlquilerSubmit').disabled = false;
-    
-    console.log('✅ Alquiler selected:', alquilerId);
-}
-
-// ==========================================
-// SEARCH ALQUILERES
-// ==========================================
-function setupAlquilerSearch() {
-    const searchInput = document.getElementById('searchAlquilerInput');
-    if (!searchInput) return;
-    
-    searchInput.addEventListener('input', function(e) {
-        const searchTerm = e.target.value.toLowerCase().trim();
-        const cards = document.querySelectorAll('.alquiler-card');
-        
-        if (!searchTerm) {
-            // Show all cards
-            cards.forEach(card => {
-                card.style.display = '';
-                // Remove highlights
-                card.querySelectorAll('.search-highlight').forEach(el => {
-                    el.outerHTML = el.textContent;
-                });
-            });
-            return;
-        }
-        
-        // Filter and highlight
-        cards.forEach(card => {
-            const searchText = card.dataset.searchText;
-            
-            if (searchText.includes(searchTerm)) {
-                card.style.display = '';
-                
-                // Highlight matching text
-                highlightSearchTerm(card, searchTerm);
-            } else {
-                card.style.display = 'none';
-            }
-        });
-        
-        // Check if any visible
-        const visibleCards = Array.from(cards).filter(card => card.style.display !== 'none');
-        if (visibleCards.length === 0) {
-            showEmptyAlquileres('No se encontraron alquileres que coincidan con la búsqueda');
-        }
-    });
-}
-
-// ==========================================
-// HIGHLIGHT SEARCH TERM
-// ==========================================
-function highlightSearchTerm(card, term) {
-    // Reset previous highlights
-    card.querySelectorAll('.search-highlight').forEach(el => {
-        el.outerHTML = el.textContent;
-    });
-    
-    // Highlight in placa
-    const placaEl = card.querySelector('.alquiler-placa');
-    if (placaEl) {
-        highlightInElement(placaEl, term);
-    }
-    
-    // Highlight in vehiculo
-    const vehiculoEl = card.querySelector('.alquiler-vehiculo');
-    if (vehiculoEl) {
-        highlightInElement(vehiculoEl, term);
-    }
-    
-    // Highlight in inquilino
-    const inquilinoEl = card.querySelector('.alquiler-secondary span');
-    if (inquilinoEl) {
-        highlightInElement(inquilinoEl, term);
-    }
-}
-
-function highlightInElement(element, term) {
-    const text = element.textContent;
-    const regex = new RegExp(`(${escapeRegex(term)})`, 'gi');
-    const highlighted = text.replace(regex, '<span class="search-highlight">$1</span>');
-    element.innerHTML = highlighted;
-}
-
-function escapeRegex(str) {
-    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-// ==========================================
-// SHOW EMPTY STATE
-// ==========================================
-function showEmptyAlquileres(message) {
-    const container = document.getElementById('alquileresList');
-    container.innerHTML = `
-        <div class="alquileres-empty">
-            <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-            <p>${message}</p>
-        </div>
-    `;
-}
-
-// ==========================================
-// UPDATE PREVIEW
-// ==========================================
-function updatePreview() {
-    const vehiculoSelect = document.getElementById('vehiculoSelect');
-    const inquilinoSelect = document.getElementById('inquilinoSelect');
-    const preview = document.getElementById('alquilerPreview');
-    
-    const vehiculoOption = vehiculoSelect.selectedOptions[0];
-    const inquilinoOption = inquilinoSelect.selectedOptions[0];
-    
-    if (!vehiculoOption || !vehiculoOption.value || !inquilinoOption || !inquilinoOption.value) {
-        preview.style.display = 'none';
-        return;
-    }
-    
-    const vehiculo = JSON.parse(vehiculoOption.dataset.vehiculo);
-    const inquilino = JSON.parse(inquilinoOption.dataset.inquilino);
-    
-    document.getElementById('previewVehiculo').textContent = 
-        `${vehiculo.placa} - ${vehiculo.marca} ${vehiculo.modelo}`;
-    document.getElementById('previewPrecio').textContent = 
-        `$${formatCurrency(vehiculo.precio_semanal)}`;
-    document.getElementById('previewInquilino').textContent = 
-        inquilino.nombre_apellido;
-    document.getElementById('previewPropietario').textContent = 
-        vehiculo.propietario_nombre || 'N/A';
-    
-    preview.style.display = 'block';
-}
-
-// ==========================================
-// SETUP AGREGAR ALQUILER FORM (CORREGIDO)
-// ==========================================
-function setupAgregarAlquilerForm() {
-    const form = document.getElementById('agregarAlquilerForm');
-    if (!form) return;
-    
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(this);
-        const data = {
-            semana_id: formData.get('semana_id'),
-            vehiculo_id: formData.get('vehiculo_id'),
-            inquilino_id: formData.get('inquilino_id'),
-            dias_trabajo: formData.get('dias_trabajo')
-        };
-        
-        if (!data.vehiculo_id || !data.inquilino_id) {
-            showAlert('Error', 'Debe seleccionar un vehículo y un inquilino', 'error');
-            return;
-        }
-        
-        // Disable submit button
-        const submitBtn = document.getElementById('agregarAlquilerSubmit');
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = `
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="animation: spin 1s linear infinite;">
-                <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32"/>
-            </svg>
-            Agregando...
-        `;
-        
-fetch('/alquiler/semanas/agregar_alquiler', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(data)
-        })
-        .then(response => {
-            // ✅ Check HTTP status first
-            if (!response.ok) {
-                return response.json().then(err => {
-                    throw new Error(err.message || 'Error en el servidor');
-                });
-            }
-            return response.json();
-        })
-        .then(result => {
-            if (result.success) {
-                window.AppUtils.closeModal('agregarAlquilerModal');
-                
-                // Reload detalles
-                delete semanasData[currentSemanaId];
-                loadDetallesSemana(currentSemanaId);
-                
-                showAlert('Éxito', 'Alquiler agregado correctamente', 'success');
-                console.log('✅ Alquiler added:', result.detalle_id);
-            } else {
-                showAlert('Error', result.message, 'error');
-            }
-        })
-        .catch(error => {
-            console.error('❌ Error adding alquiler:', error);
-            showAlert('Error', error.message || 'Error al agregar alquiler', 'error');
-        })
-        .finally(() => {
-            // Re-enable submit
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = `
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                </svg>
-                Agregar Alquiler
-            `;
-        });
-    });
 }
 
 // ==========================================
 // ELIMINAR SEMANA
 // ==========================================
+function eliminarSemana_(semanaId, totalVehiculos) {
+    if (window.APP_DATA.userRol !== 'admin') {
+        mostrarError('⛔ Solo administradores pueden eliminar semanas');
+        return;
+    }
+
+    const msg = totalVehiculos > 0
+        ? `¿Eliminar esta semana y sus ${totalVehiculos} alquileres? Esta acción NO se puede deshacer.`
+        : '¿Eliminar esta semana vacía?';
+
+    if (!confirm(msg)) return;
+
+    fetch(`/alquiler/semanas/${semanaId}/eliminar`, {
+        method: 'POST'
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                mostrarExito('✅ Semana eliminada');
+                location.reload();
+            } else {
+                mostrarError(data.message);
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            mostrarError('Error al eliminar semana');
+        });
+}
+
+// Función para abrir el modal con información de la semana
+function abrirModalEliminarSemana(semanaId) {
+    console.log(`🗑️ Abriendo modal para eliminar semana ${semanaId}`);
+
+    // Verificar permisos
+    if (window.APP_DATA.userRol !== 'admin') {
+        mostrarError('⛔ Solo administradores pueden eliminar semanas');
+        return;
+    }
+
+    // Buscar información de la semana en el DOM
+    const semanaItem = document.querySelector(`[data-semana-id="${semanaId}"]`);
+    if (!semanaItem) {
+        mostrarError('No se encontró información de la semana');
+        return;
+    }
+
+    // Extraer datos del DOM
+    const semanaHeader = semanaItem.querySelector('.semana-header');
+    const semanaTitle = semanaItem.querySelector('.semana-title').textContent.trim();
+    const semanaMeta = semanaItem.querySelector('.semana-meta').textContent;
+
+    // Parsear meta info (formato: "Semana #X • Y Vehículos • Z Socios • W Inquilinos • $XXX")
+    const metaParts = semanaMeta.split('•').map(s => s.trim());
+    const totalVehiculos = parseInt(metaParts[1]) || 0;
+    const totalSocios = parseInt(metaParts[2]) || 0;
+    const totalInquilinos = parseInt(metaParts[3]) || 0;
+    const ingresoTotal = metaParts[4] || '$0.00';
+
+    // Llenar modal
+    document.getElementById('eliminarSemanaCompleta_id').value = semanaId;
+    document.getElementById('eliminarSemanaCompleta_vehiculos').value = totalVehiculos;
+
+    document.getElementById('eliminarSemanaModal_fecha').textContent = semanaTitle.replace('Semana: ', '');
+    document.getElementById('eliminarSemanaModal_totalVehiculos').textContent = `${totalVehiculos} vehículos`;
+    document.getElementById('eliminarSemanaModal_totalSocios').textContent = `${totalSocios} socios`;
+    document.getElementById('eliminarSemanaModal_totalInquilinos').textContent = `${totalInquilinos} inquilinos`;
+    document.getElementById('eliminarSemanaModal_ingresoTotal').textContent = ingresoTotal;
+
+    // Mensaje según cantidad de vehículos
+    const mensajeElement = document.getElementById('eliminarSemanaModal_mensaje');
+    if (totalVehiculos > 0) {
+        mensajeElement.innerHTML = `
+            ⚠️ Esta semana contiene <strong>${totalVehiculos} alquiler${totalVehiculos !== 1 ? 'es' : ''}</strong> que 
+            ${totalVehiculos !== 1 ? 'serán eliminados' : 'será eliminado'} permanentemente. 
+            Los vehículos quedarán disponibles nuevamente.
+        `;
+        document.getElementById('eliminarSemanaModal_adminWarning').style.display = 'block';
+    } else {
+        mensajeElement.innerHTML = '¿Está seguro de eliminar esta semana vacía?';
+        document.getElementById('eliminarSemanaModal_adminWarning').style.display = 'none';
+    }
+
+    // Resetear checkbox
+    document.getElementById('confirmarEliminacionSemanaCheck').checked = false;
+    document.getElementById('btnConfirmarEliminarSemana').disabled = true;
+
+    // Abrir modal
+    openModal('confirmarEliminarSemanaModal');
+}
+
+// Habilitar botón cuando se marca el checkbox
+document.getElementById('confirmarEliminacionSemanaCheck')?.addEventListener('change', function () {
+    document.getElementById('btnConfirmarEliminarSemana').disabled = !this.checked;
+});
+
+// Función para ejecutar la eliminación
+function ejecutarEliminacionSemana() {
+    const semanaId = document.getElementById('eliminarSemanaCompleta_id').value;
+    const totalVehiculos = document.getElementById('eliminarSemanaCompleta_vehiculos').value;
+
+    if (!semanaId) {
+        mostrarError('Error: ID de semana no válido');
+        return;
+    }
+
+    if (window.APP_DATA.userRol !== 'admin') {
+        mostrarError('⛔ Solo administradores pueden eliminar semanas');
+        return;
+    }
+
+    // Deshabilitar botón
+    const btnEliminar = document.getElementById('btnConfirmarEliminarSemana');
+    btnEliminar.disabled = true;
+    btnEliminar.innerHTML = `
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="animation: spin 1s linear infinite;">
+            <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32"/>
+        </svg>
+        Eliminando...
+    `;
+
+    console.log(`🗑️ Eliminando semana ${semanaId} con ${totalVehiculos} vehículos...`);
+
+    // Ejecutar eliminación
+    fetch(`/alquiler/semanas/${semanaId}/eliminar`, {
+        method: 'POST'
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                mostrarExito(`✅ Semana eliminada correctamente (${totalVehiculos} alquileres liberados)`);
+                closeModal('confirmarEliminarSemanaModal');
+
+                // Recargar página después de 1 segundo
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } else {
+                mostrarError(data.message || 'Error al eliminar semana');
+                btnEliminar.disabled = false;
+                btnEliminar.innerHTML = `
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                Sí, Eliminar Semana Completa
+            `;
+            }
+        })
+        .catch(err => {
+            console.error('❌ Error:', err);
+            mostrarError('Error al eliminar semana');
+            btnEliminar.disabled = false;
+            btnEliminar.innerHTML = `
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+            Sí, Eliminar Semana Completa
+        `;
+        });
+}
+
+// Actualizar función eliminarSemana original para usar el modal
 function eliminarSemana(semanaId, totalVehiculos) {
-    let message = totalVehiculos > 0 
-        ? `Esta semana tiene ${totalVehiculos} alquileres. Solo los administradores pueden eliminarla. ¿Continuar?`
-        : 'Esta semana está vacía. ¿Deseas eliminarla?';
-    
-    showConfirm(
-        '¿Eliminar Semana?',
-        message,
-        function() {
-            fetch(`/alquiler/semanas/${semanaId}/eliminar`, {
-                method: 'POST'
-            })
-            .then(response => response.json())
-            .then(result => {
-                if (result.success) {
-                    showAlert('Éxito', 'Semana eliminada', 'success');
-                    setTimeout(() => window.location.reload(), 1500);
-                } else {
-                    showAlert('Error', result.message, 'error');
-                }
-            })
-            .catch(error => {
-                console.error('❌ Error:', error);
-                showAlert('Error', 'Error al eliminar semana', 'error');
-            });
+    // Redirigir a la nueva función del modal
+    abrirModalEliminarSemana(semanaId);
+}
+
+
+// ==========================================
+// GESTIONAR INVERSIONES
+function gestionarInversiones(detalleId) {
+    try {
+        console.log(`🔧 Gestionando inversiones del detalle ${detalleId}`);
+
+        const modalId = 'inversionesModal';
+        const modalEl = document.getElementById(modalId);
+
+        if (!modalEl) {
+            console.error('No existe modal id="inversionesModal"');
+            return;
         }
-    );
+
+        // 🚀 CRÍTICO: Mover el modal al body para evitar problemas de stacking context o transformaciones en padres
+        if (modalEl.parentNode !== document.body) {
+            document.body.appendChild(modalEl);
+        }
+
+        const inputId = document.getElementById('inversionDetalleId');
+        if (inputId) inputId.value = detalleId;
+
+        cargarInversiones(detalleId);
+
+        // Estilos base del overlay
+        modalEl.style.cssText = `
+            display: flex !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            background-color: rgba(0, 0, 0, 0.5) !important;
+            z-index: 100000 !important;
+            align-items: center !important;
+            justify-content: center !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+        `;
+
+        // Estilos del contenido interno
+        const modalContent = modalEl.querySelector('.modal');
+        if (modalContent) {
+            modalContent.style.cssText = `
+                display: block !important;
+                position: relative !important;
+                z-index: 100001 !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+                transform: none !important;
+                max-height: 90vh !important;
+                overflow-y: auto !important;
+            `;
+        }
+
+        // Handler para cerrar
+        modalEl.onclick = function (e) {
+            if (e.target === modalEl) {
+                modalEl.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+        };
+
+    } catch (e) {
+        console.error(e);
+        alert('Error: ' + e.message);
+    }
+}
+
+function cargarInversiones(detalleId) {
+    const lista = document.getElementById('listaInversiones');
+    const totalElement = document.getElementById('totalInversiones');
+
+    lista.innerHTML = '<p style="text-align: center; padding: 20px;"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="animation: spin 1s linear infinite;"><circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32"/></svg></p>';
+
+    fetch(`/alquiler/detalles/${detalleId}/inversiones`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                if (data.inversiones.length === 0) {
+                    lista.innerHTML = `
+                        <div style="text-align: center; padding: 30px; color: #6c757d;">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="opacity: 0.3; margin-bottom: 12px;">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M12 8v4m0 4h.01"/>
+                            </svg>
+                            <p style="margin: 0; font-size: 14px;">No hay inversiones registradas en esta semana</p>
+                        </div>
+                    `;
+                } else {
+                    // Ordenar por fecha descendente (más reciente primero) y luego por ID descendente
+                    const inversionesOrdenadas = data.inversiones.sort((a, b) => {
+                        const fechaA = new Date(a.fecha.split('/').reverse().join('-'));
+                        const fechaB = new Date(b.fecha.split('/').reverse().join('-'));
+                        if (fechaB - fechaA !== 0) {
+                            return fechaB - fechaA;
+                        }
+                        return b.id - a.id; // Desempate por ID (Mayor ID = más reciente)
+                    });
+
+                    lista.innerHTML = inversionesOrdenadas.map((inv, index) => `
+                        <div style="padding: 14px; border: 2px solid ${index === 0 ? '#28a745' : '#dee2e6'}; border-radius: 8px; margin-bottom: 10px; background: ${index === 0 ? '#f1f9f4' : 'white'}; transition: all 0.3s;" ${index === 0 ? 'class="nueva-inversion"' : ''}>
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                                <div style="flex: 1;">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                        <strong style="color: #2c3e50; font-size: 15px;">${inv.tipo_trabajo}</strong>
+                                        ${inv.tipo_trabajo === 'Lavado'
+                            ? `<span style="padding: 3px 10px; background: #17a2b8; color: white; border-radius: 12px; font-size: 11px; font-weight: 600;">Lavado de salida</span>`
+                            : `<span style="padding: 3px 10px; background: ${inv.tipo_inversion === 'falla_mecanica' ? '#0724FFFF' : '#dc3545'}; color: white; border-radius: 12px; font-size: 11px; font-weight: 600;">
+                                                ${inv.tipo_inversion === 'falla_mecanica' ? 'Falla Mecánica' : ' Accidente'}
+                                               </span>`
+                        }
+                                        ${index === 0 ? '<span style="padding: 3px 10px; background: #28a745; color: white; border-radius: 12px; font-size: 11px; font-weight: 600; animation: pulse 1s infinite;"> NUEVO</span>' : ''}
+                                    </div>
+                                    <div style="font-size: 13px; color: #495057; margin-bottom: 8px; line-height: 1.4;">
+                                        ${inv.descripcion}
+                                    </div>
+                                    <div style="font-size: 12px; color: #6c757d; display: flex; gap: 16px;">
+                                        <span> ${inv.fecha}</span>
+                                        ${inv.tipo_trabajo !== 'Lavado' ? `<span> ${inv.mecanico}</span>` : ''}
+                                    </div>
+                                </div>
+                                <div style="text-align: right; margin-left: 16px;">
+                                    <div style="font-size: 12px; color: #6c757d; margin-bottom: 4px;">Costo</div>
+                                    <strong style="color: #28a745; font-size: 18px; font-weight: 700;">$${parseFloat(inv.costo).toFixed(2)}</strong>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+
+                    // ✅ Highlight animado para el item nuevo
+                    setTimeout(() => {
+                        const nuevoItem = lista.querySelector('.nueva-inversion');
+                        if (nuevoItem) {
+                            nuevoItem.style.transform = 'scale(1.02)';
+                            setTimeout(() => {
+                                nuevoItem.style.transform = 'scale(1)';
+                            }, 300);
+                        }
+                    }, 100);
+                }
+
+                // ✅ Actualizar total con animación
+                const totalAnterior = parseFloat(totalElement.textContent.replace('$', '').replace(',', ''));
+                const totalNuevo = parseFloat(data.total);
+
+                if (totalNuevo !== totalAnterior) {
+                    totalElement.style.transition = 'all 0.3s';
+                    totalElement.style.transform = 'scale(1.1)';
+                    totalElement.style.color = '#28a745';
+
+                    setTimeout(() => {
+                        totalElement.textContent = `$${totalNuevo.toFixed(2)}`;
+
+                        setTimeout(() => {
+                            totalElement.style.transform = 'scale(1)';
+                            totalElement.style.color = 'inherit';
+                        }, 200);
+                    }, 150);
+                } else {
+                    totalElement.textContent = `$${totalNuevo.toFixed(2)}`;
+                }
+
+                inversionesCache.set(detalleId, data);
+
+                console.log(`✅ ${data.inversiones.length} inversiones cargadas. Total: $${data.total}`);
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            lista.innerHTML = '<p style="text-align: center; color: #dc3545; padding: 20px;">❌ Error al cargar inversiones</p>';
+        });
+}
+
+document.getElementById('nuevaInversionForm')?.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    const detalleId = document.getElementById('inversionDetalleId').value;
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn.innerHTML;
+
+    // Deshabilitar botón durante envío
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="animation: spin 1s linear infinite;">
+            <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32"/>
+        </svg>
+        Guardando...
+    `;
+
+    const formData = {
+        detalle_id: detalleId,
+        tipo_trabajo_id: this.tipo_trabajo_id.value,
+        mecanico_id: this.mecanico_id.value,
+        tipo_inversion: this.tipo_inversion.value,
+        descripcion: this.descripcion.value,
+        costo: parseFloat(this.costo.value)
+    };
+
+    console.log('📤 Enviando nueva inversión:', formData);
+
+    fetch('/alquiler/inversiones/crear', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                console.log(`✅ Inversión creada. Total acumulado: $${data.total_inversion}`);
+
+                // ✅ SIN ALERT - Feedback visual directo
+                submitBtn.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                ¡Inversión Agregada!
+            `;
+                submitBtn.style.background = '#28a745';
+
+                // Resetear formulario
+                this.reset();
+
+                // ✅ RECARGAR LISTA AUTOMÁTICAMENTE
+                setTimeout(() => {
+                    cargarInversiones(detalleId);
+                }, 300);
+
+                // ✅ Actualizar el input de inversión en el modal de edición (si está abierto)
+                const inversionInput = document.querySelector('#editarDetalleForm [name="inversion_mecanica"]');
+                if (inversionInput) {
+                    inversionInput.value = data.total_inversion;
+                    inversionInput.style.background = '#d4edda';
+                    setTimeout(() => {
+                        inversionInput.style.background = '';
+                    }, 1500);
+                }
+
+                // ✅ Actualizar la tabla principal si está visible
+                const currentSemanaId = Array.from(semanasAbiertas.keys()).find(id => {
+                    const detalles = semanasAbiertas.get(id);
+                    return detalles && detalles.some(d => d.id == detalleId);
+                });
+
+                if (currentSemanaId) {
+                    // Refrescar la fila específica en la tabla
+                    actualizarFilaInversion(detalleId, data.total_inversion);
+                }
+
+                // Restaurar botón después de 2 segundos
+                setTimeout(() => {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
+                    submitBtn.style.background = '';
+                }, 2000);
+
+            } else {
+                console.error('❌ Error:', data.message);
+
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+
+                // Mostrar error sin alert - usar notificación visual
+                mostrarNotificacion('Error al crear inversión: ' + data.message, 'error');
+            }
+        })
+        .catch(err => {
+            console.error('❌ Error:', err);
+
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+
+            mostrarNotificacion('Error de conexión al crear inversión', 'error');
+        });
+});
+
+// ==========================================
+// NUEVA FUNCIÓN: ACTUALIZAR FILA DE INVERSIÓN
+// ==========================================
+
+function actualizarFilaInversion(detalleId, nuevoTotal) {
+    const fila = document.querySelector(`tr[data-detalle-id="${detalleId}"]`);
+    if (!fila) return;
+
+    // Buscar la celda de inversión (columna 9)
+    const celdas = fila.querySelectorAll('td');
+    if (celdas.length < 9) return;
+
+    const celdaInversion = celdas[8]; // Índice 8 = columna "Inversión"
+    const spanMonto = celdaInversion.querySelector('span');
+
+    if (spanMonto) {
+        // Animación de actualización
+        celdaInversion.style.transition = 'all 0.3s';
+        celdaInversion.style.background = '#d4edda';
+        celdaInversion.style.transform = 'scale(1.05)';
+
+        spanMonto.textContent = `$${parseFloat(nuevoTotal).toFixed(2)}`;
+
+        setTimeout(() => {
+            celdaInversion.style.transform = 'scale(1)';
+            setTimeout(() => {
+                celdaInversion.style.background = '';
+            }, 500);
+        }, 300);
+
+        console.log(`✅ Fila actualizada: Detalle ${detalleId} -> $${nuevoTotal}`);
+    }
+}
+
+function mostrarNotificacion(mensaje, tipo = 'success') {
+    // Crear elemento de notificación
+    const notif = document.createElement('div');
+    notif.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${tipo === 'success' ? '#28a745' : '#dc3545'};
+        color: white;
+        padding: 16px 24px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 10000;
+        font-size: 14px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        animation: slideInRight 0.3s ease;
+        max-width: 400px;
+    `;
+
+    const icono = tipo === 'success'
+        ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>'
+        : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+
+    notif.innerHTML = `${icono}<span>${mensaje}</span>`;
+
+    document.body.appendChild(notif);
+
+    // Auto-remover después de 3 segundos
+    setTimeout(() => {
+        notif.style.animation = 'slideOutRight 0.3s ease';
+        setTimeout(() => {
+            notif.remove();
+        }, 300);
+    }, 3000);
+}
+
+
+// ==========================================
+// EXPORTAR A EXCEL
+// ==========================================
+function exportarExcelSemana(semanaId) {
+    window.location.href = `/alquiler/semanas/${semanaId}/exportar-excel`;
 }
 
 // ==========================================
-// UTILITY
+// FILTROS
 // ==========================================
-function formatCurrency(value) {
-    return parseFloat(value || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+function setupFiltros() {
+    const filtroEstado = document.getElementById('filtroEstado');
+    if (filtroEstado) {
+        filtroEstado.addEventListener('change', function () {
+            const estado = this.value;
+            document.querySelectorAll('.semana-accordion-item').forEach(item => {
+                if (!estado || item.dataset.estado === estado) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    }
 }
+
+// ==========================================
+// NOTIFICACIONES
+// ==========================================
+function mostrarExito(mensaje) {
+    alert(mensaje);
+}
+
+function mostrarError(mensaje) {
+    alert('❌ ' + mensaje);
+}
+
+console.log('✅ alquileres.js cargado completamente (v4.0 - DEBUG ALERTS)');
+
+// ==========================================
+// CONFIRMAR PAGO (MODAL)
+// ==========================================
+function abrirModalConfirmarPago(detalleId) {
+    console.log(`💰 Abriendo confirmación de pago para detalle ${detalleId}`);
+
+    try {
+        const modalId = 'confirmarPagoModal';
+        const modalEl = document.getElementById(modalId);
+
+        if (!modalEl) {
+            throw new Error('No existe el elemento HTML con id="' + modalId + '"');
+        }
+
+        // Reset form
+        const form = document.getElementById('confirmarPagoForm');
+        if (form) form.reset();
+
+        // Set ID
+        const detalleIdInput = document.getElementById('pagoDetalleId');
+        if (detalleIdInput) detalleIdInput.value = detalleId;
+
+        // Load banks
+        cargarBancosModal();
+
+        // 🚀 CRÍTICO: Mover el modal al body para evitar problemas de stacking context
+        if (modalEl.parentNode !== document.body) {
+            document.body.appendChild(modalEl);
+        }
+
+        if (typeof openModal === 'function') {
+            openModal(modalId);
+        } else {
+            modalEl.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Estilos base del overlay
+        modalEl.style.cssText = `
+        display: flex !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        background-color: rgba(0, 0, 0, 0.5) !important;
+        z-index: 100000 !important;
+        align-items: center !important;
+        justify-content: center !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+    `;
+
+        // Estilos del contenido interno
+        const modalContent = modalEl.querySelector('.modal');
+        if (modalContent) {
+            modalContent.style.cssText = `
+            display: block !important;
+            position: relative !important;
+            z-index: 100001 !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            transform: none !important;
+            max-height: 90vh !important;
+            overflow-y: auto !important;
+        `;
+        }
+
+        // Handler para cerrar
+        modalEl.onclick = function (e) {
+            if (e.target === modalEl) {
+                modalEl.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+        };
+
+    } catch (e) {
+        console.error(e);
+        alert('❌ ERROR CRÍTICO EN JS: ' + e.message);
+    }
+
+
+    // Reset form (ya realizado arriba)
+
+    // Limpiar previews y flag de eliminación
+    const previewContainer = document.getElementById('pagoPreviewContainer');
+    const fileInfo = document.getElementById('fileInfo');
+    const deleteFlag = document.getElementById('eliminarComprobanteFlag');
+
+    if (previewContainer) previewContainer.innerHTML = '';
+    if (fileInfo) {
+        fileInfo.style.display = 'none';
+        fileInfo.innerHTML = '';
+    }
+    if (deleteFlag) deleteFlag.value = 'false';
+
+    // Buscar el detalle en nuestras semanas abiertas
+    let detalle = null;
+    semanasAbiertas.forEach((detalles) => {
+        const found = detalles.find(d => d.id == detalleId);
+        if (found) detalle = found;
+    });
+
+    if (!detalle) {
+        console.error(`❌ No se encontró el detalle ${detalleId} en semanasAbiertas`, semanasAbiertas);
+        mostrarError('No se encontró la información del alquiler');
+        return;
+    }
+
+    // Llenar datos del modal
+    // document.getElementById('confirmarPagoDetalleId').value = detalleId; // REDUNDANTE Y ERRONEO
+
+    // Asegurar que tenemos strings válidos
+    const marca = detalle.vehiculo_marca || 'S/M';
+    const modelo = detalle.vehiculo_modelo || 'S/M';
+    const placa = detalle.vehiculo_placa || 'S/P';
+    const inquilino = detalle.inquilino_nombre || 'Sin Inquilino';
+    const monto = parseFloat(detalle.nomina_final || 0).toFixed(2);
+
+    document.getElementById('confirmarPagoInfo').textContent = `${marca} ${modelo} (${placa}) / ${inquilino}`;
+    document.getElementById('confirmarPagoMonto').textContent = `$${monto}`;
+
+    // Fecha por defecto hoy
+    const hoy = new Date().toISOString().split('T')[0];
+    document.getElementById('pagoFecha').value = detalle.fecha_confirmacion_pago || hoy;
+
+    const checkbox = document.getElementById('pagoConfirmadoCheck');
+    if (checkbox) {
+        checkbox.checked = detalle.pago_confirmado !== false;
+    }
+
+    // Mostrar comprobante existente si hay
+    if (detalle.comprobante_pago_path && previewContainer) {
+        const path = `/static/${detalle.comprobante_pago_path}`;
+        const isImage = detalle.comprobante_pago_path.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+
+        const card = document.createElement('div');
+        card.className = 'current-image-item';
+        card.innerHTML = `
+            ${isImage ? `<img src="${path}" alt="Comprobante">` :
+                `<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #6c757d; font-size: 24px;">📄</div>`}
+            <div class="preview-badge">EXISTENTE</div>
+            <button type="button" class="btn-delete-preview" onclick="eliminarComprobante(true)" title="Eliminar comprobante actual">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <path d="M18 6L6 18M6 6l12 12"></path>
+                </svg>
+            </button>
+        `;
+        previewContainer.appendChild(card);
+
+        if (fileInfo) {
+            fileInfo.innerHTML = `<a href="${path}" target="_blank" class="text-primary" style="text-decoration: underline; font-weight: 500;">Ver archivo original</a>`;
+            fileInfo.style.display = 'block';
+        }
+    }
+
+    // Cargar bancos en el select del modal
+    // Si está confirmado pero no tiene banco_id, es EFECTIVO ('0')
+    const initialBancoId = (detalle.pago_confirmado && !detalle.banco_id) ? '0' : detalle.banco_id;
+    cargarBancosModal(initialBancoId);
+
+    openModal('confirmarPagoModal');
+}
+
+function cargarBancosModal(selectedBancoId = null) {
+    const optionsContainer = document.getElementById('pagoBancoSelectOptions');
+    const triggerText = document.getElementById('pagoBancoSelectText');
+    const hiddenInput = document.getElementById('pagoBancoSelectValue');
+
+    optionsContainer.innerHTML = '<div class="custom-select-option no-results">Cargando bancos...</div>';
+
+    fetch('/alquiler/bancos/json')
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                optionsContainer.innerHTML = '';
+
+                // OPCIÓN EFECTIVO
+                const cashOption = document.createElement('div');
+                cashOption.className = 'custom-select-option';
+                cashOption.innerHTML = '<span style="font-weight: 600; color: #2ecc71;">💵 EFECTIVO</span>';
+                cashOption.onclick = () => {
+                    selectOption('pagoBancoSelectWrapper', '0', 'EFECTIVO');
+                };
+
+                if (selectedBancoId === 0 || selectedBancoId === '0' || (selectedBancoId === null && triggerText.textContent === 'EFECTIVO')) {
+                    selectOption('pagoBancoSelectWrapper', '0', 'EFECTIVO');
+                }
+                optionsContainer.appendChild(cashOption);
+
+                data.bancos.forEach(banco => {
+                    const option = document.createElement('div');
+                    option.className = 'custom-select-option';
+                    option.textContent = `${banco.banco} - ${banco.cuenta}`;
+                    option.onclick = () => {
+                        selectOption('pagoBancoSelectWrapper', banco.id, banco.banco);
+                    };
+
+                    if (selectedBancoId && banco.id == selectedBancoId) {
+                        selectOption('pagoBancoSelectWrapper', banco.id, banco.banco);
+                    }
+
+                    optionsContainer.appendChild(option);
+                });
+
+                if (data.bancos.length === 0 && !cashOption) {
+                    optionsContainer.innerHTML = '<div class="custom-select-option no-results">No hay bancos registrados</div>';
+                }
+            }
+        })
+        .catch(err => {
+            console.error('Error al cargar bancos:', err);
+            optionsContainer.innerHTML = '<div class="custom-select-option no-results text-danger">Error al cargar bancos</div>';
+        });
+}
+
+function previewPaymentProof(input) {
+    const container = document.getElementById('pagoPreviewContainer');
+    const fileInfo = document.getElementById('fileInfo');
+
+    // Al seleccionar nuevo, cancelamos la eliminación del anterior si existía
+    document.getElementById('eliminarComprobanteFlag').value = 'false';
+
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        container.innerHTML = ''; // Limpiar anteriores (incluyendo el "Existente")
+
+        fileInfo.textContent = `Seleccionado: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+        fileInfo.style.display = 'block';
+
+        const card = document.createElement('div');
+        card.className = 'current-image-item';
+
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                card.innerHTML = `
+                    <img src="${e.target.result}" alt="Preview">
+                    <div class="preview-badge">NUEVO</div>
+                    <button type="button" class="btn-delete-preview" onclick="eliminarComprobante(false)" title="Quitar archivo">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                            <path d="M18 6L6 18M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                `;
+                container.appendChild(card);
+            };
+            reader.readAsDataURL(file);
+        } else {
+            card.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #6c757d; font-size: 24px;">📄</div>
+                <div class="preview-badge">PDF</div>
+                <button type="button" class="btn-delete-preview" onclick="eliminarComprobante(false)" title="Quitar archivo">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                        <path d="M18 6L6 18M6 6l12 12"></path>
+                    </svg>
+                </button>
+            `;
+            container.appendChild(card);
+        }
+    }
+}
+
+function eliminarComprobante(existente = false) {
+    const container = document.getElementById('pagoPreviewContainer');
+    const fileInfo = document.getElementById('fileInfo');
+    const input = document.getElementById('pagoComprobante');
+
+    if (existente) {
+        document.getElementById('eliminarComprobanteFlag').value = 'true';
+    }
+
+    // Reset inputs y UI
+    input.value = '';
+    container.innerHTML = '';
+    fileInfo.style.display = 'none';
+    fileInfo.innerHTML = '';
+
+    console.log(`🗑️ Comprobante quitado${existente ? ' (marcado para eliminar del servidor)' : ''}`);
+}
+
+// Handler para el form de confirmación
+document.getElementById('confirmarPagoForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+    const detalleId = document.getElementById('confirmarPagoDetalleId').value;
+    const btn = document.getElementById('btnConfirmarPagoSubmit');
+
+    // Agregar el valor del checkbox manualmente si es necesario
+    formData.append('pago_confirmado', document.getElementById('pagoConfirmadoCheck').checked);
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spinner"></span> Confirmando...';
+
+    fetch(`/alquiler/detalles/${detalleId}/confirmar_pago`, {
+        method: 'POST',
+        body: formData
+    })
+        .then(async res => {
+            const isJson = res.headers.get('content-type')?.includes('application/json');
+            const data = isJson ? await res.json() : null;
+
+            if (!res.ok) {
+                console.error('Error response:', res.status, data);
+                throw new Error(data?.message || `Error del servidor (${res.status})`);
+            }
+            return data;
+        })
+        .then(data => {
+            if (data.success) {
+                mostrarExito(data.message);
+                closeModal('confirmarPagoModal');
+
+                // Recargar la semana para ver los cambios
+                // Necesitamos encontrar el ID de la semana
+                let semanaId = null;
+                semanasAbiertas.forEach((detalles, sId) => {
+                    if (detalles.find(d => d.id == detalleId)) semanaId = sId;
+                });
+
+                if (semanaId) {
+                    document.getElementById(`loading-${semanaId}`).style.display = 'flex';
+                    cargarDetallesSemana(semanaId);
+                }
+            } else {
+                mostrarError(data.message || 'Error al confirmar el pago');
+            }
+        })
+        .catch(err => {
+            console.error('Error en confirmación:', err);
+            mostrarError(`Error al confirmar pago: ${err.message}`);
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = `
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            Confirmar Pago
+        `;
+        });
+});
+// ==========================================
+// EXPORTAR FUNCIONES GLOBALES
+// ==========================================
+window.gestionarInversiones = gestionarInversiones;
+window.abrirModalConfirmarPago = abrirModalConfirmarPago;
+window.editarDetalle = editarDetalle;
+window.eliminarDetalle = eliminarDetalle;
+window.eliminarSemana = eliminarSemana;
+window.toggleSemana = toggleSemana;
+window.agregarAlquiler = agregarAlquiler;
+window.confirmarEliminacionDetalle = confirmarEliminacionDetalle;
+window.ejecutarEliminacionSemana = ejecutarEliminacionSemana;
+window.exportarExcelSemana = exportarExcelSemana;
+window.previewPaymentProof = previewPaymentProof;
+
+// ==========================================
+// UTILITIES
+// ==========================================
+
+// Override global closeModal to handle our specific modals
+window.closeModal = function (modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+
+    // 1. Remove active class
+    modal.classList.remove('active');
+
+    // 2. Hide with forced styles (counteracting the open logic)
+    modal.style.setProperty('display', 'none', 'important');
+    modal.style.setProperty('visibility', 'hidden', 'important');
+    modal.style.setProperty('opacity', '0', 'important');
+
+    // 3. Clean up body scroll
+    document.body.style.overflow = '';
+
+    console.log(`🔒 Cerrando modal ${modalId} (Forced cleanup)`);
+};
+
+// Specific close handlers to guarantee execution
+function cerrarModalInversiones() {
+    window.closeModal('inversionesModal');
+}
+
+function cerrarModalPago() {
+    window.closeModal('confirmarPagoModal');
+}
+
+// Exportar globalmente
+window.toggleSemana = toggleSemana;
+window.gestionarInversiones = gestionarInversiones;
+window.abrirModalConfirmarPago = abrirModalConfirmarPago;
+window.eliminarComprobante = eliminarComprobante;
+window.cerrarModalInversiones = cerrarModalInversiones;
+window.cerrarModalPago = cerrarModalPago;

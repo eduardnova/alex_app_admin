@@ -2,11 +2,160 @@
 
 {% block title %}Gestión de Vehículos{% endblock %}
 {% block breadcrumb %}
-<span class="breadcrumb-item">Catálogo</span>
+<span class="breadcrumb-item">Módulo</span>
 <span class="breadcrumb-item">Vehículos</span>
+
 {% endblock %}
 {% block content %}
+<style>
+    .form-input {
+        border: 2px solid #ccc;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
 
+    /* Custom Searchable Select Styles */
+    .custom-select-container {
+        position: relative;
+        width: 100%;
+    }
+
+    .custom-select-trigger {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background: var(--bg-secondary);
+        border: 2px solid transparent;
+        border-radius: var(--radius-md);
+        box-shadow: var(--neu-shadow-inset);
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 14px;
+        color: var(--text-primary);
+    }
+
+    .custom-select-container.active .custom-select-trigger {
+        border-color: var(--primary);
+        box-shadow: var(--neu-shadow-inset), 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+    }
+
+    .custom-select-dropdown {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 0;
+        width: 100%;
+        background: var(--bg-elevated);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--neu-shadow-large);
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+        border: 1px solid var(--divider-color);
+        backdrop-filter: blur(10px);
+    }
+
+    .custom-select-container.active .custom-select-dropdown {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+
+    .custom-select-search-wrapper {
+        padding: 12px;
+        border-bottom: 1px solid var(--divider-color);
+        background: rgba(var(--bg-primary-rgb), 0.5);
+    }
+
+    .custom-select-search {
+        width: 100%;
+        padding: 8px 12px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--divider-color);
+        background: var(--bg-primary);
+        font-size: 13px;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+
+    .custom-select-search:focus {
+        border-color: var(--primary);
+    }
+
+    .custom-select-options {
+        max-height: 250px;
+        overflow-y: auto;
+        padding: 8px 0;
+    }
+
+    .custom-select-option {
+        padding: 10px 16px;
+        font-size: 14px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .custom-select-option:hover {
+        background: rgba(var(--primary-rgb), 0.1);
+        color: var(--primary);
+    }
+
+    .custom-select-option.selected {
+        background: var(--primary);
+        color: white;
+    }
+
+    .custom-select-option.hidden {
+        display: none;
+    }
+
+    .custom-select-no-results {
+        padding: 16px;
+        text-align: center;
+        color: var(--text-tertiary);
+        font-size: 13px;
+        display: none;
+    }
+
+    .custom-select-no-results.visible {
+        display: block;
+    }
+
+    /* Custom Scrollbar for Options */
+    .custom-select-options::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .custom-select-options::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .custom-select-options::-webkit-scrollbar-thumb {
+        background: var(--divider-color);
+        border-radius: 3px;
+    }
+
+    .custom-select-options::-webkit-scrollbar-thumb:hover {
+        background: var(--text-tertiary);
+    }
+
+    /* Modern Switch Styles */
+    .modern-switch input:checked+.modern-slider {
+        background: linear-gradient(135deg, var(--success) 0%, #38a169 100%) !important;
+    }
+
+    .modern-switch input:checked+.modern-slider span {
+        transform: translateX(24px);
+        box-shadow: 0 2px 8px rgba(72, 187, 120, 0.4), 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .modern-switch input:focus+.modern-slider {
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1), 0 0 0 3px rgba(72, 187, 120, 0.2);
+    }
+</style>
 <div class="content-area">
     <!-- Table Card -->
     <div class="table-container">
@@ -19,23 +168,30 @@
                 <div class="input-group" style="width: 400px;">
                     <span class="input-icon">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <circle cx="11" cy="11" r="8"/>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35"/>
+                            <circle cx="11" cy="11" r="8" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-4.35-4.35" />
                         </svg>
                     </span>
                     <input type="text" class="form-input" id="searchInput" placeholder="Buscar vehículo...">
                 </div>
-            </div>
-            <div style="display: flex; gap: 12px;">
+                <button class="btn btn-secondary" onclick="location.reload()" title="Actualizar">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path
+                            d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
+                    </svg>
+                    Actualizar
+                </button>
                 <button class="btn btn-secondary" data-modal="filterModal">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                     </svg>
                     Filtros
                 </button>
                 <button class="btn btn-primary" onclick="createNewVehiculo()">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                     </svg>
                     Nuevo Vehículo
                 </button>
@@ -62,10 +218,8 @@
                 </thead>
                 <tbody id="tableBody">
                     {% for vehiculo in vehiculos %}
-                    <tr data-id="{{ vehiculo.id }}" 
-                        data-marca="{{ vehiculo.marca_modelo.marca }}"
-                        data-modelo="{{ vehiculo.marca_modelo.modelo }}"
-                        data-placa="{{ vehiculo.placa or '' }}"
+                    <tr data-id="{{ vehiculo.id }}" data-marca="{{ vehiculo.marca_modelo.marca }}"
+                        data-modelo="{{ vehiculo.marca_modelo.modelo }}" data-placa="{{ vehiculo.placa or '' }}"
                         data-ano="{{ vehiculo.ano or '' }}"
                         data-disponible="{{ 'true' if vehiculo.disponible else 'false' }}"
                         data-has-alquileres="{{ 'true' if vehiculo.alquileres.count() > 0 else 'false' }}"
@@ -73,16 +227,23 @@
                         <td>#{{ vehiculo.id }}</td>
                         <td>
                             <div style="display: flex; align-items: center; gap: 10px;">
-                                <div class="user-avatar" style="width: 36px; height: 36px; font-size: 13px; background: linear-gradient(135deg, var(--primary), var(--primary-dark));">
-                                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-car-front" viewBox="0 0 16 16">
-                                    <path d="M4 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0m10 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0M6 8a1 1 0 0 0 0 2h4a1 1 0 1 0 0-2zM4.862 4.276 3.906 6.19a.51.51 0 0 0 .497.731c.91-.073 2.35-.17 3.597-.17s2.688.097 3.597.17a.51.51 0 0 0 .497-.731l-.956-1.913A.5.5 0 0 0 10.691 4H5.309a.5.5 0 0 0-.447.276"/>
-                                    <path d="M2.52 3.515A2.5 2.5 0 0 1 4.82 2h6.362c1 0 1.904.596 2.298 1.515l.792 1.848c.075.175.21.319.38.404.5.25.855.715.965 1.262l.335 1.679q.05.242.049.49v.413c0 .814-.39 1.543-1 1.997V13.5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5v-1.338c-1.292.048-2.745.088-4 .088s-2.708-.04-4-.088V13.5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5v-1.892c-.61-.454-1-1.183-1-1.997v-.413a2.5 2.5 0 0 1 .049-.49l.335-1.68c.11-.546.465-1.012.964-1.261a.8.8 0 0 0 .381-.404l.792-1.848ZM4.82 3a1.5 1.5 0 0 0-1.379.91l-.792 1.847a1.8 1.8 0 0 1-.853.904.8.8 0 0 0-.43.564L1.03 8.904a1.5 1.5 0 0 0-.03.294v.413c0 .796.62 1.448 1.408 1.484 1.555.07 3.786.155 5.592.155s4.037-.084 5.592-.155A1.48 1.48 0 0 0 15 9.611v-.413q0-.148-.03-.294l-.335-1.68a.8.8 0 0 0-.43-.563 1.8 1.8 0 0 1-.853-.904l-.792-1.848A1.5 1.5 0 0 0 11.18 3z"/>
+                                <div class="user-avatar"
+                                    style="width: 36px; height: 36px; font-size: 13px; background: linear-gradient(135deg, var(--primary), var(--primary-dark));">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor"
+                                        class="bi bi-car-front" viewBox="0 0 16 16">
+                                        <path
+                                            d="M4 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0m10 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0M6 8a1 1 0 0 0 0 2h4a1 1 0 1 0 0-2zM4.862 4.276 3.906 6.19a.51.51 0 0 0 .497.731c.91-.073 2.35-.17 3.597-.17s2.688.097 3.597.17a.51.51 0 0 0 .497-.731l-.956-1.913A.5.5 0 0 0 10.691 4H5.309a.5.5 0 0 0-.447.276" />
+                                        <path
+                                            d="M2.52 3.515A2.5 2.5 0 0 1 4.82 2h6.362c1 0 1.904.596 2.298 1.515l.792 1.848c.075.175.21.319.38.404.5.25.855.715.965 1.262l.335 1.679q.05.242.049.49v.413c0 .814-.39 1.543-1 1.997V13.5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5v-1.338c-1.292.048-2.745.088-4 .088s-2.708-.04-4-.088V13.5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5v-1.892c-.61-.454-1-1.183-1-1.997v-.413a2.5 2.5 0 0 1 .049-.49l.335-1.68c.11-.546.465-1.012.964-1.261a.8.8 0 0 0 .381-.404l.792-1.848ZM4.82 3a1.5 1.5 0 0 0-1.379.91l-.792 1.847a1.8 1.8 0 0 1-.853.904.8.8 0 0 0-.43.564L1.03 8.904a1.5 1.5 0 0 0-.03.294v.413c0 .796.62 1.448 1.408 1.484 1.555.07 3.786.155 5.592.155s4.037-.084 5.592-.155A1.48 1.48 0 0 0 15 9.611v-.413q0-.148-.03-.294l-.335-1.68a.8.8 0 0 0-.43-.563 1.8 1.8 0 0 1-.853-.904l-.792-1.848A1.5 1.5 0 0 0 11.18 3z" />
                                     </svg>
                                 </div>
                                 <div>
-                                    <strong>{{ vehiculo.marca_modelo.marca }} {{ vehiculo.marca_modelo.modelo }}</strong>
+                                    <strong>{{ vehiculo.marca_modelo.marca }} {{ vehiculo.marca_modelo.modelo
+                                        }}</strong>
                                     {% if vehiculo.descripcion %}
-                                    <div style="font-size: 12px; color: var(--text-tertiary);">{{ vehiculo.descripcion[:30] }}{% if vehiculo.descripcion|length > 30 %}...{% endif %}</div>
+                                    <div style="font-size: 12px; color: var(--text-tertiary);">{{
+                                        vehiculo.descripcion[:30] }}{% if vehiculo.descripcion|length > 30 %}...{% endif
+                                        %}</div>
                                     {% endif %}
                                 </div>
                             </div>
@@ -104,12 +265,14 @@
                         </td>
                         <td>{{ vehiculo.propietario.nombre_apellido or '—' }}</td>
                         <td>
-                            <span class="badge badge-primary" style="cursor: pointer;" onclick="viewAlquileres({{ vehiculo.id }}, '{{ vehiculo.marca_modelo.marca | e }} {{ vehiculo.marca_modelo.modelo | e }}')">
+                            <span class="badge badge-primary" style="cursor: pointer;"
+                                onclick="viewAlquileres({{ vehiculo.id }}, '{{ vehiculo.marca_modelo.marca | e }} {{ vehiculo.marca_modelo.modelo | e }}')">
                                 {{ vehiculo.alquileres.count() }} alq.
                             </span>
                         </td>
                         <td>
-                            <span class="badge badge-secondary" style="cursor: pointer;" onclick="viewReparaciones({{ vehiculo.id }}, '{{ vehiculo.marca_modelo.marca | e }} {{ vehiculo.marca_modelo.modelo | e }}')">
+                            <span class="badge badge-secondary" style="cursor: pointer;"
+                                onclick="viewReparaciones({{ vehiculo.id }}, '{{ vehiculo.marca_modelo.marca | e }} {{ vehiculo.marca_modelo.modelo | e }}')">
                                 {{ vehiculo.trabajos.count() }} rep.
                             </span>
                         </td>
@@ -123,19 +286,26 @@
                         </td>
                         <td>
                             <div style="display: flex; gap: 8px;">
-                                <button class="btn btn-sm btn-secondary" onclick="viewHistory({{ vehiculo.id }})" title="Ver Historial">
+                                <button class="btn btn-sm btn-secondary" onclick="viewHistory({{ vehiculo.id }})"
+                                    title="Ver Historial">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                 </button>
-                                <button class="btn btn-sm btn-primary" onclick='editVehiculo({{ vehiculo.id }})' title="Editar">
+                                <button class="btn btn-sm btn-primary" onclick='editVehiculo({{ vehiculo.id }})'
+                                    title="Editar">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                     </svg>
                                 </button>
-                                <button type="button" class="btn btn-sm btn-danger" onclick='deleteVehiculo({{ vehiculo.id }}, "{{ vehiculo.marca_modelo.marca | e }} {{ vehiculo.marca_modelo.modelo | e }}")' title="Eliminar">
+                                <button type="button" class="btn btn-sm btn-danger"
+                                    onclick='deleteVehiculo({{ vehiculo.id }}, "{{ vehiculo.marca_modelo.marca | e }} {{ vehiculo.marca_modelo.modelo | e }}")'
+                                    title="Eliminar">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                     </svg>
                                 </button>
                             </div>
@@ -149,7 +319,8 @@
         <div class="table-footer">
             <div style="display: flex; align-items: center; gap: 12px;">
                 <span style="font-size: 14px; color: var(--text-secondary);">
-                    Mostrando <strong id="showingStart">1</strong>-<strong id="showingEnd">5</strong> de <strong id="totalRecords">{{ vehiculos|length }}</strong> registros
+                    Mostrando <strong id="showingStart">1</strong>-<strong id="showingEnd">5</strong> de <strong
+                        id="totalRecords">{{ vehiculos|length }}</strong> registros
                 </span>
                 <select id="itemsPerPage" class="form-select" style="width: 80px; height: 36px; padding: 6px 10px;">
                     <option value="5">5</option>
@@ -175,7 +346,7 @@
             </h3>
             <button class="modal-close" data-modal-close>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
         </div>
@@ -189,7 +360,7 @@
                 </select>
             </div>
             <div class="checkbox-wrapper">
-                <input type="checkbox" class="checkbox" id="conAlquileres"> 
+                <input type="checkbox" class="checkbox" id="conAlquileres">
                 <label for="conAlquileres" class="checkbox-label">Con Historial de Alquileres</label>
             </div>
             <div class="checkbox-wrapper">
@@ -209,14 +380,15 @@
     <div class="modal modal-lg">
         <div class="modal-header">
             <h3 class="modal-title">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
                 <span id="vehiculoModalTitle">Nuevo Vehículo</span>
             </h3>
             <button class="modal-close" data-modal-close>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
         </div>
@@ -226,7 +398,7 @@
                 <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
                     <div class="form-group">
                         <label class="form-label required">Marca y Modelo</label>
-                        <select id="marcaModeloId" name="marca_modelo_id" class="form-select" required>
+                        <select id="marcaModeloId" name="marca_modelo_vehiculo_id" class="form-select" required>
                             <option value="">Seleccionar...</option>
                             {% for mm in marca_modelos %}
                             <option value="{{ mm.id }}">{{ mm.marca }} {{ mm.modelo }}</option>
@@ -242,41 +414,234 @@
                             {% endfor %}
                         </select>
                     </div>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;">
                     <div class="form-group">
                         <label class="form-label required">Placa</label>
                         <input type="text" id="placa" name="placa" class="form-input" required>
+
                     </div>
                     <div class="form-group">
                         <label class="form-label required">Año</label>
-                        <input type="number" id="ano" name="ano" class="form-input" required>
+                        <!--<input type="number" id="ano" name="ano" class="form-input" required>-->
+                        <select id="ano" name="ano" class="form-input" required>
+                            <option value="" disabled selected>Seleccione año</option>
+                            <option value="2050">2050</option>
+                            <option value="2049">2049</option>
+                            <option value="2048">2048</option>
+                            <option value="2047">2047</option>
+                            <option value="2046">2046</option>
+                            <option value="2045">2045</option>
+                            <option value="2044">2044</option>
+                            <option value="2043">2043</option>
+                            <option value="2042">2042</option>
+                            <option value="2041">2041</option>
+                            <option value="2040">2040</option>
+                            <option value="2039">2039</option>
+                            <option value="2038">2038</option>
+                            <option value="2037">2037</option>
+                            <option value="2036">2036</option>
+                            <option value="2035">2035</option>
+                            <option value="2034">2034</option>
+                            <option value="2033">2033</option>
+                            <option value="2032">2032</option>
+                            <option value="2031">2031</option>
+                            <option value="2030">2030</option>
+                            <option value="2029">2029</option>
+                            <option value="2028">2028</option>
+                            <option value="2027">2027</option>
+                            <option value="2026">2026</option>
+                            <option value="2025">2025</option>
+                            <option value="2024">2024</option>
+                            <option value="2023">2023</option>
+                            <option value="2022">2022</option>
+                            <option value="2021">2021</option>
+                            <option value="2020">2020</option>
+                            <option value="2019">2019</option>
+                            <option value="2018">2018</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Color</label>
-                        <input type="text" id="color" name="color" class="form-input">
+                        <!--<input type="text" id="color" name="color" class="form-input">--->
+                        <select id="color" name="color" class="form-input color-sync">
+                            <option value="" disabled selected>Seleccione color</option>
+                            <option value="Blanco">Blanco</option>
+                            <option value="Negro">Negro</option>
+                            <option value="Gris">Gris</option>
+                            <option value="Plata">Plata</option>
+                            <option value="Azul">Azul</option>
+                            <option value="Rojo">Rojo</option>
+                            <option value="Verde">Verde</option>
+                            <option value="Amarillo">Amarillo</option>
+                            <option value="Naranja">Naranja</option>
+                            <option value="Marrón">Marrón</option>
+                            <option value="Dorado">Dorado</option>
+                            <option value="Bronce">Bronce</option>
+                            <option value="Cobre">Cobre</option>
+                            <option value="Púrpura">Púrpura</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label class="form-label required">Precio Semanal</label>
-                        <input type="number" step="0.01" id="precioSemanal" name="precio_semanal" class="form-input" required>
+                        <input type="number" step="0.01" id="precioSemanal" name="precio_semanal" class="form-input"
+                            required>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Descripción</label>
-                    <textarea id="descripcion" name="descripcion" class="form-textarea" rows="3"></textarea>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+                    <div class="form-group">
+                        <label class="form-label">Descripción</label>
+                        <textarea id="descripcion" name="descripcion" class="form-textarea" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Condiciones</label>
+                        <textarea id="condiciones" name="condiciones" class="form-textarea" rows="3"></textarea>
+                    </div>
+                    <div
+                        style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--bg-secondary); border-radius: var(--radius-lg); transition: all 0.3s ease; grid-column: span 2;">
+                        <label class="modern-switch"
+                            style="position: relative; display: inline-block; width: 52px; height: 28px; margin: 0;">
+                            <input type="checkbox" name="disponible" id="disponible" value="true" checked
+                                style="opacity: 0; width: 0; height: 0;">
+                            <span class="modern-slider" style="
+                                position: absolute;
+                                cursor: pointer;
+                                top: 0;
+                                left: 0;
+                                right: 0;
+                                bottom: 0;
+                                background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%);
+                                transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                                border-radius: 34px;
+                                box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+                            ">
+                                <span style="
+                                    position: absolute;
+                                    content: '';
+                                    height: 22px;
+                                    width: 22px;
+                                    left: 3px;
+                                    bottom: 3px;
+                                    background: white;
+                                    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                                    border-radius: 50%;
+                                    box-shadow: 0 2px 6px rgba(0,0,0,0.2), 0 1px 3px rgba(0,0,0,0.1);
+                                "></span>
+                            </span>
+                        </label>
+                        <div style="flex: 1;">
+                            <div id="switchLabel"
+                                style="font-weight: 600; font-size: 14px; color: var(--success); transition: color 0.3s ease;">
+                                Vehículo Disponible</div>
+                            <div id="switchSublabel"
+                                style="font-size: 12px; color: var(--text-tertiary); margin-top: 2px;">
+                                Permitir nuevas rentas
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Condiciones</label>
-                    <textarea id="condiciones" name="condiciones" class="form-textarea" rows="3"></textarea>
-                </div>
-                <div class="checkbox-wrapper">
-                    <input type="checkbox" class="checkbox" id="disponible" name="disponible">
-                    <label for="disponible" class="checkbox-label">Disponible</label>
+
+                <!-- Images Accordion Section -->
+                <div id="imagenesAccordion" class="accordion-section" style="margin-top: 20px; display: none;">
+                    <div class="accordion-header" onclick="toggleImagenesAccordion()"
+                        style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--bg-secondary); border-radius: var(--radius-lg); cursor: pointer; transition: all 0.3s ease;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                <polyline points="21 15 16 10 5 21"></polyline>
+                            </svg>
+                            <span style="font-weight: 600;">Imágenes del Vehículo</span>
+                            <span id="imagenesCount" class="badge"
+                                style="background: var(--primary); color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px;">0</span>
+                        </div>
+                        <svg id="imagenesArrow" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" style="transition: transform 0.3s ease;">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </div>
+                    <div id="imagenesContent"
+                        style="display: none; padding: 16px; border: 1px solid var(--border-color); border-top: none; border-radius: 0 0 var(--radius-lg) var(--radius-lg);">
+
+                        <!-- Message for new vehicles -->
+                        <div id="saveFirstMsg"
+                            style="text-align: center; padding: 20px; color: var(--text-tertiary); display: none;">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                style="opacity: 0.5; margin-bottom: 8px;">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            <p>Guarde el vehículo primero para poder gestionar sus imágenes.</p>
+                        </div>
+
+                        <!-- Upload new image -->
+                        <div id="uploadSection">
+                            <div class="form-group" style="margin-bottom: 16px;">
+
+                                <label class="form-label">Agregar Nueva Imagen</label>
+                                <div class="file-upload">
+                                    <input type="file" id="vehiculoImagenInput" class="file-input" accept="image/*"
+                                        onchange="handleVehiculoImagenPreview(this)">
+                                    <label for="vehiculoImagenInput" class="file-label">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12">
+                                            </path>
+                                        </svg>
+                                        <span class="file-text" id="vehiculoImagenText">Seleccionar imagen</span>
+                                    </label>
+                                </div>
+                                <!-- New image preview -->
+                                <div id="newImagePreview" style="margin-top: 10px; display: none;">
+                                    <div style="position: relative; display: inline-block;">
+                                        <img id="newImagePreviewImg" src="" alt="Preview"
+                                            style="max-width: 120px; max-height: 120px; border-radius: 8px; box-shadow: var(--neu-shadow-small);">
+                                        <button type="button" onclick="clearNewImagePreview()"
+                                            style="position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; border-radius: 50%; background: var(--danger); color: white; border: 2px solid white; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="3">
+                                                <path d="M18 6L6 18M6 6l12 12"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <button type="button" onclick="subirNuevaImagen()" class="btn btn-sm btn-primary"
+                                        style="margin-left: 12px; vertical-align: bottom;">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" style="margin-right: 4px;">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12">
+                                            </path>
+                                        </svg>
+                                        Subir
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Existing images grid -->
+                        <div id="imagenesGrid"
+                            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; margin-top: 16px;">
+                            <!-- Images will be loaded here dynamically -->
+                        </div>
+                        <div id="noImagenesMsg"
+                            style="text-align: center; color: var(--text-tertiary); padding: 20px; display: none;">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                style="opacity: 0.5; margin-bottom: 8px;">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                <polyline points="21 15 16 10 5 21"></polyline>
+                            </svg>
+                            <p>No hay imágenes guardadas</p>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button>
                 <button type="submit" class="btn btn-primary">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                     </svg>
                     <span id="submitBtnText">Guardar</span>
                 </button>
@@ -296,9 +661,13 @@
             <div class="modal-body">
                 <input type="hidden" id="deleteVehiculoId" name="vehiculo_id">
                 <div style="text-align: center; margin-bottom: 20px;">
-                    <div style="width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 50%; background: rgba(245, 101, 101, 0.1); display: flex; align-items: center; justify-content: center;">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2">
-                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <div
+                        style="width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 50%; background: rgba(245, 101, 101, 0.1); display: flex; align-items: center; justify-content: center;">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--danger)"
+                            stroke-width="2">
+                            <path
+                                d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
+                            </path>
                             <line x1="12" y1="9" x2="12" y2="13"></line>
                             <line x1="12" y1="17" x2="12.01" y2="17"></line>
                         </svg>
@@ -307,7 +676,8 @@
                         ¿Estás seguro de eliminar este vehículo?
                     </p>
                     <p style="font-size: 14px; color: var(--text-secondary);">
-                        El vehículo <strong id="deleteVehiculoName"></strong> será eliminado permanentemente. Esta acción no se puede deshacer.
+                        El vehículo <strong id="deleteVehiculoName"></strong> será eliminado permanentemente. Esta
+                        acción no se puede deshacer.
                     </p>
                 </div>
             </div>
@@ -334,7 +704,7 @@
             </h3>
             <button class="modal-close" data-modal-close>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
         </div>
@@ -370,7 +740,7 @@
             </h3>
             <button class="modal-close" data-modal-close>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
         </div>
@@ -397,50 +767,107 @@
     </div>
 </div>
 
+<!-- Modal: Gallery para Imágenes del Vehículo -->
+<div class="modal-overlay" id="galleryModal" style="z-index: 2000;">
+    <div class="modal modal-lg"
+        style="max-width: 90vw; height: 90vh; display: flex; flex-direction: column; background: rgba(10, 10, 10, 0.95); border: none;">
+        <div class="modal-header"
+            style="background: transparent; border-bottom: none; position: absolute; top: 0; left: 0; right: 0; z-index: 10;">
+            <h3 class="modal-title" style="color: white; font-size: 14px;" id="galleryTitle">Ver imagen</h3>
+            <button class="modal-close" onclick="closeGallery()"
+                style="background: rgba(255,255,255,0.1); color: white;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M6 18L18 6M6 6l12 12" stroke-width="2" />
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body"
+            style="flex: 1; display: flex; align-items: center; justify-content: center; position: relative; padding: 0; overflow: hidden;">
+            <!-- Botón Izquierdo -->
+            <button onclick="prevImage()"
+                style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.1); color: white; border: none; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 5; transition: all 0.3s;"
+                onmouseover="this.style.background='rgba(255,255,255,0.2)'"
+                onmouseout="this.style.background='rgba(255,255,255,0.1)'">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M15 19l-7-7 7-7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+            </button>
+
+            <!-- Imagen -->
+            <img id="galleryImage" src=""
+                style="max-width: 100%; max-height: 100%; object-fit: contain; transition: opacity 0.3s ease;">
+
+            <!-- Botón Derecho -->
+            <button onclick="nextImage()"
+                style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.1); color: white; border: none; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 5; transition: all 0.3s;"
+                onmouseover="this.style.background='rgba(255,255,255,0.2)'"
+                onmouseout="this.style.background='rgba(255,255,255,0.1)'">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M9 5l7 7-7 7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+            </button>
+        </div>
+        <div class="gallery-info"
+            style="position: absolute; bottom: 20px; left: 0; right: 0; color: white; text-align: center; pointer-events: none; z-index: 5;">
+            <span id="galleryCounter"
+                style="background: rgba(0,0,0,0.5); padding: 4px 12px; border-radius: 20px; font-size: 13px;"></span>
+        </div>
+    </div>
+</div>
+
 <!-- Modal: Historial de Modificaciones -->
+
 <div class="modal-overlay" id="historyModal">
     <div class="modal modal-xl">
         <div class="modal-header">
             <h3 class="modal-title">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 Historial de Modificaciones - <span id="historyVehiculoName">Cargando...</span>
             </h3>
             <button class="modal-close" data-modal-close>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
         </div>
         <div class="modal-body">
             <!-- Loading State -->
             <div id="historyLoading" style="text-align: center; padding: 40px; display: none;">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="animation: spin 1s linear infinite;">
-                    <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="0" opacity="0.25"/>
-                    <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="8"/>
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    style="animation: spin 1s linear infinite;">
+                    <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="0"
+                        opacity="0.25" />
+                    <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="8" />
                 </svg>
                 <p style="margin-top: 12px; color: var(--text-secondary);">Cargando historial...</p>
             </div>
 
             <!-- Filters -->
-            <div id="historyFilters" style="display: none; gap: 12px; margin-bottom: 20px;">
-                <div class="input-group" style="flex: 1;">
+            <div id="historyFilters" style="display: none; gap: 12px; margin-bottom: 20px; align-items: center;">
+                <div class="input-group" style="flex: 3;">
                     <span class="input-icon">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <circle cx="11" cy="11" r="8"/>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35"/>
+                            <circle cx="11" cy="11" r="8" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-4.35-4.35" />
                         </svg>
                     </span>
                     <input type="text" class="form-input" id="historySearch" placeholder="Buscar en historial...">
                 </div>
-                <select class="form-select" id="historyFilterAction" style="width: 200px;">
-                    <option value="">Todas las acciones</option>
-                    <option value="INSERT">Creación</option>
-                    <option value="UPDATE">Edición</option>
-                    <option value="DELETE">Eliminación</option>
-                </select>
+                <div style="flex: 1; min-width: 200px;">
+                    <select class="form-select" id="historyFilterAction" style="width: 100%;">
+                        <option value="">Todas las acciones</option>
+                        <option value="INSERT">Creación</option>
+                        <option value="UPDATE">Edición</option>
+                        <option value="DELETE">Eliminación</option>
+                    </select>
+                </div>
             </div>
+
 
             <!-- History Table -->
             <div class="table-wrapper" id="historyTableContainer" style="display: none;">
@@ -461,18 +888,21 @@
 
             <!-- Empty State -->
             <div id="historyEmpty" style="text-align: center; padding: 40px; display: none;">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" style="margin: 0 auto 16px;">
-                    <circle cx="12" cy="12" r="10"/>
-                    <path d="M12 6v6l4 2"/>
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)"
+                    style="margin: 0 auto 16px;">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 6v6l4 2" />
                 </svg>
-                <p style="color: var(--text-secondary); font-size: 15px;">No hay historial disponible para este vehículo.</p>
+                <p style="color: var(--text-secondary); font-size: 15px;">No hay historial disponible para este
+                    vehículo.</p>
             </div>
         </div>
         <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button>
             <button type="button" class="btn btn-primary" onclick="exportHistory()">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 Exportar Historial
             </button>
@@ -482,530 +912,764 @@
 
 <!-- CSS for loading animation -->
 <style>
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
+    @keyframes spin {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
+    }
 </style>
 
 <script>
-// ==========================================
-// INICIALIZACIÓN
-// ==========================================
-let allRows = [];
-let filteredRows = [];
-let currentPage = 1;
-let itemsPerPage = 20;
-let allHistoryRecords = [];
-let currentHistoryId = null;
+    // ==========================================
+    // CUSTOM SEARCH SELECT UTILITY
+    // ==========================================
+    function initCustomSearchSelect(selectId, placeholder = 'Seleccionar...') {
+        const originalSelect = document.getElementById(selectId);
+        if (!originalSelect) return;
 
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('🚀 Initializing Vehículos page...');
-    
-    allRows = Array.from(document.querySelectorAll('#vehiculosTable tbody tr'));
-    filteredRows = [...allRows];
-    updatePagination();
-    initSearch();
-    initFormListeners();
-    
-    console.log(`📊 Loaded ${allRows.length} records`);
-});
+        // Hide original select
+        originalSelect.style.display = 'none';
 
-// ==========================================
-// SEARCH Y PAGINATION
-// ==========================================
-function initSearch() {
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) {
-        searchInput.addEventListener('input', function(e) {
-            const searchTerm = e.target.value.toLowerCase();
-            filteredRows = allRows.filter(row => {
-                const text = row.textContent.toLowerCase();
-                return text.includes(searchTerm);
-            });
-            currentPage = 1;
-            updatePagination();
-        });
-    }
-    
-    const itemsPerPageSelect = document.getElementById('itemsPerPage');
-    if (itemsPerPageSelect) {
-        itemsPerPageSelect.addEventListener('change', function(e) {
-            itemsPerPage = parseInt(e.target.value);
-            currentPage = 1;
-            updatePagination();
-        });
-    }
-}
+        // Create container
+        const container = document.createElement('div');
+        container.className = 'custom-select-container';
 
-function updatePagination() {
-    const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
-    const start = (currentPage - 1) * itemsPerPage;
-    const end = start + itemsPerPage;
-    
-    // Hide all rows
-    allRows.forEach(row => row.style.display = 'none');
-    
-    // Show current page rows
-    filteredRows.slice(start, end).forEach(row => row.style.display = '');
-    
-    // Update showing text
-    const actualEnd = Math.min(end, filteredRows.length);
-    const showingStart = document.getElementById('showingStart');
-    const showingEnd = document.getElementById('showingEnd');
-    const totalRecords = document.getElementById('totalRecords');
-    
-    if (showingStart) showingStart.textContent = filteredRows.length > 0 ? start + 1 : 0;
-    if (showingEnd) showingEnd.textContent = actualEnd;
-    if (totalRecords) totalRecords.textContent = filteredRows.length;
-    
-    // Generate pagination buttons
-    generatePaginationButtons(totalPages);
-}
+        // Copy styles if present
+        if (originalSelect.style.width) container.style.width = originalSelect.style.width;
+        if (originalSelect.style.flex) container.style.flex = originalSelect.style.flex;
 
-function generatePaginationButtons(totalPages) {
-    const container = document.getElementById('paginationContainer');
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    // Previous button
-    const prevBtn = createPaginationButton('prev', currentPage === 1);
-    prevBtn.onclick = () => {
-        if (currentPage > 1) {
-            currentPage--;
-            updatePagination();
-        }
-    };
-    container.appendChild(prevBtn);
-    
-    // Page number buttons
-    const maxButtons = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
-    let endPage = Math.min(totalPages, startPage + maxButtons - 1);
-    
-    if (endPage - startPage < maxButtons - 1) {
-        startPage = Math.max(1, endPage - maxButtons + 1);
-    }
-    
-    for (let i = startPage; i <= endPage; i++) {
-        const btn = document.createElement('button');
-        btn.className = 'pagination-item' + (i === currentPage ? ' active' : '');
-        btn.textContent = i;
-        btn.onclick = () => {
-            currentPage = i;
-            updatePagination();
-        };
-        container.appendChild(btn);
-    }
-    
-    // Next button
-    const nextBtn = createPaginationButton('next', currentPage === totalPages || totalPages === 0);
-    nextBtn.onclick = () => {
-        if (currentPage < totalPages) {
-            currentPage++;
-            updatePagination();
-        }
-    };
-    container.appendChild(nextBtn);
-}
+        originalSelect.parentNode.insertBefore(container, originalSelect.nextSibling);
 
-function createPaginationButton(type, disabled) {
-    const btn = document.createElement('button');
-    btn.className = 'pagination-item';
-    if (disabled) btn.disabled = true;
-    
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('width', '16');
-    svg.setAttribute('height', '16');
-    svg.setAttribute('viewBox', '0 0 24 24');
-    svg.setAttribute('fill', 'none');
-    svg.setAttribute('stroke', 'currentColor');
-    
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('stroke-linecap', 'round');
-    path.setAttribute('stroke-linejoin', 'round');
-    path.setAttribute('stroke-width', '2');
-    path.setAttribute('d', type === 'prev' ? 'M15 19l-7-7 7-7' : 'M9 5l7 7-7 7');
-    
-    svg.appendChild(path);
-    btn.appendChild(svg);
-    
-    return btn;
-}
 
-// ==========================================
-// CRUD VEHÍCULOS
-// ==========================================
-function createNewVehiculo() {
-    const modalTitle = document.getElementById('vehiculoModalTitle');
-    const submitBtnText = document.getElementById('submitBtnText');
-    const vehiculoForm = document.getElementById('vehiculoForm');
-    const vehiculoId = document.getElementById('vehiculoId');
-    
-    if (modalTitle) modalTitle.textContent = 'Nuevo Vehículo';
-    if (submitBtnText) submitBtnText.textContent = 'Guardar';
-    if (vehiculoForm) {
-        vehiculoForm.action = '{{ url_for("propietario.crear_vehiculo") }}';
-        vehiculoForm.reset();
-    }
-    if (vehiculoId) vehiculoId.value = '';
-    
-    if (window.AppUtils && window.AppUtils.openModal) {
-        window.AppUtils.openModal('vehiculoModal');
-    } else {
-        const modal = document.getElementById('vehiculoModal');
-        if (modal) modal.classList.add('active');
-    }
-}
+        // Create trigger
+        const trigger = document.createElement('div');
+        trigger.className = 'custom-select-trigger';
+        trigger.innerHTML = `
+            <span class="custom-select-trigger-text">${originalSelect.options[originalSelect.selectedIndex]?.text || placeholder}</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+            </svg>
+        `;
+        container.appendChild(trigger);
 
-async function editVehiculo(id) {
-    try {
-        const response = await fetch(`/vehiculos/${id}`);
-        const data = await response.json();
-        
-        if (data.success) {
-            const modalTitle = document.getElementById('vehiculoModalTitle');
-            const submitBtnText = document.getElementById('submitBtnText');
-            const vehiculoForm = document.getElementById('vehiculoForm');
-            const vehiculo = data.vehiculo;
-            
-            if (modalTitle) modalTitle.textContent = 'Editar Vehículo';
-            if (submitBtnText) submitBtnText.textContent = 'Actualizar';
-            if (vehiculoForm) vehiculoForm.action = `/propietario/vehiculos/${id}/editar`;
-            
-            document.getElementById('vehiculoId').value = vehiculo.id;
-            document.getElementById('marcaModeloId').value = vehiculo.marca_modelo_vehiculo_id;
-            document.getElementById('propietarioId').value = vehiculo.propietario_id;
-            document.getElementById('placa').value = vehiculo.placa || '';
-            document.getElementById('ano').value = vehiculo.ano || '';
-            document.getElementById('color').value = vehiculo.color || '';
-            document.getElementById('descripcion').value = vehiculo.descripcion || '';
-            document.getElementById('precioSemanal').value = vehiculo.precio_semanal || '';
-            document.getElementById('condiciones').value = vehiculo.condiciones || '';
-            document.getElementById('disponible').checked = vehiculo.disponible;
-            
-            if (window.AppUtils && window.AppUtils.openModal) {
-                window.AppUtils.openModal('vehiculoModal');
-            } else {
-                const modal = document.getElementById('vehiculoModal');
-                if (modal) modal.classList.add('active');
-            }
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error al cargar los datos del vehículo');
-    }
-}
+        // Create dropdown
+        const dropdown = document.createElement('div');
+        dropdown.className = 'custom-select-dropdown';
 
-function initFormListeners() {
-    const vehiculoForm = document.getElementById('vehiculoForm');
-    if (vehiculoForm) {
-        vehiculoForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const formData = new FormData(e.target);
-            const url = e.target.action;
-            
-            try {
-                const response = await fetch(url, { 
-                    method: 'POST', 
-                    body: formData 
+        // Create search
+        const searchWrapper = document.createElement('div');
+        searchWrapper.className = 'custom-select-search-wrapper';
+        const searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.className = 'custom-select-search';
+        searchInput.placeholder = 'Buscar...';
+        searchWrapper.appendChild(searchInput);
+        dropdown.appendChild(searchWrapper);
+
+        // Create options container
+        const optionsContainer = document.createElement('div');
+        optionsContainer.className = 'custom-select-options';
+
+        // No results message
+        const noResults = document.createElement('div');
+        noResults.className = 'custom-select-no-results';
+        noResults.textContent = 'No se encontraron resultados';
+        dropdown.appendChild(noResults);
+
+        // Populate options
+        function populateOptions() {
+            optionsContainer.innerHTML = '';
+            Array.from(originalSelect.options).forEach((option, index) => {
+                if (option.value === "" && option.disabled) return;
+
+                const opt = document.createElement('div');
+                opt.className = 'custom-select-option';
+                if (option.selected) opt.classList.add('selected');
+                opt.dataset.value = option.value;
+                opt.textContent = option.text;
+
+                opt.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    originalSelect.value = option.value;
+                    trigger.querySelector('.custom-select-trigger-text').textContent = option.text;
+                    container.classList.remove('active');
+
+                    // Trigger change event on original select
+                    originalSelect.dispatchEvent(new Event('change'));
+
+                    // Update selected class
+                    const allOpts = optionsContainer.querySelectorAll('.custom-select-option');
+                    allOpts.forEach(o => o.classList.remove('selected'));
+                    opt.classList.add('selected');
                 });
-                
-                if (response.ok) {
-                    location.reload();
+
+                optionsContainer.appendChild(opt);
+            });
+        }
+
+        populateOptions();
+        dropdown.appendChild(optionsContainer);
+        container.appendChild(dropdown);
+
+        // Toggle dropdown
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+
+            // Close other custom selects
+            document.querySelectorAll('.custom-select-container').forEach(c => {
+                if (c !== container) c.classList.remove('active');
+            });
+
+            container.classList.toggle('active');
+            if (container.classList.contains('active')) {
+                searchInput.value = '';
+                searchInput.focus();
+                // Reset visible options
+                const opts = optionsContainer.querySelectorAll('.custom-select-option');
+                opts.forEach(o => o.classList.remove('hidden'));
+                noResults.classList.remove('visible');
+            }
+        });
+
+        // Search logic
+        searchInput.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const opts = optionsContainer.querySelectorAll('.custom-select-option');
+            let visibleCount = 0;
+
+            opts.forEach(opt => {
+                const text = opt.textContent.toLowerCase();
+                if (text.includes(term)) {
+                    opt.classList.remove('hidden');
+                    visibleCount++;
                 } else {
+                    opt.classList.add('hidden');
+                }
+            });
+
+            noResults.classList.toggle('visible', visibleCount === 0);
+        });
+
+        // Close on outside click
+        document.addEventListener('click', () => {
+            container.classList.remove('active');
+        });
+
+        // Add a mutation observer specifically for the original select's options
+        const observer = new MutationObserver(() => {
+            populateOptions();
+        });
+        observer.observe(originalSelect, { childList: true });
+
+        // Helper to update trigger text
+        function updateTrigger() {
+            const selectedOption = originalSelect.options[originalSelect.selectedIndex];
+            trigger.querySelector('.custom-select-trigger-text').textContent = selectedOption?.text || placeholder;
+            const allOpts = optionsContainer.querySelectorAll('.custom-select-option');
+            allOpts.forEach(o => {
+                o.classList.toggle('selected', o.dataset.value == originalSelect.value);
+            });
+        }
+
+        // We need to sync when value changes programmatically
+        const descriptor = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
+        const originalSetter = descriptor.set;
+        const originalGetter = descriptor.get;
+
+        Object.defineProperty(originalSelect, 'value', {
+            set: function (val) {
+                originalSetter.call(this, val);
+                updateTrigger();
+            },
+            get: function () {
+                return originalGetter.call(this);
+            },
+            configurable: true
+        });
+
+        // Listen for change events too
+        originalSelect.addEventListener('change', updateTrigger);
+
+        return {
+            update: populateOptions,
+            sync: updateTrigger
+        };
+    }
+
+    // ==========================================
+    // GLOBAL SWITCH LABEL UPDATE
+    // ==========================================
+    window.updateSwitchLabels = () => {
+        const sw = document.getElementById('disponible');
+        const label = document.getElementById('switchLabel');
+        const sublabel = document.getElementById('switchSublabel');
+        if (!sw || !label || !sublabel) return;
+
+        if (sw.checked) {
+            label.textContent = 'Vehículo Disponible';
+            label.style.color = 'var(--success)';
+            sublabel.textContent = 'Permitir nuevas rentas';
+        } else {
+            label.textContent = 'No Disponible';
+            label.style.color = 'var(--text-tertiary)';
+            sublabel.textContent = 'En este estado no permite reservas';
+        }
+    };
+
+    // ==========================================
+    // INICIALIZACIÓN
+    // ==========================================
+    let allRows = [];
+    let filteredRows = [];
+    let currentPage = 1;
+    let itemsPerPage = 20;
+    let allHistoryRecords = [];
+    let currentHistoryId = null;
+
+    // Select controllers for syncing
+    let selectControllers = {};
+
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('🚀 Initializing Vehículos page...');
+
+        // Initialize custom selects
+        selectControllers.marcaModelo = initCustomSearchSelect('marcaModeloId', 'Seleccionar Marca y Modelo');
+        selectControllers.propietario = initCustomSearchSelect('propietarioId', 'Seleccionar Propietario');
+        selectControllers.ano = initCustomSearchSelect('ano', 'Seleccione año');
+        selectControllers.color = initCustomSearchSelect('color', 'Seleccione color');
+        selectControllers.filterDisponible = initCustomSearchSelect('filterDisponible', 'Todos');
+        selectControllers.historyAction = initCustomSearchSelect('historyFilterAction', 'Todas las acciones');
+
+
+        // Switch logic for 'disponible'
+        const sw = document.getElementById('disponible');
+        if (sw) {
+            sw.addEventListener('change', window.updateSwitchLabels);
+            window.updateSwitchLabels(); // Initial call
+        }
+
+        allRows = Array.from(document.querySelectorAll('#vehiculosTable tbody tr'));
+        filteredRows = [...allRows];
+        updatePagination();
+        initSearch();
+        initFormListeners();
+
+        console.log(`📊 Loaded ${allRows.length} records`);
+    });
+
+    // ==========================================
+    // SEARCH Y PAGINATION
+    // ==========================================
+    function initSearch() {
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', function (e) {
+                const searchTerm = e.target.value.toLowerCase();
+                filteredRows = allRows.filter(row => {
+                    const text = row.textContent.toLowerCase();
+                    return text.includes(searchTerm);
+                });
+                currentPage = 1;
+                updatePagination();
+            });
+        }
+
+        const itemsPerPageSelect = document.getElementById('itemsPerPage');
+        if (itemsPerPageSelect) {
+            itemsPerPageSelect.addEventListener('change', function (e) {
+                itemsPerPage = parseInt(e.target.value);
+                currentPage = 1;
+                updatePagination();
+            });
+        }
+    }
+
+    function updatePagination() {
+        const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+
+        // Hide all rows
+        allRows.forEach(row => row.style.display = 'none');
+
+        // Show current page rows
+        filteredRows.slice(start, end).forEach(row => row.style.display = '');
+
+        // Update showing text
+        const actualEnd = Math.min(end, filteredRows.length);
+        const showingStart = document.getElementById('showingStart');
+        const showingEnd = document.getElementById('showingEnd');
+        const totalRecords = document.getElementById('totalRecords');
+
+        if (showingStart) showingStart.textContent = filteredRows.length > 0 ? start + 1 : 0;
+        if (showingEnd) showingEnd.textContent = actualEnd;
+        if (totalRecords) totalRecords.textContent = filteredRows.length;
+
+        // Generate pagination buttons
+        generatePaginationButtons(totalPages);
+    }
+
+    function generatePaginationButtons(totalPages) {
+        const container = document.getElementById('paginationContainer');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        // Previous button
+        const prevBtn = createPaginationButton('prev', currentPage === 1);
+        prevBtn.onclick = () => {
+            if (currentPage > 1) {
+                currentPage--;
+                updatePagination();
+            }
+        };
+        container.appendChild(prevBtn);
+
+        // Page number buttons
+        const maxButtons = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+        let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+
+        if (endPage - startPage < maxButtons - 1) {
+            startPage = Math.max(1, endPage - maxButtons + 1);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            const btn = document.createElement('button');
+            btn.className = 'pagination-item' + (i === currentPage ? ' active' : '');
+            btn.textContent = i;
+            btn.onclick = () => {
+                currentPage = i;
+                updatePagination();
+            };
+            container.appendChild(btn);
+        }
+
+        // Next button
+        const nextBtn = createPaginationButton('next', currentPage === totalPages || totalPages === 0);
+        nextBtn.onclick = () => {
+            if (currentPage < totalPages) {
+                currentPage++;
+                updatePagination();
+            }
+        };
+        container.appendChild(nextBtn);
+    }
+
+    function createPaginationButton(type, disabled) {
+        const btn = document.createElement('button');
+        btn.className = 'pagination-item';
+        if (disabled) btn.disabled = true;
+
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('width', '16');
+        svg.setAttribute('height', '16');
+        svg.setAttribute('viewBox', '0 0 24 24');
+        svg.setAttribute('fill', 'none');
+        svg.setAttribute('stroke', 'currentColor');
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('stroke-linejoin', 'round');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute('d', type === 'prev' ? 'M15 19l-7-7 7-7' : 'M9 5l7 7-7 7');
+
+        svg.appendChild(path);
+        btn.appendChild(svg);
+
+        return btn;
+    }
+
+    // ==========================================
+    // CRUD VEHÍCULOS
+    // ==========================================
+    function createNewVehiculo() {
+        const modalTitle = document.getElementById('vehiculoModalTitle');
+        const submitBtnText = document.getElementById('submitBtnText');
+        const vehiculoForm = document.getElementById('vehiculoForm');
+        const vehiculoId = document.getElementById('vehiculoId');
+
+        if (modalTitle) modalTitle.textContent = 'Nuevo Vehículo';
+        if (submitBtnText) submitBtnText.textContent = 'Guardar';
+        if (vehiculoForm) {
+            vehiculoForm.action = '{{ url_for("propietario.crear_vehiculo") }}';
+            vehiculoForm.reset();
+        }
+        if (vehiculoId) vehiculoId.value = '';
+
+        // Reset switch to 'Disponible' (checked)
+        const sw = document.getElementById('disponible');
+        if (sw) {
+            sw.checked = true;
+            if (window.updateSwitchLabels) window.updateSwitchLabels();
+        }
+
+        if (window.AppUtils && window.AppUtils.openModal) {
+            window.AppUtils.openModal('vehiculoModal');
+        } else {
+            const modal = document.getElementById('vehiculoModal');
+            if (modal) modal.classList.add('active');
+        }
+
+        // Show images accordion in 'save first' mode
+        showImagenesAccordion(null);
+    }
+
+    async function editVehiculo(id) {
+        try {
+            const response = await fetch(`/vehiculos/${id}`);
+            const data = await response.json();
+
+            if (data.success) {
+                const modalTitle = document.getElementById('vehiculoModalTitle');
+                const submitBtnText = document.getElementById('submitBtnText');
+                const vehiculoForm = document.getElementById('vehiculoForm');
+                const vehiculo = data.vehiculo;
+
+                if (modalTitle) modalTitle.textContent = 'Editar Vehículo';
+                if (submitBtnText) submitBtnText.textContent = 'Actualizar';
+                if (vehiculoForm) vehiculoForm.action = `/propietario/vehiculos/${id}/editar`;
+
+                document.getElementById('vehiculoId').value = vehiculo.id;
+                document.getElementById('marcaModeloId').value = vehiculo.marca_modelo_vehiculo_id;
+                document.getElementById('propietarioId').value = vehiculo.propietario_id;
+                document.getElementById('placa').value = vehiculo.placa || '';
+                document.getElementById('ano').value = vehiculo.ano || '';
+                document.getElementById('color').value = vehiculo.color || '';
+                document.getElementById('descripcion').value = vehiculo.descripcion || '';
+                document.getElementById('precioSemanal').value = vehiculo.precio_semanal || '';
+                document.getElementById('condiciones').value = vehiculo.condiciones || '';
+                document.getElementById('disponible').checked = vehiculo.disponible;
+                if (window.updateSwitchLabels) window.updateSwitchLabels();
+
+                if (window.AppUtils && window.AppUtils.openModal) {
+                    window.AppUtils.openModal('vehiculoModal');
+                } else {
+                    const modal = document.getElementById('vehiculoModal');
+                    if (modal) modal.classList.add('active');
+                }
+
+                // Show images accordion and load images
+                showImagenesAccordion(vehiculo.id);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error al cargar los datos del vehículo');
+        }
+    }
+
+    function initFormListeners() {
+        const vehiculoForm = document.getElementById('vehiculoForm');
+        if (vehiculoForm) {
+            vehiculoForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const formData = new FormData(e.target);
+                const url = e.target.action;
+
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        location.reload();
+                    } else {
+                        alert('Error al guardar el vehículo');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
                     alert('Error al guardar el vehículo');
                 }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Error al guardar el vehículo');
-            }
-        });
-    }
-}
-
-function deleteVehiculo(id, name) {
-    const deleteVehiculoId = document.getElementById('deleteVehiculoId');
-    const deleteVehiculoName = document.getElementById('deleteVehiculoName');
-    const deleteForm = document.getElementById('deleteForm');
-    
-    if (deleteVehiculoId) deleteVehiculoId.value = id;
-    if (deleteVehiculoName) deleteVehiculoName.textContent = name;
-    if (deleteForm) {
-        deleteForm.action = `/vehiculos/${id}/eliminar`;
-        
-        deleteForm.onsubmit = async (e) => {
-            e.preventDefault();
-            
-            try {
-                const response = await fetch(`/vehiculos/${id}/eliminar`, { 
-                    method: 'POST' 
-                });
-                const data = await response.json();
-                
-                if (data.success) {
-                    location.reload();
-                } else {
-                    alert(data.message || 'Error al eliminar el vehículo');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Error al eliminar el vehículo');
-            }
-        };
-    }
-    
-    if (window.AppUtils && window.AppUtils.openModal) {
-        window.AppUtils.openModal('deleteModal');
-    } else {
-        const modal = document.getElementById('deleteModal');
-        if (modal) modal.classList.add('active');
-    }
-}
-
-// ==========================================
-// ALQUILERES (Historial Inquilinos)
-// ==========================================
-async function viewAlquileres(id, name) {
-    document.getElementById('alquileresVehiculoName').textContent = name;
-    document.getElementById('alquileresVehiculoId').value = id;
-    document.getElementById('alquileresTableBody').innerHTML = '<tr><td colspan="5" style="text-align: center;">Cargando...</td></tr>';
-    
-    if (window.AppUtils && window.AppUtils.openModal) {
-        window.AppUtils.openModal('alquileresModal');
-    } else {
-        const modal = document.getElementById('alquileresModal');
-        if (modal) modal.classList.add('active');
-    }
-    
-    try {
-        const response = await fetch(`/vehiculos/${id}/alquileres`);
-        const data = await response.json();
-        if (data.success) {
-            renderAlquileres(data.alquileres);
-        } else {
-            document.getElementById('alquileresTableBody').innerHTML = '<tr><td colspan="5" style="text-align: center;">No hay alquileres</td></tr>';
+            });
         }
-    } catch (error) {
-        console.error('Error:', error);
-        document.getElementById('alquileresTableBody').innerHTML = '<tr><td colspan="5" style="text-align: center;">Error al cargar</td></tr>';
     }
-}
 
-function renderAlquileres(alquileres) {
-    const tbody = document.getElementById('alquileresTableBody');
-    tbody.innerHTML = '';
-    
-    if (alquileres.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: var(--text-secondary);">No hay alquileres registrados</td></tr>';
-        return;
+    function deleteVehiculo(id, name) {
+        const deleteVehiculoId = document.getElementById('deleteVehiculoId');
+        const deleteVehiculoName = document.getElementById('deleteVehiculoName');
+        const deleteForm = document.getElementById('deleteForm');
+
+        if (deleteVehiculoId) deleteVehiculoId.value = id;
+        if (deleteVehiculoName) deleteVehiculoName.textContent = name;
+        if (deleteForm) {
+            deleteForm.action = `/vehiculos/${id}/eliminar`;
+
+            deleteForm.onsubmit = async (e) => {
+                e.preventDefault();
+
+                try {
+                    const response = await fetch(`/vehiculos/${id}/eliminar`, {
+                        method: 'POST'
+                    });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert(data.message || 'Error al eliminar el vehículo');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error al eliminar el vehículo');
+                }
+            };
+        }
+
+        if (window.AppUtils && window.AppUtils.openModal) {
+            window.AppUtils.openModal('deleteModal');
+        } else {
+            const modal = document.getElementById('deleteModal');
+            if (modal) modal.classList.add('active');
+        }
     }
-    
-    alquileres.forEach(alq => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
+
+    // ==========================================
+    // ALQUILERES (Historial Inquilinos)
+    // ==========================================
+    async function viewAlquileres(id, name) {
+        document.getElementById('alquileresVehiculoName').textContent = name;
+        document.getElementById('alquileresVehiculoId').value = id;
+        document.getElementById('alquileresTableBody').innerHTML = '<tr><td colspan="5" style="text-align: center;">Cargando...</td></tr>';
+
+        if (window.AppUtils && window.AppUtils.openModal) {
+            window.AppUtils.openModal('alquileresModal');
+        } else {
+            const modal = document.getElementById('alquileresModal');
+            if (modal) modal.classList.add('active');
+        }
+
+        try {
+            const response = await fetch(`/vehiculos/${id}/alquileres`);
+            const data = await response.json();
+            if (data.success) {
+                renderAlquileres(data.alquileres);
+            } else {
+                document.getElementById('alquileresTableBody').innerHTML = '<tr><td colspan="5" style="text-align: center;">No hay alquileres</td></tr>';
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('alquileresTableBody').innerHTML = '<tr><td colspan="5" style="text-align: center;">Error al cargar</td></tr>';
+        }
+    }
+
+    function renderAlquileres(alquileres) {
+        const tbody = document.getElementById('alquileresTableBody');
+        tbody.innerHTML = '';
+
+        if (alquileres.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: var(--text-secondary);">No hay alquileres registrados</td></tr>';
+            return;
+        }
+
+        alquileres.forEach(alq => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
             <td>${alq.inquilino_nombre || 'N/A'}</td>
             <td>${alq.fecha_inicio ? new Date(alq.fecha_inicio).toLocaleDateString() : '—'}</td>
             <td>${alq.fecha_fin ? new Date(alq.fecha_fin).toLocaleDateString() : '—'}</td>
-            <td>${alq.ingreso || '—'}</td>
+            <td><span style="color: var(--success); font-weight: 600;">$${parseFloat(alq.ingreso || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></td>
             <td>${alq.notas || '—'}</td>
         `;
-        tbody.appendChild(row);
-    });
-}
-
-// ==========================================
-// REPARACIONES
-// ==========================================
-async function viewReparaciones(id, name) {
-    document.getElementById('reparacionesVehiculoName').textContent = name;
-    document.getElementById('reparacionesVehiculoId').value = id;
-    document.getElementById('reparacionesTableBody').innerHTML = '<tr><td colspan="5" style="text-align: center;">Cargando...</td></tr>';
-    
-    if (window.AppUtils && window.AppUtils.openModal) {
-        window.AppUtils.openModal('reparacionesModal');
-    } else {
-        const modal = document.getElementById('reparacionesModal');
-        if (modal) modal.classList.add('active');
+            tbody.appendChild(row);
+        });
     }
-    
-    try {
-        const response = await fetch(`/vehiculos/${id}/reparaciones`);
-        const data = await response.json();
-        if (data.success) {
-            renderReparaciones(data.reparaciones);
+
+    // ==========================================
+    // REPARACIONES
+    // ==========================================
+    async function viewReparaciones(id, name) {
+        document.getElementById('reparacionesVehiculoName').textContent = name;
+        document.getElementById('reparacionesVehiculoId').value = id;
+        document.getElementById('reparacionesTableBody').innerHTML = '<tr><td colspan="5" style="text-align: center;">Cargando...</td></tr>';
+
+        if (window.AppUtils && window.AppUtils.openModal) {
+            window.AppUtils.openModal('reparacionesModal');
         } else {
-            document.getElementById('reparacionesTableBody').innerHTML = '<tr><td colspan="5" style="text-align: center;">No hay reparaciones</td></tr>';
+            const modal = document.getElementById('reparacionesModal');
+            if (modal) modal.classList.add('active');
         }
-    } catch (error) {
-        console.error('Error:', error);
-        document.getElementById('reparacionesTableBody').innerHTML = '<tr><td colspan="5" style="text-align: center;">Error al cargar</td></tr>';
-    }
-}
 
-function renderReparaciones(reparaciones) {
-    const tbody = document.getElementById('reparacionesTableBody');
-    tbody.innerHTML = '';
-    
-    if (reparaciones.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: var(--text-secondary);">No hay reparaciones registradas</td></tr>';
-        return;
+        try {
+            const response = await fetch(`/vehiculos/${id}/reparaciones`);
+            const data = await response.json();
+            if (data.success) {
+                renderReparaciones(data.reparaciones);
+            } else {
+                document.getElementById('reparacionesTableBody').innerHTML = '<tr><td colspan="5" style="text-align: center;">No hay reparaciones</td></tr>';
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('reparacionesTableBody').innerHTML = '<tr><td colspan="5" style="text-align: center;">Error al cargar</td></tr>';
+        }
     }
-    
-    reparaciones.forEach(rep => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
+
+    function renderReparaciones(reparaciones) {
+        const tbody = document.getElementById('reparacionesTableBody');
+        tbody.innerHTML = '';
+
+        if (reparaciones.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: var(--text-secondary);">No hay reparaciones registradas</td></tr>';
+            return;
+        }
+
+        reparaciones.forEach(rep => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
             <td>${rep.tipo_trabajo_nombre || 'N/A'}</td>
             <td>${rep.fecha_inicio ? new Date(rep.fecha_inicio).toLocaleDateString() : '—'}</td>
             <td>${rep.fecha_fin ? new Date(rep.fecha_fin).toLocaleDateString() : '—'}</td>
-            <td>${rep.costo || '—'}</td>
+            <td><span style="color: var(--danger); font-weight: 600;">$${parseFloat(rep.costo || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></td>
             <td>${rep.notas || '—'}</td>
         `;
-        tbody.appendChild(row);
-    });
-}
+            tbody.appendChild(row);
+        });
+    }
 
-// ==========================================
-// HISTORIAL
-// ==========================================
-async function viewHistory(id) {
-    console.log('📜 Opening history for ID:', id);
-    currentHistoryId = id;
-    
-    const loadingEl = document.getElementById('historyLoading');
-    const filtersEl = document.getElementById('historyFilters');
-    const tableEl = document.getElementById('historyTableContainer');
-    const emptyEl = document.getElementById('historyEmpty');
-    const vehiculoNameEl = document.getElementById('historyVehiculoName');
-    
-    if (!loadingEl || !filtersEl || !tableEl || !emptyEl || !vehiculoNameEl) {
-        console.error('❌ History modal elements not found');
-        alert('Error: No se pudo cargar el modal de historial');
-        return;
-    }
-    
-    loadingEl.style.display = 'block';
-    filtersEl.style.display = 'none';
-    tableEl.style.display = 'none';
-    emptyEl.style.display = 'none';
-    
-    if (window.AppUtils && window.AppUtils.openModal) {
-        window.AppUtils.openModal('historyModal');
-    } else {
-        const modal = document.getElementById('historyModal');
-        if (modal) modal.classList.add('active');
-    }
-    
-    try {
-        const response = await fetch(`/vehiculos/${id}/historial`);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+    // ==========================================
+    // HISTORIAL
+    // ==========================================
+    async function viewHistory(id) {
+        console.log('📜 Opening history for ID:', id);
+        currentHistoryId = id;
+
+        const loadingEl = document.getElementById('historyLoading');
+        const filtersEl = document.getElementById('historyFilters');
+        const tableEl = document.getElementById('historyTableContainer');
+        const emptyEl = document.getElementById('historyEmpty');
+        const vehiculoNameEl = document.getElementById('historyVehiculoName');
+
+        if (!loadingEl || !filtersEl || !tableEl || !emptyEl || !vehiculoNameEl) {
+            console.error('❌ History modal elements not found');
+            alert('Error: No se pudo cargar el modal de historial');
+            return;
         }
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            allHistoryRecords = data.historial || [];
-            vehiculoNameEl.textContent = data.vehiculo_nombre || 'Desconocido';
-            
-            initHistoryFilters();
-            renderHistory(allHistoryRecords);
-            
-            loadingEl.style.display = 'none';
-            
-            if (allHistoryRecords.length > 0) {
-                filtersEl.style.display = 'flex';
-                tableEl.style.display = 'block';
-            } else {
-                emptyEl.style.display = 'block';
-            }
+
+        loadingEl.style.display = 'block';
+        filtersEl.style.display = 'none';
+        tableEl.style.display = 'none';
+        emptyEl.style.display = 'none';
+
+        if (window.AppUtils && window.AppUtils.openModal) {
+            window.AppUtils.openModal('historyModal');
         } else {
-            throw new Error(data.message || 'Error al cargar historial');
+            const modal = document.getElementById('historyModal');
+            if (modal) modal.classList.add('active');
         }
-    } catch (error) {
-        console.error('❌ Error loading history:', error);
-        loadingEl.style.display = 'none';
-        emptyEl.style.display = 'block';
-    }
-}
 
-function renderHistory(records) {
-    const tbody = document.getElementById('historyTableBody');
-    if (!tbody) return;
-    
-    tbody.innerHTML = '';
-    
-    if (records.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 40px; color: var(--text-secondary);">No hay registros para mostrar</td></tr>';
-        return;
+        try {
+            const response = await fetch(`/vehiculos/${id}/historial`);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (data.success) {
+                allHistoryRecords = data.historial || [];
+                vehiculoNameEl.textContent = data.vehiculo_nombre || 'Desconocido';
+
+                initHistoryFilters();
+                renderHistory(allHistoryRecords);
+
+                loadingEl.style.display = 'none';
+
+                if (allHistoryRecords.length > 0) {
+                    filtersEl.style.display = 'flex';
+                    tableEl.style.display = 'block';
+                } else {
+                    emptyEl.style.display = 'block';
+                }
+            } else {
+                throw new Error(data.message || 'Error al cargar historial');
+            }
+        } catch (error) {
+            console.error('❌ Error loading history:', error);
+            loadingEl.style.display = 'none';
+            emptyEl.style.display = 'block';
+        }
     }
-    
-    records.forEach(record => {
-        const row = document.createElement('tr');
-        
-        const fechaCell = document.createElement('td');
-        fechaCell.textContent = record.fecha_hora;
-        row.appendChild(fechaCell);
-        
-        const usuarioCell = document.createElement('td');
-        usuarioCell.innerHTML = `
+
+    function renderHistory(records) {
+        const tbody = document.getElementById('historyTableBody');
+        if (!tbody) return;
+
+        tbody.innerHTML = '';
+
+        if (records.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 40px; color: var(--text-secondary);">No hay registros para mostrar</td></tr>';
+            return;
+        }
+
+        records.forEach(record => {
+            const row = document.createElement('tr');
+
+            const fechaCell = document.createElement('td');
+            fechaCell.textContent = record.fecha_hora;
+            row.appendChild(fechaCell);
+
+            const usuarioCell = document.createElement('td');
+            usuarioCell.innerHTML = `
             <div style="display: flex; align-items: center; gap: 8px;">
                 <div class="user-avatar" style="width: 28px; height: 28px; font-size: 11px;">${record.usuario_iniciales}</div>
                 <span>${record.usuario_nombre}</span>
             </div>
         `;
-        row.appendChild(usuarioCell);
-        
-        const accionCell = document.createElement('td');
-        let badgeClass = 'badge-info';
-        let accionText = record.tipo_operacion;
-        
-        if (record.tipo_operacion === 'INSERT') {
-            badgeClass = 'badge-success';
-            accionText = 'Creación';
-        } else if (record.tipo_operacion === 'UPDATE') {
-            badgeClass = 'badge-warning';
-            accionText = 'Edición';
-        } else if (record.tipo_operacion === 'DELETE') {
-            badgeClass = 'badge-danger';
-            accionText = 'Eliminación';
-        }
-        
-        accionCell.innerHTML = `<span class="badge ${badgeClass}">${accionText}</span>`;
-        row.appendChild(accionCell);
-        
-        const detallesCell = document.createElement('td');
-        detallesCell.innerHTML = formatHistoryDetails(record);
-        row.appendChild(detallesCell);
-        
-        tbody.appendChild(row);
-    });
-}
+            row.appendChild(usuarioCell);
 
-function formatHistoryDetails(record) {
-    if (record.tipo_operacion === 'INSERT') {
-        return `
+            const accionCell = document.createElement('td');
+            let badgeClass = 'badge-info';
+            let accionText = record.tipo_operacion;
+
+            if (record.tipo_operacion === 'INSERT') {
+                badgeClass = 'badge-success';
+                accionText = 'Creación';
+            } else if (record.tipo_operacion === 'UPDATE') {
+                badgeClass = 'badge-warning';
+                accionText = 'Edición';
+            } else if (record.tipo_operacion === 'DELETE') {
+                badgeClass = 'badge-danger';
+                accionText = 'Eliminación';
+            }
+
+            accionCell.innerHTML = `<span class="badge ${badgeClass}">${accionText}</span>`;
+            row.appendChild(accionCell);
+
+            const detallesCell = document.createElement('td');
+            detallesCell.innerHTML = formatHistoryDetails(record);
+            row.appendChild(detallesCell);
+
+            tbody.appendChild(row);
+        });
+    }
+
+    function formatHistoryDetails(record) {
+        if (record.tipo_operacion === 'INSERT') {
+            return `
             <div style="font-size: 13px;">
                 <strong>Registro Inicial:</strong> ${record.marca} ${record.modelo}<br>
                 <span style="color: var(--text-secondary);">Placa: ${record.placa || 'N/A'}</span>
             </div>
         `;
-    } else if (record.tipo_operacion === 'DELETE') {
-        return `
+        } else if (record.tipo_operacion === 'DELETE') {
+            return `
             <div style="font-size: 13px;">
                 <strong>Registro Eliminado:</strong> ${record.marca} ${record.modelo}<br>
                 <span style="color: var(--text-secondary);">Placa: ${record.placa || 'N/A'}</span>
             </div>
         `;
-    } else if (record.tipo_operacion === 'UPDATE') {
-        let changes = [];
-        
-        if (record.cambios && record.cambios.length > 0) {
-            record.cambios.forEach(cambio => {
-                changes.push(`
+        } else if (record.tipo_operacion === 'UPDATE') {
+            let changes = [];
+
+            if (record.cambios && record.cambios.length > 0) {
+                record.cambios.forEach(cambio => {
+                    changes.push(`
                     <div style="margin-bottom: 8px; padding: 8px; background: var(--bg-secondary); border-radius: 6px;">
                         <strong>${cambio.campo}:</strong><br>
                         <span style="color: var(--text-secondary); font-size: 12px;">
@@ -1015,147 +1679,423 @@ function formatHistoryDetails(record) {
                         </span>
                     </div>
                 `);
+                });
+            }
+
+            return changes.length > 0 ? changes.join('') : '<span style="color: var(--text-secondary);">Sin cambios específicos registrados</span>';
+        }
+
+        return '-';
+    }
+
+    function initHistoryFilters() {
+        const searchInput = document.getElementById('historySearch');
+
+        if (searchInput) {
+            searchInput.removeEventListener('input', filterHistory);
+            searchInput.addEventListener('input', filterHistory);
+            searchInput.value = '';
+        }
+
+        if (selectControllers.historyAction) {
+            selectControllers.historyAction.sync();
+        }
+    }
+
+
+    function filterHistory() {
+        if (!allHistoryRecords || allHistoryRecords.length === 0) return;
+
+        const searchInput = document.getElementById('historySearch');
+        const actionSelect = document.getElementById('historyFilterAction');
+
+        if (!searchInput || !actionSelect) return;
+
+        const searchTerm = searchInput.value.toLowerCase();
+        const actionFilter = actionSelect.value;
+
+        let filtered = allHistoryRecords;
+
+        if (searchTerm) {
+            filtered = filtered.filter(record => {
+                const searchableText = `${record.marca} ${record.modelo} ${record.placa} ${record.usuario_nombre}`.toLowerCase();
+                return searchableText.includes(searchTerm);
             });
         }
-        
-        return changes.length > 0 ? changes.join('') : '<span style="color: var(--text-secondary);">Sin cambios específicos registrados</span>';
-    }
-    
-    return '-';
-}
 
-function initHistoryFilters() {
-    const searchInput = document.getElementById('historySearch');
-    const actionSelect = document.getElementById('historyFilterAction');
-    
-    if (searchInput) {
-        searchInput.removeEventListener('input', filterHistory);
-        searchInput.addEventListener('input', filterHistory);
-        searchInput.value = '';
-    }
-    
-    if (actionSelect) {
-        actionSelect.removeEventListener('change', filterHistory);
-        actionSelect.addEventListener('change', filterHistory);
-        actionSelect.value = '';
-    }
-}
+        if (actionFilter) {
+            filtered = filtered.filter(record => record.tipo_operacion === actionFilter);
+        }
 
-function filterHistory() {
-    if (!allHistoryRecords || allHistoryRecords.length === 0) return;
-    
-    const searchInput = document.getElementById('historySearch');
-    const actionSelect = document.getElementById('historyFilterAction');
-    
-    if (!searchInput || !actionSelect) return;
-    
-    const searchTerm = searchInput.value.toLowerCase();
-    const actionFilter = actionSelect.value;
-    
-    let filtered = allHistoryRecords;
-    
-    if (searchTerm) {
-        filtered = filtered.filter(record => {
-            const searchableText = `${record.marca} ${record.modelo} ${record.placa} ${record.usuario_nombre}`.toLowerCase();
-            return searchableText.includes(searchTerm);
+        renderHistory(filtered);
+    }
+
+    function exportHistory() {
+        if (!allHistoryRecords || allHistoryRecords.length === 0) {
+            alert('No hay datos para exportar');
+            return;
+        }
+
+        try {
+            let csv = 'Fecha/Hora,Usuario,Acción,Marca,Modelo,Placa\n';
+
+            allHistoryRecords.forEach(record => {
+                let accionText = record.tipo_operacion;
+                if (record.tipo_operacion === 'INSERT') accionText = 'Creación';
+                else if (record.tipo_operacion === 'UPDATE') accionText = 'Edición';
+                else if (record.tipo_operacion === 'DELETE') accionText = 'Eliminación';
+
+                csv += `"${record.fecha_hora}","${record.usuario_nombre}","${accionText}","${record.marca}","${record.modelo}","${record.placa || 'N/A'}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            const filename = `historial_vehiculo_${currentHistoryId}_${timestamp}.csv`;
+
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            setTimeout(() => URL.revokeObjectURL(url), 100);
+        } catch (error) {
+            console.error('❌ Error exporting history:', error);
+            alert('Error al exportar el historial');
+        }
+    }
+
+    // ==========================================
+    // FILTROS
+    // ==========================================
+    function applyFilters() {
+        const filterDisponible = document.getElementById('filterDisponible')?.value || '';
+        const conAlquileres = document.getElementById('conAlquileres')?.checked || false;
+        const conReparaciones = document.getElementById('conReparaciones')?.checked || false;
+
+        filteredRows = allRows.filter(row => {
+            let show = true;
+
+            if (filterDisponible) {
+                const disponible = row.getAttribute('data-disponible') === 'true';
+                if (filterDisponible === 'disponibles') show = show && disponible;
+                else if (filterDisponible === 'no_disponibles') show = show && !disponible;
+            }
+
+            if (conAlquileres) {
+                show = show && row.getAttribute('data-has-alquileres') === 'true';
+            }
+
+            if (conReparaciones) {
+                show = show && row.getAttribute('data-has-reparaciones') === 'true';
+            }
+
+            return show;
         });
-    }
-    
-    if (actionFilter) {
-        filtered = filtered.filter(record => record.tipo_operacion === actionFilter);
-    }
-    
-    renderHistory(filtered);
-}
 
-function exportHistory() {
-    if (!allHistoryRecords || allHistoryRecords.length === 0) {
-        alert('No hay datos para exportar');
-        return;
-    }
-    
-    try {
-        let csv = 'Fecha/Hora,Usuario,Acción,Marca,Modelo,Placa\n';
-        
-        allHistoryRecords.forEach(record => {
-            let accionText = record.tipo_operacion;
-            if (record.tipo_operacion === 'INSERT') accionText = 'Creación';
-            else if (record.tipo_operacion === 'UPDATE') accionText = 'Edición';
-            else if (record.tipo_operacion === 'DELETE') accionText = 'Eliminación';
-            
-            csv += `"${record.fecha_hora}","${record.usuario_nombre}","${accionText}","${record.marca}","${record.modelo}","${record.placa || 'N/A'}"\n`;
-        });
-        
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-        const filename = `historial_vehiculo_${currentHistoryId}_${timestamp}.csv`;
-        
-        link.setAttribute('href', url);
-        link.setAttribute('download', filename);
-        link.style.visibility = 'hidden';
-        
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        setTimeout(() => URL.revokeObjectURL(url), 100);
-    } catch (error) {
-        console.error('❌ Error exporting history:', error);
-        alert('Error al exportar el historial');
-    }
-}
+        currentPage = 1;
+        updatePagination();
 
-// ==========================================
-// FILTROS
-// ==========================================
-function applyFilters() {
-    const filterDisponible = document.getElementById('filterDisponible')?.value || '';
-    const conAlquileres = document.getElementById('conAlquileres')?.checked || false;
-    const conReparaciones = document.getElementById('conReparaciones')?.checked || false;
-    
-    filteredRows = allRows.filter(row => {
-        let show = true;
-        
-        if (filterDisponible) {
-            const disponible = row.getAttribute('data-disponible') === 'true';
-            if (filterDisponible === 'disponibles') show = show && disponible;
-            else if (filterDisponible === 'no_disponibles') show = show && !disponible;
+        if (window.AppUtils && window.AppUtils.closeModal) {
+            window.AppUtils.closeModal('filterModal');
+        } else {
+            const modal = document.getElementById('filterModal');
+            if (modal) modal.classList.remove('active');
         }
-        
-        if (conAlquileres) {
-            show = show && row.getAttribute('data-has-alquileres') === 'true';
+    }
+
+    function clearFilters() {
+        document.getElementById('filterDisponible').value = '';
+        document.getElementById('conAlquileres').checked = false;
+        document.getElementById('conReparaciones').checked = false;
+
+        filteredRows = [...allRows];
+        currentPage = 1;
+        updatePagination();
+    }
+
+    // ==========================================
+    // VEHICLE IMAGES MANAGEMENT
+    // ==========================================
+    let currentVehiculoId = null;
+
+    function toggleImagenesAccordion() {
+        const content = document.getElementById('imagenesContent');
+        const arrow = document.getElementById('imagenesArrow');
+
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            arrow.style.transform = 'rotate(180deg)';
+        } else {
+            content.style.display = 'none';
+            arrow.style.transform = 'rotate(0deg)';
         }
-        
-        if (conReparaciones) {
-            show = show && row.getAttribute('data-has-reparaciones') === 'true';
+    }
+
+    function handleVehiculoImagenPreview(input) {
+        const file = input.files[0];
+        const preview = document.getElementById('newImagePreview');
+        const img = document.getElementById('newImagePreviewImg');
+        const text = document.getElementById('vehiculoImagenText');
+
+        if (file && file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                img.src = e.target.result;
+                preview.style.display = 'block';
+                text.textContent = file.name;
+            };
+            reader.readAsDataURL(file);
         }
-        
-        return show;
+    }
+
+    function clearNewImagePreview() {
+        const input = document.getElementById('vehiculoImagenInput');
+        const preview = document.getElementById('newImagePreview');
+        const img = document.getElementById('newImagePreviewImg');
+        const text = document.getElementById('vehiculoImagenText');
+
+        input.value = '';
+        img.src = '';
+        preview.style.display = 'none';
+        text.textContent = 'Seleccionar imagen';
+    }
+
+    async function subirNuevaImagen() {
+        if (!currentVehiculoId) {
+            alert('Primero guarde el vehículo para poder agregar imágenes');
+            return;
+        }
+
+        const input = document.getElementById('vehiculoImagenInput');
+        const file = input.files[0];
+
+        if (!file) {
+            alert('Seleccione una imagen primero');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('imagen', file);
+
+        try {
+            const response = await fetch(`/vehiculos/${currentVehiculoId}/imagenes/subir`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                clearNewImagePreview();
+                cargarImagenesVehiculo(currentVehiculoId);
+                showAlert && showAlert('Éxito', 'Imagen subida correctamente', 'success');
+            } else {
+                alert(result.message || 'Error al subir imagen');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error al subir imagen');
+        }
+    }
+
+    async function cargarImagenesVehiculo(vehiculoId) {
+        const grid = document.getElementById('imagenesGrid');
+        const noMsg = document.getElementById('noImagenesMsg');
+        const countBadge = document.getElementById('imagenesCount');
+
+        try {
+            const response = await fetch(`/vehiculos/${vehiculoId}/imagenes`);
+            const result = await response.json();
+
+            if (result.success) {
+                const imagenes = result.imagenes;
+                countBadge.textContent = imagenes.length;
+
+                if (imagenes.length === 0) {
+                    grid.innerHTML = '';
+                    noMsg.style.display = 'block';
+                } else {
+                    noMsg.style.display = 'none';
+                    grid.innerHTML = imagenes.map((img, index) => `
+                        <div class="image-item" style="position: relative; border-radius: 8px; overflow: hidden; box-shadow: var(--neu-shadow-small); cursor: pointer;" onclick="openGallery(${index})">
+                            <img src="/static/${img.ruta}" alt="${img.nombre_archivo}" style="width: 100%; height: 100px; object-fit: cover;">
+                            ${img.es_principal ? '<span style="position: absolute; top: 4px; left: 4px; background: var(--success); color: white; font-size: 9px; padding: 2px 6px; border-radius: 4px;">Principal</span>' : ''}
+                            <div style="position: absolute; bottom: 0; left: 0; right: 0; display: flex; justify-content: space-around; background: rgba(0,0,0,0.6); padding: 4px;" onclick="event.stopPropagation()">
+                                ${!img.es_principal ? `<button type="button" onclick="setImagenPrincipal(${img.id})" style="background: none; border: none; color: white; cursor: pointer; font-size: 10px;" title="Establecer como principal">⭐</button>` : ''}
+                                <button type="button" onclick="eliminarImagen(${img.id})" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 10px;" title="Eliminar">🗑️</button>
+                            </div>
+                        </div>
+                    `).join('');
+
+                }
+            }
+        } catch (error) {
+            console.error('Error cargando imágenes:', error);
+        }
+    }
+
+    async function eliminarImagen(imagenId) {
+        if (!confirm('¿Eliminar esta imagen?')) return;
+
+        try {
+            const response = await fetch(`/vehiculos/imagenes/${imagenId}/eliminar`, {
+                method: 'POST'
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                cargarImagenesVehiculo(currentVehiculoId);
+            } else {
+                alert(result.message || 'Error al eliminar imagen');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error al eliminar imagen');
+        }
+    }
+
+    async function setImagenPrincipal(imagenId) {
+        try {
+            const response = await fetch(`/vehiculos/imagenes/${imagenId}/principal`, {
+                method: 'POST'
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                cargarImagenesVehiculo(currentVehiculoId);
+            } else {
+                alert(result.message || 'Error al establecer imagen principal');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error');
+        }
+    }
+
+    function showImagenesAccordion(vehiculoId) {
+        currentVehiculoId = vehiculoId;
+        const accordion = document.getElementById('imagenesAccordion');
+        const uploadSection = document.getElementById('uploadSection');
+        const saveFirstMsg = document.getElementById('saveFirstMsg');
+
+        accordion.style.display = 'block';
+
+        if (vehiculoId) {
+            if (uploadSection) uploadSection.style.display = 'block';
+            if (saveFirstMsg) saveFirstMsg.style.display = 'none';
+            cargarImagenesVehiculo(vehiculoId);
+        } else {
+            if (uploadSection) uploadSection.style.display = 'none';
+            if (saveFirstMsg) saveFirstMsg.style.display = 'block';
+            document.getElementById('imagenesGrid').innerHTML = '';
+            document.getElementById('imagenesCount').textContent = '0';
+        }
+    }
+
+    function hideImagenesAccordion() {
+        currentVehiculoId = null;
+        const accordion = document.getElementById('imagenesAccordion');
+        accordion.style.display = 'none';
+        document.getElementById('imagenesGrid').innerHTML = '';
+        document.getElementById('imagenesCount').textContent = '0';
+        clearNewImagePreview();
+        // Clear gallery global
+        allVehicleImages = [];
+    }
+
+    // ==========================================
+    // GALLERY LOGIC
+    // ==========================================
+    let allVehicleImages = [];
+    let currentGalleryIndex = 0;
+
+    async function openGallery(index) {
+        // We already have images loaded in grid, but we need to fetch them if we want high quality
+        // Or we can just use the ones from the result of cargarImagenesVehiculo
+        // Let's refetch to be sure we have the latest list
+        try {
+            const response = await fetch(`/vehiculos/${currentVehiculoId}/imagenes`);
+            const result = await response.json();
+            if (result.success) {
+                allVehicleImages = result.imagenes;
+                currentGalleryIndex = index;
+                showGalleryImage();
+                document.getElementById('galleryModal').classList.add('active');
+            }
+        } catch (error) {
+            console.error('Error opening gallery:', error);
+        }
+    }
+
+    function showGalleryImage() {
+        const img = allVehicleImages[currentGalleryIndex];
+        const displayImg = document.getElementById('galleryImage');
+        const counter = document.getElementById('galleryCounter');
+
+        displayImg.style.opacity = '0';
+
+        setTimeout(() => {
+            displayImg.src = '/static/' + img.ruta;
+            counter.textContent = `${currentGalleryIndex + 1} / ${allVehicleImages.length}`;
+            displayImg.style.opacity = '1';
+        }, 150);
+    }
+
+    function nextImage() {
+        if (allVehicleImages.length <= 1) return;
+        currentGalleryIndex = (currentGalleryIndex + 1) % allVehicleImages.length;
+        showGalleryImage();
+    }
+
+    function prevImage() {
+        if (allVehicleImages.length <= 1) return;
+        currentGalleryIndex = (currentGalleryIndex - 1 + allVehicleImages.length) % allVehicleImages.length;
+        showGalleryImage();
+    }
+
+    function closeGallery() {
+        document.getElementById('galleryModal').classList.remove('active');
+    }
+
+    // Global keyboard listeners for gallery
+    document.addEventListener('keydown', (e) => {
+        if (!document.getElementById('galleryModal').classList.contains('active')) return;
+
+        if (e.key === 'ArrowRight') nextImage();
+        if (e.key === 'ArrowLeft') prevImage();
+        if (e.key === 'Escape') closeGallery();
     });
-    
-    currentPage = 1;
-    updatePagination();
-    
-    if (window.AppUtils && window.AppUtils.closeModal) {
-        window.AppUtils.closeModal('filterModal');
-    } else {
-        const modal = document.getElementById('filterModal');
-        if (modal) modal.classList.remove('active');
-    }
-}
 
-function clearFilters() {
-    document.getElementById('filterDisponible').value = '';
-    document.getElementById('conAlquileres').checked = false;
-    document.getElementById('conReparaciones').checked = false;
-    
-    filteredRows = [...allRows];
-    currentPage = 1;
-    updatePagination();
-}
+
 </script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const colorSelect = document.getElementById('color');
+        const inputs = document.querySelectorAll('.color-sync');
+
+        colorSelect.addEventListener('change', function () {
+            const color = this.value;
+
+            inputs.forEach(input => {
+                if (color) {
+                    input.style.borderColor = color;
+                    input.style.boxShadow = `0 0 0 1px ${color}`;
+                } else {
+                    input.style.borderColor = '#ccc';
+                    input.style.boxShadow = 'none';
+                }
+            });
+        });
+    });
+</script>
+
 
 {% endblock %}

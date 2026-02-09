@@ -7,7 +7,8 @@ from functools import wraps
 from app import db
 from app.models import (
     Usuario, Propietario, HistoricoPropietario, ReferenciaPropietario,
-    Vehiculo, VehiculoMarcaModelo, VehiculoImagen, TrabajoVehiculo 
+    Vehiculo, VehiculoMarcaModelo, VehiculoImagen, TrabajoVehiculo,
+    MetodoPago, TipoCuenta, Banco, decrypt_data
 )
 from datetime import datetime
 import os
@@ -69,7 +70,19 @@ def delete_document(path):
 def propietarios():
     """List all owners"""
     propietarios = Propietario.query.order_by(Propietario.fecha_hora_registro.desc()).all()
-    return render_template('modulos/propietarios.html', propietarios=propietarios)
+    # Filter only Efectivo and Transferencia
+    metodos_pago = MetodoPago.query.filter(
+        MetodoPago.activo == True,
+        MetodoPago.nombre.in_(['Efectivo', 'Transferencia'])
+    ).all()
+    tipos_cuenta = TipoCuenta.query.all()
+    bancos = Banco.query.all()
+    
+    return render_template('modulos/propietarios.html', 
+                          propietarios=propietarios,
+                          metodos_pago=metodos_pago,
+                          tipos_cuenta=tipos_cuenta,
+                          bancos=bancos)
 
 
 @propietario_bp.route('/propietarios/crear', methods=['POST'])
@@ -112,6 +125,10 @@ def crear_propietario():
             direccion=direccion if direccion else None,
             telefono=telefono if telefono else None,
             email=email if email else None,
+            metodo_pago_id=request.form.get('metodo_pago_id') if request.form.get('metodo_pago_id') else None,
+            banco_nombre=request.form.get('banco_nombre', '').strip() if request.form.get('banco_nombre') else None,
+            numero_cuenta=request.form.get('numero_cuenta', '').strip() if request.form.get('numero_cuenta') else None,
+            tipo_cuenta_id=request.form.get('tipo_cuenta_id') if request.form.get('tipo_cuenta_id') else None,
             cedula_path=cedula_path,
             licencia_path=licencia_path,
             documento_buena_conducta_path=buena_conducta_path,
@@ -165,6 +182,13 @@ def editar_propietario(id):
     propietario.direccion = new_direccion if new_direccion else None
     propietario.telefono = new_telefono if new_telefono else None
     propietario.email = new_email if new_email else None
+    
+    # Update payment info
+    propietario.metodo_pago_id = request.form.get('metodo_pago_id') if request.form.get('metodo_pago_id') else None
+    propietario.banco_nombre = request.form.get('banco_nombre', '').strip() if request.form.get('banco_nombre') else None
+    propietario.numero_cuenta = request.form.get('numero_cuenta', '').strip() if request.form.get('numero_cuenta') else None
+    propietario.tipo_cuenta_id = request.form.get('tipo_cuenta_id') if request.form.get('tipo_cuenta_id') else None
+
     propietario.usuario_actualizo_id = current_user.id
     propietario.fecha_hora_actualizo = datetime.now()
     
@@ -252,6 +276,10 @@ def ver_propietario(id):
         'cedula_path': propietario.cedula_path,
         'licencia_path': propietario.licencia_path,
         'documento_buena_conducta_path': propietario.documento_buena_conducta_path,
+        'metodo_pago_id': propietario.metodo_pago_id,
+        'banco_nombre': propietario.banco_nombre,
+        'numero_cuenta': propietario.numero_cuenta,
+        'tipo_cuenta_id': propietario.tipo_cuenta_id,
         'vehiculos_count': propietario.vehiculos.count(),
         'referencias_count': propietario.referencias.count(),
         'fecha_registro': propietario.fecha_hora_registro.strftime('%d/%m/%Y %H:%M') if propietario.fecha_hora_registro else None,
@@ -279,6 +307,24 @@ def historial_propietario(id):
             usuario_nombre = f"{usuario.nombre} {usuario.apellido}" if usuario else "Sistema"
             usuario_iniciales = f"{usuario.nombre[0]}{usuario.apellido[0]}" if usuario else "SY"
             
+            # Helper function to safely decrypt data
+            def safe_decrypt(value):
+                if value is None or value == '':
+                    return None
+                try:
+                    return decrypt_data(value)
+                except:
+                    # If decryption fails, return original value (might not be encrypted)
+                    return value
+            
+            # Decrypt the fields from the historical record
+            decrypted_nombre = safe_decrypt(record.nombre_apellido)
+            decrypted_cedula = safe_decrypt(record.cedula)
+            decrypted_licencia = safe_decrypt(record.licencia)
+            decrypted_direccion = safe_decrypt(record.direccion)
+            decrypted_telefono = safe_decrypt(record.telefono)
+            decrypted_email = safe_decrypt(record.email)
+            
             cambios = []
             if record.tipo_operacion == 'UPDATE':
                 previous = HistoricoPropietario.query.filter(
@@ -287,24 +333,29 @@ def historial_propietario(id):
                 ).order_by(HistoricoPropietario.fecha_hora_operacion.desc()).first()
                 
                 if previous:
+                    # Decrypt previous record fields
+                    prev_nombre = safe_decrypt(previous.nombre_apellido)
+                    prev_cedula = safe_decrypt(previous.cedula)
+                    prev_licencia = safe_decrypt(previous.licencia)
+                    prev_direccion = safe_decrypt(previous.direccion)
+                    prev_telefono = safe_decrypt(previous.telefono)
+                    prev_email = safe_decrypt(previous.email)
+                    
                     fields_to_check = [
-                        ('nombre_apellido', 'Nombre'),
-                        ('cedula', 'Cédula'),
-                        ('licencia', 'Licencia'),
-                        ('direccion', 'Dirección'),
-                        ('telefono', 'Teléfono'),
-                        ('email', 'Email'),
-                        ('cedula_path', 'Doc. Cédula'),
-                        ('licencia_path', 'Doc. Licencia'),
-                        ('documento_buena_conducta_path', 'Doc. Buena Conducta')
+                        (prev_nombre, decrypted_nombre, 'Nombre'),
+                        (prev_cedula, decrypted_cedula, 'Cédula'),
+                        (prev_licencia, decrypted_licencia, 'Licencia'),
+                        (prev_direccion, decrypted_direccion, 'Dirección'),
+                        (prev_telefono, decrypted_telefono, 'Teléfono'),
+                        (prev_email, decrypted_email, 'Email'),
+                        (previous.cedula_path, record.cedula_path, 'Doc. Cédula'),
+                        (previous.licencia_path, record.licencia_path, 'Doc. Licencia'),
+                        (previous.documento_buena_conducta_path, record.documento_buena_conducta_path, 'Doc. Buena Conducta')
                     ]
                     
-                    for field, label in fields_to_check:
-                        old_value = getattr(previous, field)
-                        new_value = getattr(record, field)
-                        
+                    for old_value, new_value, label in fields_to_check:
                         if old_value != new_value:
-                            if '_path' in field:
+                            if 'Doc.' in label:
                                 old_display = 'Sí' if old_value else 'No'
                                 new_display = 'Sí' if new_value else 'No'
                             else:
@@ -323,12 +374,12 @@ def historial_propietario(id):
                 'fecha_hora': record.fecha_hora_operacion.strftime('%d/%m/%Y %H:%M:%S'),
                 'usuario_nombre': usuario_nombre,
                 'usuario_iniciales': usuario_iniciales,
-                'nombre_apellido': record.nombre_apellido,
-                'cedula': record.cedula,
-                'licencia': record.licencia,
-                'direccion': record.direccion,
-                'telefono': record.telefono,
-                'email': record.email,
+                'nombre_apellido': decrypted_nombre,
+                'cedula': decrypted_cedula,
+                'licencia': decrypted_licencia,
+                'direccion': decrypted_direccion,
+                'telefono': decrypted_telefono,
+                'email': decrypted_email,
                 'cambios': cambios
             })
         
@@ -361,6 +412,10 @@ def registrar_historico_propietario(propietario, tipo_operacion):
         direccion=propietario.direccion,
         telefono=propietario.telefono,
         email=propietario.email,
+        metodo_pago_id=propietario.metodo_pago_id,
+        banco_nombre=propietario.banco_nombre,
+        numero_cuenta=propietario.numero_cuenta,
+        tipo_cuenta_id=propietario.tipo_cuenta_id,
         cedula_path=propietario.cedula_path,
         licencia_path=propietario.licencia_path,
         documento_buena_conducta_path=propietario.documento_buena_conducta_path,
@@ -524,6 +579,57 @@ def save_vehicle_media(file, vehiculo_id):
     return None
 
 
+@propietario_bp.route('/propietario/vehiculos/<int:id>', methods=['GET'])
+@login_required
+def get_vehiculo(id):
+    """Obtener datos de un vehículo para edición"""
+    try:
+        vehiculo = Vehiculo.query.get_or_404(id)
+        
+        # Get marca/modelo name
+        marca_modelo = ""
+        if vehiculo.marca_modelo_vehiculo_id:
+            mm = VehiculoMarcaModelo.query.get(vehiculo.marca_modelo_vehiculo_id)
+            if mm:
+                marca_modelo = f"{mm.marca} {mm.modelo}"
+        
+        # Get images with their IDs for delete functionality
+        imagenes = []
+        for img in vehiculo.imagenes:
+            # Ensure path starts with /static/
+            ruta = img.ruta
+            if not ruta.startswith('/'):
+                ruta = f"/static/{ruta}"
+            elif not ruta.startswith('/static/'):
+                ruta = f"/static{ruta}"
+            imagenes.append({
+                'id': img.id,
+                'ruta': ruta,
+                'tipo': img.tipo,
+                'es_principal': img.es_principal
+            })
+        
+        return jsonify({
+            'success': True,
+            'vehiculo': {
+                'id': vehiculo.id,
+                'propietario_id': vehiculo.propietario_id,
+                'placa': vehiculo.placa,
+                'marca_modelo_vehiculo_id': vehiculo.marca_modelo_vehiculo_id,
+                'marca_modelo': marca_modelo,
+                'ano': vehiculo.ano,
+                'color': vehiculo.color,
+                'descripcion': vehiculo.descripcion,
+                'precio_semanal': float(vehiculo.precio_semanal) if vehiculo.precio_semanal else None,
+                'condiciones': vehiculo.condiciones,
+                'disponible': vehiculo.disponible,
+                'imagenes': imagenes
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
 @propietario_bp.route('/propietario/vehiculos/crear', methods=['POST'])
 @login_required
 @admin_required
@@ -612,7 +718,7 @@ def editar_vehiculo(id):
         # Agregar nuevas imágenes si hay
         files = request.files.getlist('media_files')
         if files and files[0].filename:
-            orden_actual = vehiculo.imagenes.count()
+            orden_actual = len(list(vehiculo.imagenes))
             for i, file in enumerate(files):
                 if file and file.filename:
                     ruta = save_vehicle_media(file, vehiculo.id)

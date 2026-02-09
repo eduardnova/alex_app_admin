@@ -8,7 +8,7 @@
 // Create alert container if it doesn't exist
 function createAlertContainer() {
     if (document.getElementById('customAlertContainer')) return;
-    
+
     const container = document.createElement('div');
     container.id = 'customAlertContainer';
     container.style.cssText = `
@@ -27,10 +27,10 @@ function createAlertContainer() {
 // Show custom alert
 function showAlert(title, message, type = 'info', duration = 5000) {
     createAlertContainer();
-    
+
     const alertId = 'alert_' + Date.now() + Math.random();
     const container = document.getElementById('customAlertContainer');
-    
+
     // Icon and color based on type
     const configs = {
         success: {
@@ -54,9 +54,9 @@ function showAlert(title, message, type = 'info', duration = 5000) {
             bg: 'rgba(59, 130, 246, 0.1)'
         }
     };
-    
+
     const config = configs[type] || configs.info;
-    
+
     const alertDiv = document.createElement('div');
     alertDiv.id = alertId;
     alertDiv.style.cssText = `
@@ -72,7 +72,7 @@ function showAlert(title, message, type = 'info', duration = 5000) {
         min-width: 320px;
         max-width: 400px;
     `;
-    
+
     alertDiv.innerHTML = `
         <div style="
             width: 40px;
@@ -109,9 +109,9 @@ function showAlert(title, message, type = 'info', duration = 5000) {
             </svg>
         </button>
     `;
-    
+
     container.appendChild(alertDiv);
-    
+
     // Auto remove after duration
     if (duration > 0) {
         setTimeout(() => {
@@ -134,7 +134,7 @@ function closeAlert(alertId) {
 // Show confirmation dialog (replaces confirm())
 function showConfirm(title, message, onConfirm, onCancel = null) {
     const modalId = 'confirmModal_' + Date.now();
-    
+
     const modalHTML = `
         <div class="modal-overlay" id="${modalId}" style="display: flex !important;">
             <div class="modal modal-sm">
@@ -166,11 +166,17 @@ function showConfirm(title, message, onConfirm, onCancel = null) {
             </div>
         </div>
     `;
-    
+
     const modalDiv = document.createElement('div');
     modalDiv.innerHTML = modalHTML;
-    document.body.appendChild(modalDiv.firstElementChild);
-    
+    const modalElement = modalDiv.firstElementChild;
+    document.body.appendChild(modalElement);
+
+    // Add active class after a tiny delay to trigger CSS transitions
+    setTimeout(() => {
+        modalElement.classList.add('active');
+    }, 10);
+
     // Store callbacks
     window.confirmCallbacks = window.confirmCallbacks || {};
     window.confirmCallbacks[modalId] = {

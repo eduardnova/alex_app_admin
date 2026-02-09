@@ -7,7 +7,7 @@ AGREGAR ESTAS RUTAS A TU APLICACIÃ“N FLASK
 Crear archivo: app/routes/alquileres_routes.py
 """
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
 from flask_login import login_required, current_user
 from datetime import datetime, date, timedelta
 from sqlalchemy import func, and_, or_
@@ -15,9 +15,11 @@ from app import db
 from app.models import (
     PorcentajeGanancia, SemanaAlquiler, DetalleAlquilerSemanal,
     Alquiler, Vehiculo, Inquilino, Propietario, Banco, Usuario, EstadoAlquiler,
-    TrabajoVehiculo, TipoTrabajo, Mecanico
+    TrabajoVehiculo, TipoTrabajo, Mecanico, Contrato, Deposito, ConfiguracionAlquiler
 )
 from functools import wraps
+import os
+from werkzeug.utils import secure_filename
 
 alquileres_bp = Blueprint('alquiler', __name__)
 
@@ -60,6 +62,24 @@ def index():
     # Get mecánicos activos
     mecanicos = Mecanico.query.filter_by(activo=True).all()
     
+    # CORRECCIÓN: Convertir a diccionarios para JSON
+    mecanicos_data = [
+        {
+            'id': m.id,
+            'nombre': m.nombre,
+            'especialidad': m.especialidad or ''
+        }
+        for m in mecanicos
+    ]
+    
+    tipos_trabajo_data = [
+        {
+            'id': t.id,
+            'nombre': t.nombre,
+            'descripcion': t.descripcion or ''
+        }
+        for t in tipos_trabajo
+    ]
     
     # Calculate stats
     total_semanas = SemanaAlquiler.query.count()
@@ -87,8 +107,10 @@ def index():
         semanas=semanas,
         porcentajes_activos=porcentajes_activos,
         bancos=bancos,
-        tipos_trabajo=tipos_trabajo,
-        mecanicos=mecanicos,
+        tipos_trabajo=tipos_trabajo,  # Para los selects del template
+        mecanicos=mecanicos,  # Para los selects del template
+        mecanicos_json=mecanicos_data,  # ✅ Para JavaScript
+        tipos_trabajo_json=tipos_trabajo_data,  # ✅ Para JavaScript
         total_semanas=total_semanas,
         semanas_activas=semanas_activas,
         pagos_pendientes=pagos_pendientes,
@@ -96,13 +118,12 @@ def index():
         user_rol=current_user.rol
     )
 
-
 # ==========================================
 # CREAR SEMANA (CORREGIDA)
 # ==========================================
-@alquileres_bp.route('/alquiler/semanas/crear', methods=['POST'])
+@alquileres_bp.route('/alquiler/semanas/crear__', methods=['POST'])
 @login_required
-def crear_semana():
+def crear_semana__():
     """Crea una nueva semana de trabajo"""
     
     try:
@@ -133,29 +154,30 @@ def crear_semana():
             return redirect(url_for('alquiler.index'))
         
         # ✅ CORRECCIÓN: Validar que no haya otra semana activa en el mismo rango
-        semana_solapada = SemanaAlquiler.query.filter(
-            and_(
-                SemanaAlquiler.estado == 'abierta',
-                or_(
-                    and_(
-                        SemanaAlquiler.fecha_inicio <= fecha_inicio,
-                        SemanaAlquiler.fecha_fin >= fecha_inicio
-                    ),
-                    and_(
-                        SemanaAlquiler.fecha_inicio <= fecha_fin,
-                        SemanaAlquiler.fecha_fin >= fecha_fin
-                    ),
-                    and_(
-                        SemanaAlquiler.fecha_inicio >= fecha_inicio,
-                        SemanaAlquiler.fecha_fin <= fecha_fin
-                    )
-                )
-            )
-        ).first()
-        
-        if semana_solapada:
-            flash(f'Ya existe una semana activa que se solapa con este rango: {semana_solapada.fecha_inicio.strftime("%d/%m/%Y")} - {semana_solapada.fecha_fin.strftime("%d/%m/%Y")}', 'error')
-            return redirect(url_for('alquiler.index'))
+        # ELIMINADO POR SOLICITUD DEL USUARIO
+        # semana_solapada = SemanaAlquiler.query.filter(
+        #     and_(
+        #         SemanaAlquiler.estado == 'abierta',
+        #         or_(
+        #             and_(
+        #                 SemanaAlquiler.fecha_inicio <= fecha_inicio,
+        #                 SemanaAlquiler.fecha_fin >= fecha_inicio
+        #             ),
+        #             and_(
+        #                 SemanaAlquiler.fecha_inicio <= fecha_fin,
+        #                 SemanaAlquiler.fecha_fin >= fecha_fin
+        #             ),
+        #             and_(
+        #                 SemanaAlquiler.fecha_inicio >= fecha_inicio,
+        #                 SemanaAlquiler.fecha_fin <= fecha_fin
+        #             )
+        #         )
+        #     )
+        # ).first()
+            
+        # if semana_solapada:
+        #     flash(f'Ya existe una semana activa que se solapa con este rango: {semana_solapada.fecha_inicio.strftime("%d/%m/%Y")} - {semana_solapada.fecha_fin.strftime("%d/%m/%Y")}', 'error')
+        #     return redirect(url_for('alquiler.index'))
         
         # Create semana
         semana = SemanaAlquiler(
@@ -172,7 +194,7 @@ def crear_semana():
         db.session.add(semana)
         db.session.flush()
         
-        # ✅ CORRECCIÓN: Obtener alquileres activos SOLO en este rango
+        # CORRECCIÓN: Obtener alquileres activos SOLO en este rango
         alquileres_activos = Alquiler.query.filter(
             and_(
                 Alquiler.fecha_alquiler_inicio <= fecha_fin,
@@ -261,7 +283,96 @@ def crear_semana():
         db.session.rollback()
         flash(f'Error al crear semana: {str(e)}', 'error')
         return redirect(url_for('alquiler.index'))
+
+# ==========================================
+# CREAR SEMANA (CORREGIDA - SIN AUTO-AGREGAR ALQUILERES)
+# ==========================================
+@alquileres_bp.route('/alquiler/semanas/crear', methods=['POST'])
+@login_required
+def crear_semana():
+    """Crea una nueva semana de trabajo VACÍA"""
     
+    try:
+        fecha_inicio = datetime.strptime(request.form.get('fecha_inicio'), '%Y-%m-%d').date()
+        fecha_fin = datetime.strptime(request.form.get('fecha_fin'), '%Y-%m-%d').date()
+        porcentaje_ganancia_id = int(request.form.get('porcentaje_ganancia_id'))
+        notas = request.form.get('notas')
+        
+        # Validate dates
+        if fecha_fin < fecha_inicio:
+            flash('La fecha de fin debe ser posterior a la fecha de inicio', 'error')
+            return redirect(url_for('alquiler.index'))
+        
+        # Get numero de semana
+        numero_semana = fecha_inicio.isocalendar()[1]
+        anio = fecha_inicio.year
+        
+        # Check if semana already exists
+        existing = SemanaAlquiler.query.filter(
+            and_(
+                SemanaAlquiler.fecha_inicio == fecha_inicio,
+                SemanaAlquiler.fecha_fin == fecha_fin
+            )
+        ).first()
+        
+        if existing:
+            flash('Ya existe una semana con este rango de fechas', 'error')
+            return redirect(url_for('alquiler.index'))
+        
+        # Validar que no haya otra semana activa en el mismo rango
+        # ELIMINADO POR SOLICITUD DEL USUARIO para permitir múltiples semanas
+        # semana_solapada = SemanaAlquiler.query.filter(
+        #     and_(
+        #         SemanaAlquiler.estado == 'abierta',
+        #         or_(
+        #             and_(
+        #                 SemanaAlquiler.fecha_inicio <= fecha_inicio,
+        #                 SemanaAlquiler.fecha_fin >= fecha_inicio
+        #             ),
+        #             and_(
+        #                 SemanaAlquiler.fecha_inicio <= fecha_fin,
+        #                 SemanaAlquiler.fecha_fin >= fecha_fin
+        #             ),
+        #             and_(
+        #                 SemanaAlquiler.fecha_inicio >= fecha_inicio,
+        #                 SemanaAlquiler.fecha_fin <= fecha_fin
+        #             )
+        #         )
+        #     )
+        # ).first()
+            
+        # if semana_solapada:
+        #     flash(f'Ya existe una semana activa que se solapa: {semana_solapada.fecha_inicio.strftime("%d/%m/%Y")} - {semana_solapada.fecha_fin.strftime("%d/%m/%Y")}', 'error')
+        #     return redirect(url_for('alquiler.index'))
+        
+        # ✅ CORRECCIÓN: Crear semana VACÍA (sin alquileres automáticos)
+        semana = SemanaAlquiler(
+            fecha_inicio=fecha_inicio,
+            fecha_fin=fecha_fin,
+            numero_semana=numero_semana,
+            anio=anio,
+            porcentaje_ganancia_id=porcentaje_ganancia_id,
+            estado='abierta',
+            notas=notas,
+            # ✅ Inicializar en 0
+            total_vehiculos=0,
+            total_socios=0,
+            total_inquilinos=0,
+            ingreso_total=0,
+            usuario_registro_id=current_user.id,
+            usuario_actualizo_id=current_user.id
+        )
+        
+        db.session.add(semana)
+        db.session.commit()
+        
+        flash('Semana creada exitosamente (vacía, lista para agregar alquileres)', 'success')
+        return redirect(url_for('alquiler.index'))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error al crear semana: {str(e)}', 'error')
+        return redirect(url_for('alquiler.index'))
 
 # ==========================================
 # VALIDAR SEMANAS ACTIVAS (NUEVA)
@@ -272,14 +383,11 @@ def validar_semanas_activas():
     """Valida si hay semanas activas fuera del rango actual"""
     
     today = date.today()
-    
-    # Buscar semanas activas
     semanas_activas = SemanaAlquiler.query.filter_by(estado='abierta').all()
     
     problemas = []
     
     for semana in semanas_activas:
-        # Verificar si la semana no corresponde a la semana actual
         es_semana_actual = semana.fecha_inicio <= today <= semana.fecha_fin
         
         if not es_semana_actual:
@@ -312,7 +420,7 @@ def ver_detalles_semana(id):
     try:
         semana = SemanaAlquiler.query.get_or_404(id)
         
-        # ✅ FILTRADO CORRECTO: Solo detalles de ESTA semana
+        # FILTRADO CORRECTO: Solo detalles de ESTA semana
         detalles = DetalleAlquilerSemanal.query.filter_by(
             semana_alquiler_id=id
         ).all()
@@ -352,16 +460,65 @@ def ver_detalles_semana(id):
                     inquilino_nombre = inquilino.nombre_apellido or ''
                     inquilino_telefono = inquilino.telefono or ''
                 
-                # ✅ CALCULAR INVERSIONES TOTALES
+                # Calcular inversiones con debug
                 inversiones_totales = db.session.query(
                     func.sum(TrabajoVehiculo.costo)
-                ).join(
-                    DetalleAlquilerSemanal,
-                    DetalleAlquilerSemanal.trabajo_vehiculo_id == TrabajoVehiculo.id
                 ).filter(
-                    DetalleAlquilerSemanal.id == detalle.id
+                    and_(
+                        TrabajoVehiculo.vehiculo_id == detalle.vehiculo_id,
+                        TrabajoVehiculo.fecha_inicio >= semana.fecha_inicio,
+                        TrabajoVehiculo.fecha_inicio <= semana.fecha_fin
+                    )
                 ).scalar() or 0
                 
+                # --- NEW LOGIC: Contract & Deposits ---
+                contrato_deuda = 0
+                depositos_deuda = 0
+                depositos_estado = 'Pagado'
+                
+                # Buscar contrato activo para este vehiculo e inquilino
+                contrato_activo = Contrato.query.filter(
+                    Contrato.vehiculo_id == detalle.vehiculo_id,
+                    Contrato.inquilino_id == detalle.inquilino_id,
+                    Contrato.estado == 'activo'
+                ).first()
+                
+                if contrato_activo:
+                    # Deuda contrato:
+                    # User Logic: 
+                    # - 'efectivo' or 'transferencia' -> PAGADO (Deuda 0)
+                    # - 'pendiente' (or anything else presumably) -> NO PAGADO (Deuda = monto)
+                    
+                    # Normalizamos a minusculas por si acaso
+                    tipo_pago = str(contrato_activo.tipo_pago).lower() if contrato_activo.tipo_pago else 'pendiente'
+                    
+                    if tipo_pago in ['efectivo', 'transferencia']:
+                        contrato_deuda = 0
+                    else:
+                        # Asumimos que 'pendiente' o cualquier otro estado no pagado tiene deuda
+                        contrato_deuda = float(contrato_activo.monto_contrato)
+                    
+                    # Deuda depositos: sumar pendiente de todos los depositos del contrato
+                    for dep in contrato_activo.depositos:
+                        depositos_deuda += float(dep.monto_pendiente)
+                
+                if depositos_deuda > 0:
+                    depositos_estado = 'Pendiente'
+                # --------------------------------------
+                
+                # Debug: Contar cuántos trabajos encontró
+                count_trabajos = db.session.query(
+                    func.count(TrabajoVehiculo.id)
+                ).filter(
+                    and_(
+                        TrabajoVehiculo.vehiculo_id == detalle.vehiculo_id,
+                        TrabajoVehiculo.fecha_inicio >= semana.fecha_inicio,
+                        TrabajoVehiculo.fecha_inicio <= semana.fecha_fin
+                    )
+                ).scalar() or 0
+                
+                print(f"   Vehículo {vehiculo_placa}: {count_trabajos} trabajos, Total: ${inversiones_totales}")
+                    
                 detalles_data.append({
                     'id': detalle.id,
                     'vehiculo_id': detalle.vehiculo_id,
@@ -374,6 +531,8 @@ def ver_detalles_semana(id):
                     'vehiculo_placa': vehiculo_placa,
                     'inquilino_nombre': inquilino_nombre,
                     'inquilino_telefono': inquilino_telefono,
+                    'contrato_deuda': contrato_deuda,      # NEW
+                    'depositos_deuda': depositos_deuda,    # NEW
                     'precio_semanal': float(detalle.precio_semanal),
                     'dias_trabajo': detalle.dias_trabajo,
                     'ingreso_calculado': float(detalle.ingreso_calculado),
@@ -388,8 +547,10 @@ def ver_detalles_semana(id):
                     'monto_deuda': float(detalle.monto_deuda or 0),
                     'nomina_final': float(detalle.nomina_final),
                     'banco_id': detalle.banco_id,
+                    'banco_nombre': detalle.banco.banco if detalle.banco else ('EFECTIVO' if detalle.pago_confirmado else ''),
                     'fecha_confirmacion_pago': detalle.fecha_confirmacion_pago.isoformat() if detalle.fecha_confirmacion_pago else '',
                     'pago_confirmado': detalle.pago_confirmado,
+                    'comprobante_pago_path': detalle.comprobante_pago_path,
                     'notas': detalle.notas or ''
                 })
             except Exception as e:
@@ -451,15 +612,15 @@ def guardar_cambios_semana(id):
                 detalle.pago_confirmado = cambio.get('pago_confirmado', False)
                 detalle.notas = cambio.get('notas')
                 
-                # Recalculate
-                #detalle.ingreso_calculado = float(detalle.precio_semanal) * int(detalle.dias_trabajo)
-                #detalle.nomina_empresa = detalle.ingreso_calculado * (float(detalle.porcentaje_empresa) / 100)
-                #detalle.nomina_final = detalle.ingreso_calculado + float(detalle.monto_deuda or 0)
-                #  Recalculate con fÃ³rmula correcta
-                precio_diario = float(detalle.precio_semanal) / 7
-                detalle.ingreso_calculado = precio_diario * int(detalle.dias_trabajo)
-                detalle.nomina_empresa =  precio_diario * int(detalle.dias_trabajo) #detalle.ingreso_calculado * (float(detalle.porcentaje_empresa) / 100)
-                detalle.nomina_final =  precio_diario * int(detalle.dias_trabajo) #detalle.ingreso_calculado + float(detalle.monto_deuda or 0)
+                # Recalcular usando nueva formula: (Semanal / 7) * DT y redondeando a ENTERO
+                precio_diario = float(detalle.precio_semanal) / 7.0
+                detalle.ingreso_calculado = int(round(precio_diario * float(detalle.dias_trabajo)))
+                
+                # Nomina Calculada: (Ingreso * 0.9) - Inversion
+                detalle.nomina_empresa = (detalle.ingreso_calculado * 0.9) - float(detalle.inversion_mecanica or 0)
+                
+                # Nomina Final (Nomina Base + Deuda)
+                detalle.nomina_final = detalle.ingreso_calculado + float(detalle.monto_deuda or 0)
                 
                 detalle.usuario_actualizo_id = current_user.id
                 detalle.fecha_hora_actualizo = datetime.utcnow()
@@ -559,7 +720,7 @@ def alquileres_disponibles(id):
 @alquileres_bp.route('/alquiler/semanas/agregar_alquiler', methods=['POST'])
 @login_required
 def agregar_alquiler_a_semana():
-    """Crea un nuevo detalle de alquiler para la semana (CON REGISTRO EN ALQUILERES)"""
+    """Crea un nuevo detalle de alquiler para la semana (CON ACTUALIZACIÓN DE ESTADO)"""
     
     try:
         data = request.get_json()
@@ -568,7 +729,7 @@ def agregar_alquiler_a_semana():
         inquilino_id = int(data.get('inquilino_id'))
         dias_trabajo = int(data.get('dias_trabajo', 7))
         
-        # Validar que no exista ya este vehÃ­culo en la semana
+        # Validaciones existentes...
         existing = DetalleAlquilerSemanal.query.filter_by(
             semana_alquiler_id=semana_id,
             vehiculo_id=vehiculo_id
@@ -577,10 +738,9 @@ def agregar_alquiler_a_semana():
         if existing:
             return jsonify({
                 'success': False,
-                'message': 'Este vehÃ­culo ya estÃ¡ en esta semana'
+                'message': 'Este vehículo ya está en esta semana'
             }), 400
         
-        # Validar que no exista ya este inquilino en la semana
         existing_inquilino = DetalleAlquilerSemanal.query.filter_by(
             semana_alquiler_id=semana_id,
             inquilino_id=inquilino_id
@@ -589,39 +749,40 @@ def agregar_alquiler_a_semana():
         if existing_inquilino:
             return jsonify({
                 'success': False,
-                'message': 'Este inquilino ya tiene un vehÃ­culo asignado en esta semana'
+                'message': 'Este inquilino ya tiene un vehículo asignado en esta semana'
             }), 400
         
-        # Get semana
+        # Get objetos
         semana = SemanaAlquiler.query.get_or_404(semana_id)
-        
-        # Get vehÃ­culo
         vehiculo = Vehiculo.query.get_or_404(vehiculo_id)
+        
+        # ✅ VERIFICAR que el vehículo esté disponible
+        # VALIDACIÓN ELIMINADA: Se permite agregar alquileres a vehículos no disponibles
+        # porque si tiene contrato activo, estará marcado como no disponible (ocupado)
+        # if not vehiculo.disponible:
+        #    return jsonify({
+        #        'success': False,
+        #        'message': 'El vehículo no está disponible para alquiler'
+        #    }), 400
+        
+        estado = EstadoAlquiler.query.filter_by(nombre='activo').first()
         propietario = Propietario.query.get(vehiculo.propietario_id)
         
         if not propietario:
             return jsonify({
                 'success': False,
-                'message': 'El vehÃ­culo no tiene propietario asignado'
+                'message': 'El vehículo no tiene propietario asignado'
             }), 400
         
-        # Get inquilino
         inquilino = Inquilino.query.get_or_404(inquilino_id)
         
-        # Get estado "activo" o el primero disponible
-        estado = EstadoAlquiler.query.filter_by(nombre='activo').first()
         if not estado:
             estado = EstadoAlquiler.query.first()
         
-        if not estado:
-            return jsonify({
-                'success': False,
-                'message': 'No hay estados de alquiler configurados'
-            }), 400
-        
-        # âœ… PASO 1: Crear registro en tabla ALQUILERES
+        # PASO 1: Crear registro en tabla ALQUILERES
         precio_semanal = float(vehiculo.precio_semanal)
-        ingreso = precio_semanal * dias_trabajo
+        precio_diario = precio_semanal / 7
+        ingreso = precio_diario * dias_trabajo
         
         nuevo_alquiler = Alquiler(
             vehiculo_id=vehiculo_id,
@@ -634,27 +795,38 @@ def agregar_alquiler_a_semana():
             ingreso=ingreso,
             monto_descuento=0.00,
             usuario_registro_id=current_user.id,
-            usuario_actualizo_id=current_user.id  # âœ… Agregado
+            usuario_actualizo_id=current_user.id
         )
         
         db.session.add(nuevo_alquiler)
-        db.session.flush()  # Para obtener el ID
+        db.session.flush()
         
-        # âœ… PASO 2: Ahora crear el detalle con alquiler_id
+        
+        # PASO 2: Crear el detalle
         porcentaje = PorcentajeGanancia.query.get(semana.porcentaje_ganancia_id)
+        config = ConfiguracionAlquiler.query.first() # Get configuration
         
-        ingreso_calculado = precio_semanal * dias_trabajo
-        nomina_empresa = ingreso_calculado * (float(porcentaje.porcentaje) / 100)
+        ingreso_calculado = int(round(precio_diario * dias_trabajo))
         
-        # Calculate fecha limite (jueves)
+        # Lavado Automático
+        costo_lavado = 350.00
+        if config and config.costo_lavado is not None:
+             costo_lavado = float(config.costo_lavado)
+             
+        concepto_inversion = 'Lavado Automático al Ingreso'
+        
+        # Nomina Calculada: (Ingreso * 0.9) - Inversion (Lavado)
+        # CORRECCION: La nomina empresa se calcula sobre el ingreso BRUTO generalmente...
+        # Nomina Empresa = Ingreso * Porcentaje
+        nomina_empresa = (ingreso_calculado * (porcentaje.porcentaje / 100))
+        
         fecha_limite = semana.fecha_inicio + timedelta(
             days=(3 - semana.fecha_inicio.weekday()) % 7
         )
-        tiene_deuda = date.today() > fecha_limite
         
         detalle = DetalleAlquilerSemanal(
             semana_alquiler_id=semana_id,
-            alquiler_id=nuevo_alquiler.id,  # âœ… Ahora sÃ­ tiene valor
+            alquiler_id=nuevo_alquiler.id,
             vehiculo_id=vehiculo_id,
             inquilino_id=inquilino_id,
             propietario_id=vehiculo.propietario_id,
@@ -663,19 +835,49 @@ def agregar_alquiler_a_semana():
             ingreso_calculado=ingreso_calculado,
             porcentaje_empresa=porcentaje.porcentaje,
             nomina_empresa=nomina_empresa,
-            tiene_deuda=tiene_deuda,
             fecha_limite_pago=fecha_limite,
             nomina_final=ingreso_calculado,
-            usuario_registro_id=current_user.id
+            usuario_registro_id=current_user.id,
+            # Automatic Wash
+            inversion_mecanica=0, 
+            concepto_inversion=None 
         )
         
         db.session.add(detalle)
+        db.session.flush() 
+        
+        # --- NEW: Create TrabajoVehiculo for Wash Cost ---
+        if costo_lavado > 0:
+            # Find a default mechanic (Try ID 1, otherwise first available)
+            mecanico_defecto = Mecanico.query.get(1)
+            if not mecanico_defecto:
+                mecanico_defecto = Mecanico.query.filter_by(activo=True).first()
+            
+            # If still no mechanic, this will fail. Admin should ensure at least one mechanic exists.
+            mecanico_id = mecanico_defecto.id if mecanico_defecto else None
+            
+            nuevo_lavado = TrabajoVehiculo(
+                vehiculo_id=vehiculo_id,
+                mecanico_id=mecanico_id, # Assign mechanic
+                fecha_inicio=semana.fecha_inicio,
+                descripcion='Lavado Automático al Ingreso',
+                costo=costo_lavado,
+                estado='completado',
+                usuario_registro_id=current_user.id,
+                usuario_actualizo_id=current_user.id
+            )
+            db.session.add(nuevo_lavado)
+        # -------------------------------------------------
+        
+        # ✅ PASO 3: CAMBIAR ESTADO DEL VEHÍCULO A NO DISPONIBLE
+        vehiculo.disponible = False
+        vehiculo.usuario_actualizo_id = current_user.id
+        vehiculo.fecha_hora_actualizo = datetime.utcnow()
         
         # Update semana totals
         semana.total_vehiculos = (semana.total_vehiculos or 0) + 1
         semana.ingreso_total = float(semana.ingreso_total or 0) + ingreso_calculado
         
-        # Recalculate unique propietarios and inquilinos
         semana.total_socios = db.session.query(
             func.count(func.distinct(DetalleAlquilerSemanal.propietario_id))
         ).filter_by(semana_alquiler_id=semana_id).scalar() + 1
@@ -698,9 +900,9 @@ def agregar_alquiler_a_semana():
         
     except Exception as e:
         db.session.rollback()
-        print(f"âŒ Error: {str(e)}")
         import traceback
         traceback.print_exc()
+        print(f"❌ Error al agregar alquiler: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @alquileres_bp.route('/alquiler/semanas/agregar_alquiler_', methods=['POST'])
@@ -760,8 +962,10 @@ def agregar_alquiler_a_semana_():
     
     # Calculate
     precio_semanal = float(vehiculo.precio_semanal)
-    ingreso_calculado = precio_semanal * dias_trabajo
-    nomina_empresa = ingreso_calculado * (float(porcentaje.porcentaje) / 100)
+    ingreso_calculado = int(round((precio_semanal / 7.0) * dias_trabajo))
+    
+    # Nomina Calculada: (Ingreso * 0.9) - Inversion (aquÃ­ inversion es 0 al crear)
+    nomina_empresa = (ingreso_calculado * 0.9) - 0
     
     # Calculate fecha limite (jueves)
     fecha_limite = semana.fecha_inicio + timedelta(
@@ -821,14 +1025,16 @@ def agregar_alquiler_a_semana_():
 # ==========================================
 # ELIMINAR DETALLE DE SEMANA
 # ==========================================
+
 @alquileres_bp.route('/alquiler/detalles/<int:id>/eliminar', methods=['POST'])
 @login_required
 def eliminar_detalle(id):
-    """Elimina un detalle de alquiler de una semana"""
+    """Elimina un detalle de alquiler y LIBERA el vehículo"""
     
     try:
         detalle = DetalleAlquilerSemanal.query.get_or_404(id)
         semana_id = detalle.semana_alquiler_id
+        vehiculo_id = detalle.vehiculo_id
         
         # Get semana
         semana = SemanaAlquiler.query.get(semana_id)
@@ -839,14 +1045,32 @@ def eliminar_detalle(id):
                 'message': 'No se puede eliminar detalles de una semana cerrada'
             }), 400
         
+        # ✅ LIBERAR VEHÍCULO (marcar como disponible)
+        vehiculo = Vehiculo.query.get(vehiculo_id)
+        if vehiculo:
+            # Verificar que no tenga otros alquileres activos
+            otros_alquileres = DetalleAlquilerSemanal.query.filter(
+                and_(
+                    DetalleAlquilerSemanal.vehiculo_id == vehiculo_id,
+                    DetalleAlquilerSemanal.id != id,
+                    DetalleAlquilerSemanal.semana_alquiler_id != semana_id
+                )
+            ).count()
+            
+            if otros_alquileres == 0:
+                vehiculo.disponible = True
+                vehiculo.usuario_actualizo_id = current_user.id
+                vehiculo.fecha_hora_actualizo = datetime.utcnow()
+        
         # Update semana totals
         semana.total_vehiculos = max(0, semana.total_vehiculos - 1)
         semana.ingreso_total = float(semana.ingreso_total or 0) - float(detalle.ingreso_calculado or 0)
         
-        # Recalculate propietarios and inquilinos
+        # Delete detalle
         db.session.delete(detalle)
         db.session.flush()
         
+        # Recalculate propietarios and inquilinos
         semana.total_socios = db.session.query(
             func.count(func.distinct(DetalleAlquilerSemanal.propietario_id))
         ).filter_by(semana_alquiler_id=semana_id).scalar() or 0
@@ -859,13 +1083,13 @@ def eliminar_detalle(id):
         
         return jsonify({
             'success': True,
-            'message': 'Detalle eliminado exitosamente'
+            'message': 'Detalle eliminado y vehículo liberado exitosamente'
         })
         
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': str(e)}), 500
- 
+
 
 # ==========================================
 # CERRAR SEMANA (CON VALIDACIÓN ADMIN)
@@ -1151,8 +1375,6 @@ def eliminar_porcentaje_ganancia(id):
             return redirect(url_for('alquiler.porcentajes_ganancia'))
         
         db.session.delete(porcentaje)
-        db.session.commit()
-        
         flash('Porcentaje eliminado exitosamente', 'success')
         
     except Exception as e:
@@ -1160,11 +1382,68 @@ def eliminar_porcentaje_ganancia(id):
         flash(f'Error al eliminar porcentaje: {str(e)}', 'error')
     
     return redirect(url_for('alquiler.porcentajes_ganancia'))
+        
+# ==========================================
+# CONFIGURACIÓN MORA / INCAUTACIÓN
+# ==========================================
+@alquileres_bp.route('/catalogos/configuracion-alquiler', methods=['GET'])
+@login_required
+def configuracion_alquiler():
+    """Renderiza la página de configuración de alquileres"""
+    try:
+        config = ConfiguracionAlquiler.query.first()
+        
+        # Si no existe, crear valores por defecto
+        if not config:
+            config = ConfiguracionAlquiler(
+                dias_incautacion=3,
+                porcentaje_mora=5.0
+            )
+            db.session.add(config)
+            db.session.commit()
+            
+        return render_template('catalogos/configuracion_alquiler.html', config=config)
+    except Exception as e:
+        flash(f'Error al cargar configuración: {str(e)}', 'error')
+        return redirect(url_for('alquiler.index'))
+
+@alquileres_bp.route('/catalogos/configuracion-alquiler/guardar', methods=['POST'])
+@login_required
+@admin_required
+def guardar_configuracion():
+    """Guarda la configuración de alquileres desde el formulario"""
+    try:
+        dias = int(request.form.get('dias_incautacion'))
+        mora = float(request.form.get('porcentaje_mora'))
+        costo_lavado = float(request.form.get('costo_lavado', 350.00))
+        
+        config = ConfiguracionAlquiler.query.first()
+        if not config:
+            config = ConfiguracionAlquiler()
+            db.session.add(config)
+            
+        config.dias_incautacion = dias
+        config.porcentaje_mora = mora
+        config.costo_lavado = costo_lavado
+        config.usuario_actualizo_id = current_user.id
+        config.fecha_hora_actualizo = datetime.utcnow()
+        
+        db.session.commit()
+        
+        flash('Configuración guardada correctamente', 'success')
+        return redirect(url_for('alquiler.configuracion_alquiler'))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error al guardar configuración: {str(e)}', 'error')
+        return redirect(url_for('alquiler.configuracion_alquiler'))
 
 
 # ==========================================
-# DISPONIBLES PARA ALQUILER (CORREGIDO)
+# CORRECCIÓN COMPLETA: DISPONIBLES PARA ALQUILER
+# Con debug y manejo correcto del campo disponible encriptado
 # ==========================================
+
 @alquileres_bp.route('/alquiler/semanas/<int:id>/disponibles')
 @login_required
 def disponibles_para_alquiler(id):
@@ -1173,67 +1452,133 @@ def disponibles_para_alquiler(id):
     try:
         semana = SemanaAlquiler.query.get_or_404(id)
         
-        # Get vehículos ya en esta semana
+        print(f"🔍 DEBUG: Buscando disponibles para semana {id}")
+        print(f"   Rango: {semana.fecha_inicio} a {semana.fecha_fin}")
+        
+        # ==========================================
+        # VEHÍCULOS DISPONIBLES
+        # ==========================================
+        
+        # 1. Vehículos ya en esta semana
         vehiculos_en_semana = db.session.query(
             DetalleAlquilerSemanal.vehiculo_id
         ).filter_by(semana_alquiler_id=id).all()
-        
         vehiculos_ids_en_semana = [v[0] for v in vehiculos_en_semana]
         
-        # Get inquilinos ya en esta semana
-        inquilinos_en_semana = db.session.query(
-            DetalleAlquilerSemanal.inquilino_id
-        ).filter_by(semana_alquiler_id=id).all()
+        print(f"   Vehículos ya en semana: {vehiculos_ids_en_semana}")
         
-        inquilinos_ids_en_semana = [i[0] for i in inquilinos_en_semana]
-        
-        # ✅ CORRECCIÓN: Obtener vehículos disponibles (sin alquiler activo en el rango)
+        # 2. Vehículos con alquiler activo en el rango de fechas
         vehiculos_con_alquiler_activo = db.session.query(Alquiler.vehiculo_id).filter(
             and_(
                 Alquiler.fecha_alquiler_inicio <= semana.fecha_fin,
                 Alquiler.fecha_alquiler_fin >= semana.fecha_inicio
             )
         ).all()
-        
         vehiculos_ids_con_alquiler = [v[0] for v in vehiculos_con_alquiler_activo]
         
-        vehiculos_query = Vehiculo.query.filter(
-            and_(
-                Vehiculo.propietario_id.isnot(None),
-                ~Vehiculo.id.in_(vehiculos_ids_en_semana),
-                ~Vehiculo.id.in_(vehiculos_ids_con_alquiler)
-            )
-        )
+        print(f"   Vehículos con alquiler activo: {vehiculos_ids_con_alquiler}")
         
-        vehiculos_disponibles = vehiculos_query.all()
+        # 3. ✅ CORRECCIÓN: Filtrar por CONTRATO ACTIVO y DEPOSITO
+        # Requerimiento: Solo incluir vehículos que tienen un contrato activo y depósito OK
+        todos_vehiculos = Vehiculo.query \
+            .join(Contrato, Vehiculo.contratos) \
+            .join(Deposito, Contrato.depositos) \
+            .filter(
+                and_(
+                    ~Vehiculo.id.in_(vehiculos_ids_en_semana),
+                    Contrato.estado == 'activo',
+                    or_(
+                        Deposito.estado == 'parcial',
+                        Deposito.estado == 'completado'
+                    )
+                )
+            ).all()
+
+        vehiculos_disponibles = todos_vehiculos
+        print(f"   Vehículos disponibles con contrato activo: {len(vehiculos_disponibles)}")
         
-        # ✅ CORRECCIÓN: Obtener inquilinos disponibles (sin alquiler activo en el rango)
+        print(f"   Vehículos realmente disponibles: {len(vehiculos_disponibles)}")
+        
+        # ==========================================
+        # INQUILINOS DISPONIBLES
+        # ==========================================
+        
+        # 1. Inquilinos ya en esta semana
+        inquilinos_en_semana = db.session.query(
+            DetalleAlquilerSemanal.inquilino_id
+        ).filter_by(semana_alquiler_id=id).all()
+        inquilinos_ids_en_semana = [i[0] for i in inquilinos_en_semana]
+        
+        print(f"   Inquilinos ya en semana: {inquilinos_ids_en_semana}")
+        
+        # 2. Inquilinos con alquiler activo en el rango
         inquilinos_con_alquiler_activo = db.session.query(Alquiler.inquilino_id).filter(
             and_(
                 Alquiler.fecha_alquiler_inicio <= semana.fecha_fin,
                 Alquiler.fecha_alquiler_fin >= semana.fecha_inicio
             )
         ).all()
-        
         inquilinos_ids_con_alquiler = [i[0] for i in inquilinos_con_alquiler_activo]
         
-        inquilinos_query = Inquilino.query.filter(
-            and_(
-                ~Inquilino.id.in_(inquilinos_ids_en_semana),
-                ~Inquilino.id.in_(inquilinos_ids_con_alquiler)
+        print(f"   Inquilinos con alquiler activo: {inquilinos_ids_con_alquiler}")
+        
+        # 3. ✅ Inquilinos realmente disponibles (sin duplicados)
+        # Requerimiento: Solo inquilinos con CONTRATO ACTIVO y DEPOSITO (Parcial o Completado)
+        inquilinos_disponibles_query = Inquilino.query \
+            .join(Contrato, Inquilino.contratos) \
+            .join(Deposito, Contrato.depositos) \
+            .filter(
+                and_(
+                    ~Inquilino.id.in_(inquilinos_ids_en_semana),
+                    ~Inquilino.id.in_(inquilinos_ids_con_alquiler),
+                    Contrato.estado == 'activo',
+                    or_(
+                        Deposito.estado == 'parcial',
+                        Deposito.estado == 'completado'
+                    )
+                )
             )
-        )
         
-        inquilinos_disponibles = inquilinos_query.all()
+        inquilinos_disponibles = inquilinos_disponibles_query.all()
         
-        # Prepare vehiculos data
+        # 4. 🔴 Asegurar que los inquilinos asociados a los vehículos disponibles ESTÉN en la lista
+        # (Aunque hayan sido filtrados por alguna razón, si el vehículo está libre, su dueño debería poder seleccionarse)
+        inquilinos_ids_en_lista = {i.id for i in inquilinos_disponibles}
+        
+        for v in vehiculos_disponibles:
+             # Buscar contrato activo de este vehículo
+             c = Contrato.query.filter_by(vehiculo_id=v.id, estado='activo').first()
+             if c and c.inquilino_id and c.inquilino_id not in inquilinos_ids_en_lista:
+                 inquilino_faltante = Inquilino.query.get(c.inquilino_id)
+                 if inquilino_faltante:
+                     inquilinos_disponibles.append(inquilino_faltante)
+                     inquilinos_ids_en_lista.add(c.inquilino_id)
+                     print(f"   ⚠️ Agregado forzosamente inquilino asociado: {inquilino_faltante.nombre_apellido}")
+
+        print(f"   Inquilinos disponibles total: {len(inquilinos_disponibles)}")
+        
+        # ==========================================
+        # PREPARAR DATOS PARA JSON
+        # ==========================================
+        
         vehiculos_data = []
         for vehiculo in vehiculos_disponibles:
             try:
-                marca_modelo = vehiculo.marca_modelo if hasattr(vehiculo, 'marca_modelo') else None
+                # Usar relationship correctamente
+                marca_modelo = vehiculo.marca_modelo if vehiculo.marca_modelo else None
                 propietario = Propietario.query.get(vehiculo.propietario_id) if vehiculo.propietario_id else None
                 
-                vehiculos_data.append({
+                # Obtener contrato activo para este vehículo para saber el inquilino
+                contrato_activo = Contrato.query.filter_by(vehiculo_id=vehiculo.id, estado='activo').first()
+                if contrato_activo:
+                    inquilino_asociado_id = contrato_activo.inquilino_id
+                    inquilino_asoc = Inquilino.query.get(inquilino_asociado_id)
+                    inquilino_nombre = inquilino_asoc.nombre_apellido if inquilino_asoc else "Desconocido"
+                else:
+                    inquilino_asociado_id = None
+                    inquilino_nombre = None
+                
+                vehiculo_dict = {
                     'id': vehiculo.id,
                     'placa': vehiculo.placa if vehiculo.placa else 'N/A',
                     'marca': marca_modelo.marca if marca_modelo else 'N/A',
@@ -1242,39 +1587,75 @@ def disponibles_para_alquiler(id):
                     'color': vehiculo.color if vehiculo.color else '',
                     'precio_semanal': float(vehiculo.precio_semanal) if vehiculo.precio_semanal else 0,
                     'propietario_id': vehiculo.propietario_id,
-                    'propietario_nombre': propietario.nombre_apellido if propietario else ''
-                })
+                    'propietario_nombre': propietario.nombre_apellido if propietario else '',
+                    'inquilino_asociado_id': inquilino_asociado_id, # ID para auto-selección
+                    'inquilino_nombre': inquilino_nombre, # Nombre para display
+                    'disponible': True  # Ya filtrados
+                }
+                
+                vehiculos_data.append(vehiculo_dict)
+                
             except Exception as e:
-                print(f"Error procesando vehículo {vehiculo.id}: {str(e)}")
+                print(f"❌ Error procesando vehículo {vehiculo.id}: {str(e)}")
+                import traceback
+                traceback.print_exc()
                 continue
         
-        # Prepare inquilinos data
+        # ✅ Ordenar por placa
+        vehiculos_data.sort(key=lambda x: x['placa'])
+        
         inquilinos_data = []
         for inquilino in inquilinos_disponibles:
             try:
-                inquilinos_data.append({
+                inquilino_dict = {
                     'id': inquilino.id,
                     'nombre_apellido': inquilino.nombre_apellido if inquilino.nombre_apellido else 'Sin nombre',
                     'telefono': inquilino.telefono if inquilino.telefono else '',
                     'cedula': inquilino.cedula if inquilino.cedula else ''
-                })
+                }
+                
+                inquilinos_data.append(inquilino_dict)
+                
             except Exception as e:
-                print(f"Error procesando inquilino {inquilino.id}: {str(e)}")
+                print(f"❌ Error procesando inquilino {inquilino.id}: {str(e)}")
+                import traceback
+                traceback.print_exc()
                 continue
+        
+        # ✅ Ordenar por nombre y ELIMINAR DUPLICADOS
+        inquilinos_data.sort(key=lambda x: x['nombre_apellido'])
+        
+        # ✅ ELIMINAR DUPLICADOS por ID
+        inquilinos_unicos = []
+        ids_vistos = set()
+        for inq in inquilinos_data:
+            if inq['id'] not in ids_vistos:
+                inquilinos_unicos.append(inq)
+                ids_vistos.add(inq['id'])
+        
+        print(f"✅ Respuesta: {len(vehiculos_data)} vehículos, {len(inquilinos_unicos)} inquilinos")
         
         return jsonify({
             'success': True,
             'vehiculos': vehiculos_data,
-            'inquilinos': inquilinos_data
+            'inquilinos': inquilinos_unicos,
+            'debug': {
+                'semana_id': id,
+                'total_vehiculos': len(vehiculos_data),
+                'total_inquilinos': len(inquilinos_unicos),
+                'vehiculos_en_semana': len(vehiculos_ids_en_semana),
+                'inquilinos_en_semana': len(inquilinos_ids_en_semana)
+            }
         })
         
     except Exception as e:
-        print(f"❌ Error en disponibles_para_alquiler: {str(e)}")
+        print(f"❌ ERROR CRÍTICO en disponibles_para_alquiler: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'message': str(e)}), 500
 
-
 # ==========================================
-# AGREGAR INVERSIÓN MECÁNICA (NUEVO)
+# CORRECCIÓN 5: CREAR INVERSIÓN MECÁNICA (CON TODOS LOS CAMPOS REQUERIDOS)
 # ==========================================
 @alquileres_bp.route('/alquiler/inversiones/crear', methods=['POST'])
 @login_required
@@ -1287,33 +1668,62 @@ def crear_inversion_mecanica():
         detalle_id = int(data.get('detalle_id'))
         mecanico_id = int(data.get('mecanico_id'))
         tipo_trabajo_id = int(data.get('tipo_trabajo_id'))
-        tipo_inversion = data.get('tipo_inversion')  # 'falla_mecanica' o 'accidente'
+        tipo_inversion = data.get('tipo_inversion')
         descripcion = data.get('descripcion')
         costo = float(data.get('costo'))
         
         # Validate detalle exists
         detalle = DetalleAlquilerSemanal.query.get_or_404(detalle_id)
+        semana = SemanaAlquiler.query.get(detalle.semana_alquiler_id)
         
-        # Create trabajo
+        # ✅ CORRECCIÓN: Usar fecha de la SEMANA, no date.today()
+        # Esto asegura que la inversión esté dentro del rango correcto
+        fecha_trabajo = semana.fecha_inicio
+        
+        print(f"📅 Creando inversión con fecha de semana: {fecha_trabajo}")
+        print(f"   Rango semana: {semana.fecha_inicio} - {semana.fecha_fin}")
+        
         trabajo = TrabajoVehiculo(
             vehiculo_id=detalle.vehiculo_id,
             mecanico_id=mecanico_id,
             tipo_trabajo_id=tipo_trabajo_id,
-            fecha_inicio=date.today(),
+            fecha_inicio=fecha_trabajo,  # Fecha de inicio de semana
+            fecha_fin=fecha_trabajo,     # Fecha de inicio de semana
             descripcion=descripcion,
             costo=costo,
             estado='completado',
             notas=f'Tipo: {tipo_inversion}',
-            usuario_registro_id=current_user.id
+            usuario_registro_id=current_user.id,
+            usuario_actualizo_id=current_user.id
         )
         
         db.session.add(trabajo)
         db.session.flush()
         
-        # Update detalle
-        detalle.trabajo_vehiculo_id = trabajo.id
-        detalle.inversion_mecanica = (detalle.inversion_mecanica or 0) + costo
-        detalle.concepto_inversion = descripcion
+        # ✅ Calcular suma TOTAL de inversiones del vehículo en esta semana
+        total_inversiones = db.session.query(
+            func.sum(TrabajoVehiculo.costo)
+        ).filter(
+            and_(
+                TrabajoVehiculo.vehiculo_id == detalle.vehiculo_id,
+                TrabajoVehiculo.fecha_inicio >= semana.fecha_inicio,
+                TrabajoVehiculo.fecha_inicio <= semana.fecha_fin
+            )
+        ).scalar() or 0
+        
+        print(f"✅ Inversión creada ID {trabajo.id}: ${costo}")
+        print(f"   Total acumulado del vehículo: ${total_inversiones}")
+        
+        # Actualizar campo de inversión mecánica
+        detalle.inversion_mecanica = total_inversiones
+        
+        # Actualizar concepto
+        if not detalle.concepto_inversion:
+            detalle.concepto_inversion = descripcion
+        else:
+            if descripcion not in detalle.concepto_inversion:
+                detalle.concepto_inversion += f"; {descripcion}"
+        
         detalle.usuario_actualizo_id = current_user.id
         detalle.fecha_hora_actualizo = datetime.utcnow()
         
@@ -1323,11 +1733,14 @@ def crear_inversion_mecanica():
             'success': True,
             'message': 'Inversión registrada exitosamente',
             'trabajo_id': trabajo.id,
-            'total_inversion': float(detalle.inversion_mecanica)
+            'total_inversion': float(total_inversiones)
         })
         
     except Exception as e:
         db.session.rollback()
+        print(f"❌ Error al crear inversión: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'message': str(e)}), 500
 
 # ==========================================
@@ -1377,32 +1790,55 @@ def obtener_inversiones_detalle(id):
     
     try:
         detalle = DetalleAlquilerSemanal.query.get_or_404(id)
+        semana = SemanaAlquiler.query.get(detalle.semana_alquiler_id)
         
-        # Get trabajos asociados
+        print(f"🔍 Buscando inversiones:")
+        print(f"   Vehículo ID: {detalle.vehiculo_id}")
+        print(f"   Rango: {semana.fecha_inicio} - {semana.fecha_fin}")
+        
+        # Get trabajos del vehículo en el rango de la semana
         trabajos = TrabajoVehiculo.query.filter(
             and_(
                 TrabajoVehiculo.vehiculo_id == detalle.vehiculo_id,
-                TrabajoVehiculo.fecha_inicio >= detalle.semana.fecha_inicio,
-                TrabajoVehiculo.fecha_inicio <= detalle.semana.fecha_fin
+                TrabajoVehiculo.fecha_inicio >= semana.fecha_inicio,
+                TrabajoVehiculo.fecha_inicio <= semana.fecha_fin
             )
-        ).all()
+        ).order_by(TrabajoVehiculo.fecha_inicio.desc(), TrabajoVehiculo.id.desc()).all()
+        
+        print(f"   Encontrados: {len(trabajos)} trabajos")
         
         inversiones_data = []
         for trabajo in trabajos:
             mecanico = Mecanico.query.get(trabajo.mecanico_id)
             tipo_trabajo = TipoTrabajo.query.get(trabajo.tipo_trabajo_id)
             
+            print(f"      - ID {trabajo.id}: ${trabajo.costo} ({trabajo.fecha_inicio})")
+            
+            nombre_tipo = 'N/A'
+            if tipo_trabajo:
+                nombre_tipo = tipo_trabajo.nombre
+            elif trabajo.descripcion == 'Lavado Automático al Ingreso':
+                nombre_tipo = 'Lavado'
+            
+            tipo_inversion = 'N/A'
+            if trabajo.notas and trabajo.notas.startswith('Tipo: '):
+                tipo_inversion = trabajo.notas.replace('Tipo: ', '').split('|')[0].strip()
+            elif trabajo.descripcion == 'Lavado Automático al Ingreso':
+                tipo_inversion = 'Mantenimiento'
+            
             inversiones_data.append({
                 'id': trabajo.id,
                 'fecha': trabajo.fecha_inicio.strftime('%d/%m/%Y'),
                 'mecanico': mecanico.nombre if mecanico else 'N/A',
-                'tipo_trabajo': tipo_trabajo.nombre if tipo_trabajo else 'N/A',
+                'tipo_trabajo': nombre_tipo,
                 'descripcion': trabajo.descripcion,
                 'costo': float(trabajo.costo),
-                'tipo_inversion': trabajo.notas.replace('Tipo: ', '') if trabajo.notas else 'N/A'
+                'tipo_inversion': tipo_inversion
             })
         
         total_inversiones = sum(float(t.costo) for t in trabajos)
+        
+        print(f"✅ Total: ${total_inversiones}")
         
         return jsonify({
             'success': True,
@@ -1411,6 +1847,9 @@ def obtener_inversiones_detalle(id):
         })
         
     except Exception as e:
+        print(f"❌ Error obteniendo inversiones: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'message': str(e)}), 500
 
 # ==========================================
@@ -1479,12 +1918,12 @@ def editar_detalle_completo(id):
         detalle.inquilino_id = nuevo_inquilino_id
         detalle.propietario_id = vehiculo.propietario_id
         detalle.precio_semanal = data.get('precio_semanal', vehiculo.precio_semanal)
-        detalle.dias_trabajo = int(data.get('dias_trabajo', 7))
-        detalle.inversion_mecanica = float(data.get('inversion_mecanica', 0))
+        detalle.dias_trabajo = int(data.get('dias_trabajo') or 7)
+        detalle.inversion_mecanica = float(data.get('inversion_mecanica') or 0)
         detalle.concepto_inversion = data.get('concepto_inversion', '')
-        detalle.monto_descuento = float(data.get('monto_descuento', 0))
+        detalle.monto_descuento = float(data.get('monto_descuento') or 0)
         detalle.concepto_descuento = data.get('concepto_descuento', '')
-        detalle.monto_deuda = float(data.get('monto_deuda', 0))
+        detalle.monto_deuda = float(data.get('monto_deuda') or 0)
         detalle.banco_id = data.get('banco_id') if data.get('banco_id') else None
         
         if data.get('fecha_confirmacion_pago'):
@@ -1496,8 +1935,12 @@ def editar_detalle_completo(id):
         detalle.notas = data.get('notas', '')
         
         # Recalculate
-        detalle.ingreso_calculado = float(detalle.precio_semanal) * int(detalle.dias_trabajo)
-        detalle.nomina_empresa = detalle.ingreso_calculado * (float(detalle.porcentaje_empresa) / 100)
+        precio_diario = float(detalle.precio_semanal) / 7.0
+        detalle.ingreso_calculado = int(round(precio_diario * float(detalle.dias_trabajo)))
+        
+        # Nomina Calculada: (Ingreso * 0.9) - Inversion
+        detalle.nomina_empresa = (detalle.ingreso_calculado * 0.9) - float(detalle.inversion_mecanica or 0)
+        
         detalle.nomina_final = detalle.ingreso_calculado + float(detalle.monto_deuda or 0)
         
         detalle.usuario_actualizo_id = current_user.id
@@ -1534,6 +1977,86 @@ def editar_detalle_completo(id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': str(e)}), 500
+
+# ==========================================
+# CONFIRMAR PAGO (MODAL DEDICADO)
+# ==========================================
+@alquileres_bp.route('/alquiler/detalles/<int:id>/confirmar_pago', methods=['POST'])
+@login_required
+def confirmar_pago_detalle(id):
+    """Confirmar pago de un detalle con banco, fecha y comprobante"""
+    
+    try:
+        detalle = DetalleAlquilerSemanal.query.get_or_404(id)
+        semana = SemanaAlquiler.query.get(detalle.semana_alquiler_id)
+        
+        if semana.estado != 'abierta' and current_user.rol != 'admin':
+            return jsonify({
+                'success': False,
+                'message': 'No se puede confirmar pago en una semana cerrada (requiere admin)'
+            }), 400
+            
+        banco_id = request.form.get('banco_id')
+        fecha_pago = request.form.get('fecha_confirmacion_pago')
+        pago_confirmado = request.form.get('pago_confirmado') == 'true'
+        
+        if banco_id == '0':
+            detalle.banco_id = None
+        elif banco_id:
+            detalle.banco_id = int(banco_id)
+        if fecha_pago:
+            try:
+                detalle.fecha_confirmacion_pago = datetime.strptime(fecha_pago, '%Y-%m-%d').date()
+            except (ValueError, TypeError):
+                detalle.fecha_confirmacion_pago = date.today()
+        else:
+            detalle.fecha_confirmacion_pago = date.today()
+            
+        detalle.pago_confirmado = pago_confirmado
+        
+        # Manejo de archivo (comprobante)
+        eliminar_comprobante = request.form.get('eliminar_comprobante') == 'true'
+        
+        if eliminar_comprobante:
+            detalle.comprobante_pago_path = None
+
+        if 'comprobante' in request.files:
+            file = request.files['comprobante']
+            if file and file.filename != '':
+                # Crear directorio si no existe
+                upload_folder = os.path.join(current_app.static_folder, 'uploads', 'pagos_alquiler')
+                if not os.path.exists(upload_folder):
+                    os.makedirs(upload_folder)
+                
+                filename = secure_filename(f"pago_{id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{file.filename}")
+                file_path = os.path.join(upload_folder, filename)
+                file.save(file_path)
+                
+                # Guardar ruta relativa en el modelo (sobrescribe cualquier flag de eliminación)
+                detalle.comprobante_pago_path = os.path.join('uploads', 'pagos_alquiler', filename)
+        
+        detalle.usuario_actualizo_id = current_user.id
+        detalle.fecha_hora_actualizo = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Pago confirmado correctamente',
+            'pago_confirmado': detalle.pago_confirmado,
+            'banco': detalle.banco.banco if detalle.banco else 'N/A'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"❌ Error al confirmar pago:\n{error_details}")
+        return jsonify({
+            'success': False, 
+            'message': str(e),
+            'debug': error_details if current_app.debug else None
+        }), 500
 """
 En tu app/__init__.py, agregar:
 
