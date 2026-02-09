@@ -14,7 +14,7 @@ class Config:
     SECRET_KEY =  'dev-secret-key-change-in-production' #21XSWcxz3zaq45EDCxsw
     
     # Database configuration
-    SQLALCHEMY_DATABASE_URI =  'mysql+pymysql://root:@localhost/alquiler_vehiculos'
+    SQLALCHEMY_DATABASE_URI =  'mysql+pymysql://root:root_password_123@alquiler-mysql:3306/alquiler_vehiculos'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = False
     SQLALCHEMY_ENGINE_OPTIONS = {
