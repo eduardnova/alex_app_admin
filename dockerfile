@@ -39,32 +39,3 @@ EXPOSE 5000
 
 # Comando para ejecutar la aplicación con Gunicorn
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--timeout", "120", "app:app"]
-```
-
-## 2. .dockerignore
-```
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-venv/
-ENV/
-.venv
-.env
-*.sqlite
-*.db
-.git
-.gitignore
-.vscode
-.idea
-*.log
-instance/
-.pytest_cache/
-.coverage
-htmlcov/
-dist/
-build/
-*.egg-info/
-.DS_Store
